@@ -72,10 +72,10 @@ static int cmd_x(char * args){
   paddr_t addr = strtol(addr_str, NULL, 0);
   word_t buffer[n];
   for (int i = 0;i<n;i++){
-    buffer[i] = paddr_read(addr+i,4);
+    buffer[i] = paddr_read(addr+i*4,4);
   }
   for (int i = 0;i<n;i++){
-    printf("%x\n",buffer[i]);
+    printf("0x%08x\n",buffer[i]);
   }
   return 0;
 }
