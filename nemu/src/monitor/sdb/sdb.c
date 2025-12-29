@@ -79,6 +79,14 @@ static int cmd_x(char * args){
   }
   return 0;
 }
+static int cmd_info(char*args){
+  if (*args == 'r'){
+    isa_reg_display();
+    return 0;
+  }else{
+    return 1;
+  }
+}
 
 static int cmd_help(char *args);
 
@@ -93,6 +101,7 @@ static struct {
   { "p" , "calculate expr",cmd_p},
   { "si", "execute n instructions",cmd_si},
   { "x", "x N EXPR", cmd_x },
+  { "info","info r and info w",cmd_info},
   //{ "w", "w EXPR",cmd_w},
   //{ "d", "delete number N watchpoint",cmd_d},
   /* TODO: Add more commands */
