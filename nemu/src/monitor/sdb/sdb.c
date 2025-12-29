@@ -92,6 +92,10 @@ static int cmd_info(char*args){
   }
 }
 static int cmd_w(char * args){
+  if(args==NULL){
+    current_wp();
+    return 0;
+  }
   set_wp(args);
   return 0;
 }
