@@ -70,6 +70,7 @@ static int cmd_x(char * args){
   char *addr_str  = strtok(NULL, " ");
   int n = atoi(n_str);
   int addr = atoi(addr_str);
+  printf("%d\n",addr);
   word_t buffer[n];
   for (int i = 0;i<n;i++){
     buffer[i] = paddr_read(addr+i,4);
