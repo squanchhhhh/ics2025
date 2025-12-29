@@ -20,6 +20,6 @@
 
 word_t expr(char *e, bool *success);
 void current_wp();
-
+void delete_wp(int n) ;
 void set_wp(char *expr);
 #endif

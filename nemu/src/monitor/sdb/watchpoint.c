@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include "sdb.h"
+#include <stdio.h>
 
 #define NR_WP 32
 
@@ -120,6 +121,7 @@ void delete_wp(int n) {
     }
     cur->next = free_;
     free_ = cur;
+    printf("deleted wp number %d\n",n);
 }
 /* TODO: Implement the functionality of watchpoint */
 
