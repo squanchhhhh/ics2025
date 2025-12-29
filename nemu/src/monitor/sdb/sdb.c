@@ -47,21 +47,28 @@ static int cmd_c(char *args) {
   return 0;
 }
 // 问题1：printf是行缓冲，在接收到\n之后才会输出
+// 单步执行
 static int cmd_si(char * args){
   int n = atoi(args);
   cpu_exec(n);
   return 0;
 }
-
+//退出
 static int cmd_q(char *args) {
   return -1;
 }
+//表达式求值
 static int cmd_p(char * args){
   bool success = true;
   int result = expr(args,&success);
   printf("%d\n",result);
   return 0;
 }
+/*
+static int cmd_x(char * args){
+  char *n  = strtok(args, " ");
+  char *addr  = strtok(NULL, " ");
+}*/
 
 static int cmd_help(char *args);
 
@@ -75,6 +82,9 @@ static struct {
   { "q", "Exit NEMU", cmd_q },
   { "p" , "calculate expr",cmd_p},
   { "si", "execute n instructions",cmd_si},
+  //{ "x", "x N EXPR", cmd_x },
+  //{ "w", "w EXPR",cmd_w},
+  //{ "d", "delete number N watchpoint",cmd_d},
   /* TODO: Add more commands */
 
 };
