@@ -66,6 +66,7 @@ static int cmd_p(char * args){
 }
 
 static int cmd_x(char * args){
+  printf("%s\n",args);
   char *n_str  = strtok(args, " ");
   char *addr_str  = strtok(NULL, " ");
   int n = atoi(n_str);
