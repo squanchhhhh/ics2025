@@ -65,7 +65,7 @@ static int cmd_q(char *args) {
 static int cmd_p(char * args){
   bool success = true;
   int result = expr(args,&success);
-  printf("%d\n",result);
+  printf("%x\n",result);
   return 0;
 }
 
