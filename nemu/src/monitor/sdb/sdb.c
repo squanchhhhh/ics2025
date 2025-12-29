@@ -68,7 +68,7 @@ static int cmd_p(char * args){
   bool success = true;
   int result = expr(expr_str,&success);
   if (!strcmp(op,"x")){
-    printf("%x\n",result);
+    printf("0x%08x\n",result);
   }else{
     printf("%d\n",result);
   }
