@@ -47,7 +47,7 @@ static int cmd_c(char *args) {
   return 0;
 }
 static int cmd_si(char * args){
-  printf("%s",args);
+  printf("%d",atoi(args));
   char *cmd = strtok(args, " ");
   printf("%s",cmd);
   (void)cmd;
