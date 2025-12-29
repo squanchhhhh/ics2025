@@ -47,12 +47,8 @@ static int cmd_c(char *args) {
   return 0;
 }
 static int cmd_si(char * args){
-  printf("%d",atoi(args));
-  char *cmd = strtok(args, " ");
-  printf("%s",cmd);
-  (void)cmd;
-  char *arg = strtok(NULL, " ");
-  int n = atoi(arg);
+  printf("%d\n",atoi(args));
+  int n = atoi(args);
   cpu_exec(n);
   return 0;
 }
