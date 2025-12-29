@@ -63,9 +63,15 @@ static int cmd_q(char *args) {
 }
 //表达式求值
 static int cmd_p(char * args){
+  char * op = strtok("args"," ");
+  char * expr_str = strtok(NULL," ");
   bool success = true;
-  int result = expr(args,&success);
-  printf("%x\n",result);
+  int result = expr(expr_str,&success);
+  if (strcmp(op,"x")){
+    printf("%x\n",result);
+  }else{
+    printf("%d\n",result);
+  }
   return 0;
 }
 
