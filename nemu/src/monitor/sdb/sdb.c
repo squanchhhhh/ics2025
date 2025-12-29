@@ -66,12 +66,10 @@ static int cmd_p(char * args){
 }
 
 static int cmd_x(char * args){
-  printf("%s\n",args);
   char *n_str  = strtok(args, " ");
   char *addr_str  = strtok(NULL, " ");
   int n = atoi(n_str);
-  int addr = atoi(addr_str);
-  printf("%d\n",addr);
+  paddr_t addr = strtol(addr_str, NULL, 0);
   word_t buffer[n];
   for (int i = 0;i<n;i++){
     buffer[i] = paddr_read(addr+i,4);
