@@ -68,10 +68,12 @@ void set_wp(char *expr_str) {
   wp->expr[sizeof(wp->expr) - 1] = '\0';
   bool  success = true;
   wp->last_val = expr(wp->expr,&success); 
+  assert(success);
 }
 bool check_wp(WP *wp) {
   bool  success = true;
   word_t new_val = expr(wp->expr,&success);
+  assert(success);
   if (new_val != wp->last_val) {
     printf("Watchpoint %d triggered:\n", wp->NO);
     printf("  expr = %s\n", wp->expr);
