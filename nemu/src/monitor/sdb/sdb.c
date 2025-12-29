@@ -87,6 +87,10 @@ static int cmd_info(char*args){
     return 1;
   }
 }
+static int cmd_w(char * args){
+  set_wp(args);
+  return 0;
+}
 
 static int cmd_help(char *args);
 
@@ -102,7 +106,7 @@ static struct {
   { "si", "execute n instructions",cmd_si},
   { "x", "x N EXPR", cmd_x },
   { "info","info r and info w",cmd_info},
-  //{ "w", "w EXPR",cmd_w},
+  { "w", "w EXPR",cmd_w},
   //{ "d", "delete number N watchpoint",cmd_d},
   /* TODO: Add more commands */
 

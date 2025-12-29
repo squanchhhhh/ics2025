@@ -20,8 +20,8 @@
 typedef struct watchpoint {
   int NO;
   struct watchpoint *next;
-
-  /* TODO: Add more members if necessary */
+  char expr[128];   
+  word_t last_val;
 
 } WP;
 
@@ -38,6 +38,68 @@ void init_wp_pool() {
   head = NULL;
   free_ = wp_pool;
 }
-
+WP* new_wp() {
+  if (free_ == NULL) {
+    assert(0);
+  }
+  WP *wp = free_;
+  free_ = free_->next;
+  wp->next = head;
+  head = wp;
+  return wp;
+}
+void free_wp(WP *wp) {
+  if (wp == NULL) return;
+  if (head == wp) {
+    head = wp->next;
+  } else {
+    WP *p = head;
+    while (p != NULL && p->next != wp) {
+      p = p->next;
+    }
+    p->next = wp->next;
+  }
+  wp->next = free_;
+  free_ = wp;
+}
+void set_wp(char *expr_str) {
+  WP *wp = new_wp();
+  strncpy(wp->expr, expr_str, sizeof(wp->expr) - 1);
+  wp->expr[sizeof(wp->expr) - 1] = '\0';
+  bool  success = true;
+  wp->last_val = expr(wp->expr,&success); 
+}
+bool check_wp(WP *wp) {
+  bool  success = true;
+  word_t new_val = expr(wp->expr,&success);
+  if (new_val != wp->last_val) {
+    printf("Watchpoint %d triggered:\n", wp->NO);
+    printf("  expr = %s\n", wp->expr);
+    printf("  old value = 0x%x\n", wp->last_val);
+    printf("  new value = 0x%x\n", new_val);
+    wp->last_val = new_val;
+    return true;
+  }
+  return false;
+}
+void current_wp(){
+  WP*temp = head;
+  while(temp!=NULL){
+    printf("NO: %d  expr: %s  value: 0x%x\n",
+       temp->NO, temp->expr, temp->last_val);
+    temp = temp->next;
+  }
+  return ;
+}
+bool check_all_wp() {
+  WP *wp = head;
+  while (wp != NULL) {
+    if (check_wp(wp)) {
+      return true; 
+    }
+    wp = wp->next;
+  }
+  return false;
+}
 /* TODO: Implement the functionality of watchpoint */
 
