@@ -64,11 +64,21 @@ static int cmd_p(char * args){
   printf("%d\n",result);
   return 0;
 }
-/*
+
 static int cmd_x(char * args){
-  char *n  = strtok(args, " ");
-  char *addr  = strtok(NULL, " ");
-}*/
+  char *n_str  = strtok(args, " ");
+  char *addr_str  = strtok(NULL, " ");
+  int n = atoi(n_str);
+  int addr = atoi(addr_str);
+  word_t buffer[n];
+  for (int i = 0;i<n;i++){
+    buffer[i] = paddr_read(addr+i,4);
+  }
+  for (int i = 0;i<n;i++){
+    printf("%x\n",buffer[i]);
+  }
+  return 0;
+}
 
 static int cmd_help(char *args);
 
@@ -82,7 +92,7 @@ static struct {
   { "q", "Exit NEMU", cmd_q },
   { "p" , "calculate expr",cmd_p},
   { "si", "execute n instructions",cmd_si},
-  //{ "x", "x N EXPR", cmd_x },
+  { "x", "x N EXPR", cmd_x },
   //{ "w", "w EXPR",cmd_w},
   //{ "d", "delete number N watchpoint",cmd_d},
   /* TODO: Add more commands */
