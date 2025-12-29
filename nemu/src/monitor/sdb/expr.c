@@ -99,6 +99,7 @@ static bool make_token(char *e) {
             i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
         position += substr_len;
+        //排除空格
         if(i!=0){
           strncpy(tokens[nr_token].str, substr_start, substr_len);
           tokens[nr_token].str[substr_len] = '\0';
@@ -223,7 +224,11 @@ long parse_primary(Parser *self) {
     if(tk.type == TK_REG){
         self->consume(self);
         bool success = true;
-        int value = isa_reg_str2val(tk.str,&success);
+        int value;
+        if(strcmp(tk.str,"pc")){
+           value = cpu.pc;
+        }
+        else{value = isa_reg_str2val(tk.str,&success);}
         return value;
     }
     if (tk.type == TK_LEFT) {
