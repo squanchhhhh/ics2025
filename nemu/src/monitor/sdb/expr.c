@@ -40,6 +40,7 @@ static struct rule {
   const char *regex;
   int token_type;
 } rules[] = {
+  { " +"       , TK_NOTYPE },   // spaces
   { "0[xX][0-9a-fA-F]+",TK_HEX},
   { "=="       , TK_EQ     },   // equal
   { "&&"       , TK_AND    },
@@ -54,7 +55,7 @@ static struct rule {
   {"\\$(t[0-6]|s[0-9]|s1[01]|a[0-7])", TK_REG},
   { "\\("      , TK_LEFT   },
   { "\\)"      , TK_RIGHT  },
-  { " +"       , TK_NOTYPE },   // spaces
+
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -98,10 +99,11 @@ static bool make_token(char *e) {
             i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
         position += substr_len;
-        strncpy(tokens[nr_token].str, substr_start, substr_len);
-        tokens[nr_token].str[substr_len] = '\0';
-        tokens[nr_token].type = rules[i].token_type;
-        nr_token++;
+        if(i!=0){
+          strncpy(tokens[nr_token].str, substr_start, substr_len);
+          tokens[nr_token].str[substr_len] = '\0';
+          tokens[nr_token].type = rules[i].token_type;
+          nr_token++;}
         break;
       }
     }
