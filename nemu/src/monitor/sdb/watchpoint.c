@@ -103,5 +103,23 @@ bool check_all_wp() {
   }
   return false;
 }
+void delete_wp(int n) {
+    WP *prev = NULL;
+    WP *cur = head;
+    while (cur != NULL && cur->NO != n) {
+        prev = cur;
+        cur = cur->next;
+    }
+    if (cur == NULL) {
+        return;
+    }
+    if (prev == NULL) {
+        head = cur->next;
+    } else {
+        prev->next = cur->next;
+    }
+    cur->next = free_;
+    free_ = cur;
+}
 /* TODO: Implement the functionality of watchpoint */
 
