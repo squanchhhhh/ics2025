@@ -21,33 +21,46 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ,
-
-  /* TODO: Add more token types */
-
+  TK_NOTYPE = 256,
+  TK_EQ,        // ==
+  TK_AND,       // &&
+  TK_NOT,       // !=
+  TK_STAR,      // *
+  TK_DIV,       // /
+  TK_PLUS,      // +
+  TK_MINUS,     // -
+  TK_NUM,       //
+  TK_ADDR,      // &addr
+  TK_REG,       // 
+  TK_LEFT,      // (
+  TK_RIGHT,     // )
+  TK_HEX,
 };
-
 static struct rule {
   const char *regex;
   int token_type;
 } rules[] = {
-
-  /* TODO: Add more rules.
-   * Pay attention to the precedence level of different rules.
-   */
-
-  {" +", TK_NOTYPE},    // spaces
-  {"\\+", '+'},         // plus
-  {"==", TK_EQ},        // equal
+  { "0[xX][0-9a-fA-F]+",TK_HEX},
+  { "=="       , TK_EQ     },   // equal
+  { "&&"       , TK_AND    },
+  { "!="       , TK_NOT    },
+  { "\\*"      , TK_STAR   },
+  { "/"        , TK_DIV    },
+  { "\\+"      , TK_PLUS   },   // plus
+  { "-"        , TK_MINUS  },
+  { "[0-9]+"   , TK_NUM    },
+  { "&"        , TK_ADDR   },
+  {"\\$(0|ra|sp|gp|tp|pc)", TK_REG},
+  {"\\$(t[0-6]|s[0-9]|s1[01]|a[0-7])", TK_REG},
+  { "\\("      , TK_LEFT   },
+  { "\\)"      , TK_RIGHT  },
+  { " +"       , TK_NOTYPE },   // spaces
 };
 
 #define NR_REGEX ARRLEN(rules)
 
 static regex_t re[NR_REGEX] = {};
 
-/* Rules are used for many times.
- * Therefore we compile them only once before any usage.
- */
 void init_regex() {
   int i;
   char error_msg[128];
@@ -74,11 +87,8 @@ static bool make_token(char *e) {
   int position = 0;
   int i;
   regmatch_t pmatch;
-
   nr_token = 0;
-
   while (e[position] != '\0') {
-    /* Try all rules one by one. */
     for (i = 0; i < NR_REGEX; i ++) {
       if (regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
         char *substr_start = e + position;
@@ -88,38 +98,165 @@ static bool make_token(char *e) {
             i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
         position += substr_len;
-
-        /* TODO: Now a new token is recognized with rules[i]. Add codes
-         * to record the token in the array `tokens'. For certain types
-         * of tokens, some extra actions should be performed.
-         */
-
-        switch (rules[i].token_type) {
-          default: TODO();
-        }
-
+        strncpy(tokens[nr_token].str, substr_start, substr_len);
+        tokens[nr_token].str[substr_len] = '\0';
+        tokens[nr_token].type = rules[i].token_type;
+        nr_token++;
         break;
       }
     }
-
     if (i == NR_REGEX) {
       printf("no match at position %d\n%s\n%*.s^\n", position, e, position, "");
       return false;
     }
   }
-
   return true;
 }
 
+typedef struct Parser Parser;
+struct Parser{
+    int pos;
+    Token (*peek)(Parser * self);
+    Token (*consume)(Parser * self);
+    int (*parse_expr)(Parser * self);
+    int (*parse_and)(Parser * self);
+    int (*parse_eq_not)(Parser * self);
+    int (*parse_plus_minus)(Parser * self);
+    int (*parse_star_div)(Parser * self);
+    int (*parse_unary)(Parser * self);
+    long (*parse_primary)(Parser * self);
+};
+Token peek(Parser * self){
+    return tokens[self->pos];
+}
+Token consume(Parser * self){
+    return tokens[self->pos++];
+}
+int parse_expr(Parser * self){
+    return self->parse_and(self);
+}
+int parse_and(Parser * self){
+    int value = self->parse_eq_not(self);
+    while(self->peek(self).type == TK_AND){
+        self->consume(self);
+        int right = self->parse_eq_not(self);
+        value = right && value;
+    }
+    return value;
+}
+int parse_eq_not(Parser* self){
+    int value = self->parse_plus_minus(self);
+    while (self->peek(self).type == TK_EQ || self->peek(self).type==TK_NOT){
+        if (self->peek(self).type == TK_EQ){
+            self->consume(self);
+            int right = self->parse_plus_minus(self);
+            value = value == right;
+        }else if(self->peek(self).type == TK_NOT){
+            self->consume(self);
+            int right = self->parse_plus_minus(self);
+            value = value != right;
+        }
+    }
+    return value;
+}
+int parse_plus_minus(Parser *self) {
+    int value = self->parse_star_div(self);
+    while (self->peek(self).type == TK_PLUS || self->peek(self).type == TK_MINUS) {
+        if (self->peek(self).type == TK_PLUS) {
+            self->consume(self);
+            int right = self->parse_star_div(self);
+            value = value + right;
+        } else if (self->peek(self).type == TK_MINUS) {
+            self->consume(self);
+            int right = self->parse_star_div(self);
+            value = value - right;
+        }
+    }
+    return value;
+}
+int parse_star_div(Parser *self) {
+    int value = self->parse_unary(self);
+    while (self->peek(self).type == TK_STAR || self->peek(self).type == TK_DIV) {
+        if (self->peek(self).type == TK_STAR) {
+            self->consume(self);
+            int right = self->parse_unary(self);
+            value = value * right;
+        } else if (self->peek(self).type == TK_DIV) {
+            self->consume(self);
+            int right = self->parse_unary(self);
+            value = value / right;
+        }
+    }
+    return value;
+}
+int parse_unary(Parser *self) {
+    if (self->peek(self).type == TK_MINUS) {
+        self->consume(self);
+        int val = self->parse_unary(self);
+        return -val;
+    }
+    if (self->peek(self).type == TK_ADDR){
+        self->consume(self);
+        int val = self->parse_unary(self);
+        return val;
+    }
+    if(self->peek(self).type == TK_STAR){
+        self->consume(self);
+        int addr = self->parse_unary(self);
+        int value = paddr_read((paddr_t)addr,4);
+        return value;
+    }
+    return self->parse_primary(self);
+}
+long parse_primary(Parser *self) {
+    Token tk = self->peek(self);
+    if (tk.type == TK_NUM) {
+        self->consume(self);
+        return atoi(tk.str);
+    }
+    if (tk.type == TK_HEX){
+      self->consume(self);
+      return strtol(tk.str,NULL,16);
+    }
+    if(tk.type == TK_REG){
+        self->consume(self);
+        bool success = true;
+        int value = isa_reg_str2val(tk.str,&success);
+        return value;
+    }
+    if (tk.type == TK_LEFT) {
+        self->consume(self);
+        int val = self->parse_expr(self);
+        if (self->peek(self).type != TK_RIGHT) {
+            printf("Missing TK_RIGHT\n");
+        } else {
+            self->consume(self);
+        }
+        return val;
+    }
+    return 0;
+}
+Parser * init_parser() {
+    Parser *parser = (Parser *)malloc(sizeof(Parser));
+    parser->pos = 0;
+    parser->peek = peek;
+    parser->consume = consume;
+    parser->parse_expr = parse_expr;
+    parser->parse_and = parse_and;
+    parser->parse_eq_not = parse_eq_not;
+    parser->parse_plus_minus = parse_plus_minus;
+    parser->parse_star_div = parse_star_div;
+    parser->parse_unary = parse_unary;
+    parser->parse_primary = parse_primary;
+    return parser;
+}
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
     *success = false;
     return 0;
   }
-
-  /* TODO: Insert codes to evaluate the expression. */
-  TODO();
-
-  return 0;
+  Parser * parser = init_parser();
+  long result = parser->parse_expr(parser);
+  return result;
 }

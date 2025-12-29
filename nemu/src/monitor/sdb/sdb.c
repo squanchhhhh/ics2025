@@ -41,15 +41,30 @@ static char* rl_gets() {
 
   return line_read;
 }
-
+static int cmd_help(char *args);
 static int cmd_c(char *args) {
   cpu_exec(-1);
   return 0;
 }
-
+static int cmd_si(char * args){
+  printf("%s",args);
+  char *cmd = strtok(args, " ");
+  printf("%s",cmd);
+  (void)cmd;
+  char *arg = strtok(NULL, " ");
+  int n = atoi(arg);
+  cpu_exec(n);
+  return 0;
+}
 
 static int cmd_q(char *args) {
   return -1;
+}
+static int cmd_p(char * args){
+  bool success = true;
+  int result = expr(args,&success);
+  printf("%d\n",result);
+  return 0;
 }
 
 static int cmd_help(char *args);
@@ -62,7 +77,8 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  { "p" , "calculate expr",cmd_p},
+  { "si", "execute n instructions",cmd_si},
   /* TODO: Add more commands */
 
 };
