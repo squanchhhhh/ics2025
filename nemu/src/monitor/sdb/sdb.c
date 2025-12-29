@@ -49,6 +49,10 @@ static int cmd_c(char *args) {
 // 问题1：printf是行缓冲，在接收到\n之后才会输出
 // 单步执行
 static int cmd_si(char * args){
+  if(args == NULL){
+    cpu_exec(1);
+    return 0;
+  }
   int n = atoi(args);
   cpu_exec(n);
   return 0;
