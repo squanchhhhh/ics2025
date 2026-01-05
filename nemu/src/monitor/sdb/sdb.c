@@ -63,14 +63,14 @@ static int cmd_q(char *args) {
 }
 //表达式求值
 static int cmd_p(char * args){
-  char * expr_str = strtok(args," ");
+  char * expr_str = args;
   bool success = true;
   int result = expr(expr_str,&success);
   printf("%d\n",result);
   return 0;
 }
 static int cmd_ph(char*args){
-  char * expr_str = strtok(args," ");
+  char * expr_str = args;
   bool success = true;
   int result = expr(expr_str,&success);
   printf("0x%08x\n",result);
