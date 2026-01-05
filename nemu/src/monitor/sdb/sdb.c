@@ -68,10 +68,10 @@ static int cmd_p(char * args){
   char * op = strtok(NULL," ");
   bool success = true;
   int result = expr(expr_str,&success);
-  if (!strcmp(op,"x")){
-    printf("0x%08x\n",result);
-  }else{
+  if (op==NULL){
     printf("%d\n",result);
+  }else{ // 暂时只添加16进制
+    printf("0x%08x\n",result);
   }
   return 0;
 }
