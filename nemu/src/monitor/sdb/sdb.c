@@ -62,6 +62,7 @@ static int cmd_q(char *args) {
   return -1;
 }
 //表达式求值
+//为表达式增加10进制和16进制选项
 static int cmd_p(char * args){
   char * op = strtok(args," ");
   char * expr_str = strtok(NULL," ");
