@@ -96,14 +96,11 @@ static int cmd_info(char*args){
     isa_reg_display();
     return 0;
   }else{
-    return 1;
-  }
-}
-static int cmd_w(char * args){
-  if(args==NULL){
     current_wp();
     return 0;
   }
+}
+static int cmd_w(char * args){
   set_wp(args);
   return 0;
 }
@@ -127,8 +124,8 @@ static struct {
   { "ph", "calculate expr with hex output",cmd_ph},
   { "si", "execute n instructions",cmd_si},
   { "x", "x N EXPR", cmd_x },
-  { "info","info r and info w",cmd_info},
-  { "w", "w EXPR",cmd_w},
+  { "info","info r to show regs\n info w to show watchpoints",cmd_info},
+  { "w", "w EXPR to set a watchpoint",cmd_w},
   { "d", "delete number N watchpoint",cmd_d},
   /* TODO: Add more commands */
 
