@@ -62,17 +62,18 @@ static int cmd_q(char *args) {
   return -1;
 }
 //表达式求值
-//为表达式增加10进制和16进制选项
 static int cmd_p(char * args){
   char * expr_str = strtok(args," ");
-  char * op = strtok(NULL," ");
   bool success = true;
   int result = expr(expr_str,&success);
-  if (op==NULL){
-    printf("%d\n",result);
-  }else{ // 暂时只添加16进制
-    printf("0x%08x\n",result);
-  }
+  printf("%d\n",result);
+  return 0;
+}
+static int cmd_ph(char*args){
+  char * expr_str = strtok(args," ");
+  bool success = true;
+  int result = expr(expr_str,&success);
+  printf("0x%08x\n",result);
   return 0;
 }
 
@@ -123,6 +124,7 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
   { "p" , "calculate expr",cmd_p},
+  { "ph", "calculate expr with hex output",cmd_ph},
   { "si", "execute n instructions",cmd_si},
   { "x", "x N EXPR", cmd_x },
   { "info","info r and info w",cmd_info},
