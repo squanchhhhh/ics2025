@@ -137,19 +137,11 @@ struct Parser{
     int (*parse_unary)(Parser * self);
     int (*parse_primary)(Parser * self);   // 忘记了为什么之前会改成long
 };
-Token peek(Parser *self) {
-    if (self->pos >= nr_token) {
-        Token tk;
-        tk.type = TK_END;   
-        return tk;
-    }
+Token peek(Parser * self){
     return tokens[self->pos];
 }
-
-Token consume(Parser *self) {
-    Token tk = peek(self); 
-    if (self->pos < nr_token) self->pos++;
-    return tk;
+Token consume(Parser * self){
+    return tokens[self->pos++];
 }
 int parse_expr(Parser * self){
     int val = self->parse_and(self);
