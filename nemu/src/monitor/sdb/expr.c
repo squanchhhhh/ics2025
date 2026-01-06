@@ -36,6 +36,7 @@ enum {
   TK_LEFT,      // (
   TK_RIGHT,     // )
   TK_HEX,
+  TK_END
 };
 static struct rule {
   const char *regex;
@@ -114,6 +115,12 @@ static bool make_token(char *e) {
       return false;
     }
   }
+  if(nr_token<256){
+    tokens[nr_token].type = TK_END;
+  }else{
+    printf("nr_token = %d > 256",nr_token);
+    assert(0);
+  }
   return true;
 }
 
@@ -137,7 +144,9 @@ Token consume(Parser * self){
     return tokens[self->pos++];
 }
 int parse_expr(Parser * self){
-    return self->parse_and(self);
+    int val = self->parse_and(self);
+    assert(self->peek(self).type == TK_END);
+    return val;
 }
 int parse_and(Parser * self){
     int value = self->parse_eq_not(self);
