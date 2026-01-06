@@ -12,7 +12,7 @@
 #
 # See the Mulan PSL v2 for more details.
 #**************************************************************************************/
-
+SHELL := /bin/bash
 # Sanity check
 ifeq ($(wildcard $(NEMU_HOME)/src/nemu-main.c),)
   $(error NEMU_HOME=$(NEMU_HOME) is not a NEMU repo)
@@ -62,3 +62,11 @@ else
 # Include rules to build NEMU
 include $(NEMU_HOME)/scripts/native.mk
 endif
+.PHONY: test
+test:
+	set -o pipefail; \
+	./tools/gen-expr/gen-expr 10 \
+	| tee REF.out \
+	| awk '{ $$1="t"; print }' \
+	| ./build/riscv32-nemu-interpreter --log ./build/nemu-log.txt \
+	1>/dev/null 2>./nemu.out

@@ -145,7 +145,7 @@ Token consume(Parser * self){
 }
 int parse_expr(Parser * self){
     int val = self->parse_and(self);
-    assert(self->peek(self).type == TK_END);
+    assert(self->peek(self).type != TK_END);
     return val;
 }
 int parse_and(Parser * self){
