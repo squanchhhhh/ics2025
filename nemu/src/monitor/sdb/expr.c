@@ -41,7 +41,7 @@ static struct rule {
   int token_type;
 } rules[] = {
   { " +"       , TK_NOTYPE },   // spaces
-  { "0[xX][0-9a-fA-F]+",TK_HEX},
+  { "0[xX][0-9a-fA-F]+u?",TK_HEX},
   { "=="       , TK_EQ     },   // equal
   { "&&"       , TK_AND    },
   { "!="       , TK_NOT    },
@@ -49,7 +49,7 @@ static struct rule {
   { "/"        , TK_DIV    },
   { "\\+"      , TK_PLUS   },   // plus
   { "-"        , TK_MINUS  },
-  { "[0-9]+"   , TK_NUM    },
+  { "[0-9]+u?"   , TK_NUM    },
   { "&"        , TK_ADDR   },
   {"\\$(0|ra|sp|gp|tp|pc)", TK_REG},
   {"\\$(t[0-6]|s[0-9]|s1[01]|a[0-7])", TK_REG},
