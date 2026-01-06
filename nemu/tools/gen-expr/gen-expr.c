@@ -42,13 +42,11 @@ typedef enum {
 } NodeType;
 typedef struct ASTNode {
   NodeType type;
-  union {
-    int value;             
-    struct {
-      char op;             
-      struct ASTNode *left;
-      struct ASTNode *right;
-    };
+  int value;             
+  struct {
+    char op;             
+    struct ASTNode *left;
+    struct ASTNode *right;
   };
 } ASTNode;
 void mid_travel(ASTNode *root);
@@ -56,6 +54,8 @@ ASTNode *new_num_node(int val) {
   ASTNode *n = malloc(sizeof(ASTNode));
   n->type = NODE_NUM;
   n->value = val;
+  n->left = NULL;  
+  n->right = NULL;
   return n;
 }
 
@@ -130,8 +130,10 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
+    expr_index = 0;
+    buf[0] = '\0';
     mid_travel(gen_rand_ast(6));
-
+    buf[expr_index] = '\0';
     sprintf(code_buf, code_format, buf);
 
     FILE *fp = fopen("/tmp/.code.c", "w");

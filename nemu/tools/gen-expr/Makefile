@@ -15,4 +15,8 @@
 
 NAME = gen-expr
 SRCS = gen-expr.c
+
+NEMU = $(NEMU_HOME)/build/riscv32-nemu-interpreter
+LOG = 
+
 include $(NEMU_HOME)/scripts/build.mk
