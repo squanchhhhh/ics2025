@@ -59,6 +59,7 @@ static int cmd_si(char * args){
 }
 //退出
 static int cmd_q(char *args) {
+  nemu_state.state = NEMU_END;
   return -1;
 }
 //表达式求值
