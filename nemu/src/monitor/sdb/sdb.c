@@ -72,7 +72,7 @@ static int cmd_p(char * args){
 static int expr_test(char * args){
   char * expr_str = args;
   bool success = true;
-  int result = expr(expr_str,&success);
+  unsigned int result = expr(expr_str,&success);
   fprintf(stderr,"%d %s\n",result,expr_str);
   return 0;
 }
