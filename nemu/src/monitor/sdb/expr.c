@@ -196,7 +196,7 @@ int parse_star_div(Parser *self) {
         } else if (self->peek(self).type == TK_DIV) {
             self->consume(self);
             int right = self->parse_unary(self);
-            assert(right == 0);
+            assert(right != 0);
             value = value / right;
         }
     }
