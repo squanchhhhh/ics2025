@@ -127,7 +127,7 @@ struct Parser{
     int (*parse_plus_minus)(Parser * self);
     int (*parse_star_div)(Parser * self);
     int (*parse_unary)(Parser * self);
-    long (*parse_primary)(Parser * self);
+    int (*parse_primary)(Parser * self);   // 忘记了为什么之前会改成long
 };
 Token peek(Parser * self){
     return tokens[self->pos];
@@ -211,7 +211,7 @@ int parse_unary(Parser *self) {
     }
     return self->parse_primary(self);
 }
-long parse_primary(Parser *self) {
+int parse_primary(Parser *self) {
     Token tk = self->peek(self);
     if (tk.type == TK_NUM) {
         self->consume(self);
