@@ -242,7 +242,7 @@ int parse_primary(Parser *self) {
         }
         return val;
     }
-    assert(1);
+    assert(0);
     return 0;
 }
 Parser * init_parser() {
