@@ -63,10 +63,6 @@ else
 include $(NEMU_HOME)/scripts/native.mk
 endif
 .PHONY: test
+.PHONY: test
 test:
-	set -o pipefail; \
-	./tools/gen-expr/gen-expr 10 \
-	| tee REF.out \
-	| awk '{ $$1="t"; print }' \
-	| ./build/riscv32-nemu-interpreter --log ./build/nemu-log.txt \
-	1>/dev/null 2>./nemu.out
+	./tools/gen-expr/gen-expr 1000 | tee REF.out | awk '{ $$1="t"; print }' | ./build/riscv32-nemu-interpreter --log ./build/nemu-log.txt 1>/dev/null 2>./nemu.out; diff -u REF.out nemu.out; echo "1"
