@@ -13,10 +13,32 @@
 # See the Mulan PSL v2 for more details.
 #**************************************************************************************/
 
-NAME = gen-expr
-SRCS = gen-expr.c
+NAME      := gen-expr
+SRCS      := gen-expr.c
+REF       := output.txt
+TESTFILE  := nemu.in
+NEMU      := $(NEMU_HOME)/build/riscv32-nemu-interpreter \
+             --log=$(NEMU_HOME)/build/nemu-log.txt
 
-NEMU = $(NEMU_HOME)/build/riscv32-nemu-interpreter
-LOG = 
+CC        := gcc
+CFLAGS    := -O2 -Wall
 
+.PHONY: all test clean
+
+all: $(NAME)
+
+$(NAME): $(SRCS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(REF): $(NAME)
+	./$(NAME) 1 > $(REF)
+
+$(TESTFILE): $(REF)
+	awk '{sub(/^[^[:space:]]+/, "t"); print}' $< > $@
+
+test: $(REF) $(TESTFILE)
+	$(NEMU) < $(TESTFILE) | diff -u $(REF) -
+
+clean:
+	rm -f $(NAME) $(REF) $(TESTFILE)
 include $(NEMU_HOME)/scripts/build.mk
