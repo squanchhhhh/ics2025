@@ -22,6 +22,7 @@
 
 // this should be enough
 static char buf[65536] = {};
+static int expr_index = 0;
 static char code_buf[65536 + 128] = {}; // a little larger than `buf`
 static char *code_format =
 "#include <stdio.h>\n"
@@ -31,8 +32,83 @@ static char *code_format =
 "  return 0; "
 "}";
 
-static void gen_rand_expr() {
-  buf[0] = '\0';
+
+int choose(int n){
+  return rand()%n;
+}
+typedef enum {
+  NODE_NUM,
+  NODE_OP
+} NodeType;
+typedef struct ASTNode {
+  NodeType type;
+  union {
+    int value;             
+    struct {
+      char op;             
+      struct ASTNode *left;
+      struct ASTNode *right;
+    };
+  };
+} ASTNode;
+
+ASTNode *new_num_node(int val) {
+  ASTNode *n = malloc(sizeof(ASTNode));
+  n->type = NODE_NUM;
+  n->value = val;
+  return n;
+}
+
+ASTNode *new_op_node(char op, ASTNode *l, ASTNode *r) {
+  ASTNode *n = malloc(sizeof(ASTNode));
+  n->type = NODE_OP;
+  n->op = op;
+  n->left = l;
+  n->right = r;
+  return n;
+}
+//num最长为11，op长度为1，所有叶子节点在同一层，深度为 65536>11*2**n+2^n
+ASTNode *gen_rand_ast(int depth) {
+  if (depth <= 0 || choose(3) == 0) {
+    return new_num_node(rand() % 1000);
+  }
+
+  ASTNode *left = gen_rand_ast(depth - 1);
+  ASTNode *right = gen_rand_ast(depth - 1);
+  char ops[] = "+-*/";
+  char op = ops[rand() % 4];
+
+  return new_op_node(op, left, right);
+}
+
+void mid_travel(ASTNode *root) {
+  if (root == NULL) return;
+  int need_paren = (root->type == NODE_OP) && (rand() % 2);
+
+  if (need_paren) {
+    buf[expr_index++] = '(';
+  }
+  mid_travel(root->left);
+
+  char temp[32];
+  size_t written = 0;
+
+  if (root->type == NODE_NUM) {
+    char * format = rand()%2?"%d":"0x%x";
+    int len = snprintf(temp, sizeof(temp), format, root->value);
+    written = (len < sizeof(temp)) ? len : sizeof(temp) - 1;
+  } 
+  else if (root->type == NODE_OP) {
+    temp[0] = root->op;
+    temp[1] = '\0';
+    written = 1;
+  }
+  memcpy(buf + expr_index, temp, written);
+  expr_index += written;
+  mid_travel(root->right);
+  if (need_paren) {
+    buf[expr_index++] = ')';
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -44,7 +120,7 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
-    gen_rand_expr();
+    mid_travel(gen_rand_ast(5));
 
     sprintf(code_buf, code_format, buf);
 
