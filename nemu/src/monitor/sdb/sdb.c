@@ -69,6 +69,13 @@ static int cmd_p(char * args){
   printf("%d\n",result);
   return 0;
 }
+static int expr_test(char * args){
+  char * expr_str = args;
+  bool success = true;
+  int result = expr(expr_str,&success);
+  fprintf(stderr,"%d %s",result,expr_str);
+  return 0;
+}
 static int cmd_ph(char*args){
   char * expr_str = args;
   bool success = true;
@@ -127,6 +134,7 @@ static struct {
   { "info","info r to show regs\n info w to show watchpoints",cmd_info},
   { "w", "w EXPR to set a watchpoint",cmd_w},
   { "d", "delete number N watchpoint",cmd_d},
+  { "t", "to test expr",expr_test},
   /* TODO: Add more commands */
 
 };

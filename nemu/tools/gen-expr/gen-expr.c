@@ -51,7 +51,7 @@ typedef struct ASTNode {
     };
   };
 } ASTNode;
-
+void mid_travel(ASTNode *root);
 ASTNode *new_num_node(int val) {
   ASTNode *n = malloc(sizeof(ASTNode));
   n->type = NODE_NUM;
@@ -75,10 +75,18 @@ ASTNode *gen_rand_ast(int depth) {
 
   ASTNode *left = gen_rand_ast(depth - 1);
   ASTNode *right = gen_rand_ast(depth - 1);
-  char ops[] = "+-*/";
-  char op = ops[rand() % 4];
+  char ops[] = "+-*";
+  char op = ops[rand() % 3];
 
   return new_op_node(op, left, right);
+}
+ASTNode *gen_div_node(int depth) {
+  ASTNode *l = gen_rand_ast(depth - 1);
+  ASTNode *r;
+  do {
+    r = new_num_node(rand()%1000);
+  } while (r->value == 0);
+  return new_op_node('/', l, r);
 }
 
 void mid_travel(ASTNode *root) {
@@ -94,14 +102,16 @@ void mid_travel(ASTNode *root) {
   size_t written = 0;
 
   if (root->type == NODE_NUM) {
-    char * format = rand()%2?"%d":"0x%x";
+    char * format = rand()%2?"%uu":"0x%xu";
     int len = snprintf(temp, sizeof(temp), format, root->value);
     written = (len < sizeof(temp)) ? len : sizeof(temp) - 1;
   } 
   else if (root->type == NODE_OP) {
-    temp[0] = root->op;
-    temp[1] = '\0';
-    written = 1;
+    temp[0] = ' ';
+    temp[1] = root->op;
+    temp[2] = ' ';
+    temp[3] = '\0';
+    written = 3;
   }
   memcpy(buf + expr_index, temp, written);
   expr_index += written;
@@ -120,7 +130,7 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
-    mid_travel(gen_rand_ast(5));
+    mid_travel(gen_rand_ast(6));
 
     sprintf(code_buf, code_format, buf);
 
