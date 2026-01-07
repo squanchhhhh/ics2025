@@ -13,15 +13,35 @@ size_t strlen(const char *s) {
 }
 
 char *strcpy(char *dst, const char *src) {
-  panic("Not implemented");
+  char * head = dst;
+    while(*src!='\0'){
+      *dst++ = *src++;
+    }
+    *dst = '\0';
+    return head;
 }
 
 char *strncpy(char *dst, const char *src, size_t n) {
-  panic("Not implemented");
+    char *head = dst;
+    int i = 0;
+    for (; i < n && src[i] != '\0'; i++) {
+        dst[i] = src[i];
+    }
+    for (; i < n; i++) {
+        dst[i] = '\0';
+    }
+    return head;
 }
 
 char *strcat(char *dst, const char *src) {
-  panic("Not implemented");
+  char * head = dst;
+  int len = strlen(dst);
+  int total = len+strlen(src);
+  for (int i = len;i<total;i++){
+    dst[i] = src[i-len];
+  }
+  dst[total]= '\0';
+  return head;
 }
 
 int strcmp(const char *s1, const char *s2) {
