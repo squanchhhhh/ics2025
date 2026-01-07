@@ -6,7 +6,7 @@
 
 size_t strlen(const char *s) {
   int len = 0;
-  while(s[len]!='\0'){  
+  while(s[len]!='\0'){   //*s卡了20分钟
     len ++;
   }
   return len;
