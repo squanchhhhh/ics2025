@@ -235,7 +235,7 @@ int parse_primary(Parser *self) {
         self->consume(self);
         bool success = true;
         int value;
-        if(strcmp(tk.str,"pc")){
+        if(strcmp(tk.str,"pc")==0){
            value = cpu.pc;
         }
         else{value = isa_reg_str2val(tk.str,&success);}
