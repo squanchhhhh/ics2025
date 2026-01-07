@@ -151,7 +151,7 @@ config ITRACE_COND
   string "Only trace instructions when the condition is true"
   default "true"
 
-config CONFIG_WATCHPOINT
+config WATCHPOINT
   depends on TRACE
   string "enable watchpoint"
   default "true"
