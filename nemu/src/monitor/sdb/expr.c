@@ -235,10 +235,12 @@ int parse_primary(Parser *self) {
         self->consume(self);
         bool success = true;
         int value;
-        if(strcmp(tk.str,"pc")==0){
+        if(strcmp(tk.str,"$pc")==0){
            value = cpu.pc;
         }
-        else{value = isa_reg_str2val(tk.str,&success);}
+        else{
+          value = isa_reg_str2val(tk.str,&success);
+        }
         return value;
     }
     if (tk.type == TK_LEFT) {
