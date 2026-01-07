@@ -239,7 +239,7 @@ int parse_primary(Parser *self) {
            value = cpu.pc;
         }
         else{
-          value = isa_reg_str2val(tk.str,&success);
+          value = isa_reg_str2val(tk.str+1,&success);
         }
         return value;
     }
