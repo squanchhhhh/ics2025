@@ -45,16 +45,13 @@ char *strcat(char *dst, const char *src) {
 }
 
 int strcmp(const char *s1, const char *s2) {
-  int index = 0;
-  while(s1[index] != '\0' && s2[index] != '\0'){
-    int temp = s1[index] - s2[index];
-    if(temp !=0){
-      return temp;
-    }else{
-      index++;
+    while(*s1 && *s2) {
+        int diff = (unsigned char)*s1 - (unsigned char)*s2;
+        if(diff != 0) return diff;
+        s1++;
+        s2++;
     }
-  }
-  return s1[index] - s2[index];
+    return (unsigned char)*s1 - (unsigned char)*s2;
 }
 
 int strncmp(const char *s1, const char *s2, size_t n) {
