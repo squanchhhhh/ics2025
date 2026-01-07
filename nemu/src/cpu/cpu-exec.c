@@ -39,6 +39,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_WATCHPOINT
     if (check_all_wp()) {
       nemu_state.state = NEMU_STOP;
+      printf("current pc = %x\n",cpu.pc);
     }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
