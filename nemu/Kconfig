@@ -154,7 +154,7 @@ config ITRACE_COND
 config WATCHPOINT
   depends on TRACE
   string "enable watchpoint"
-  default "true"
+  default 1
 
 
 config DIFFTEST
