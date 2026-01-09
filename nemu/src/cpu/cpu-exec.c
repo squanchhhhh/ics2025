@@ -141,6 +141,8 @@ static void statistic() {
 }
 
 void assert_fail_msg() {
+  Log("Recent instructions:");
+  recent_insts(&iringbuf);
   isa_reg_display();
   statistic();
 }
@@ -164,8 +166,7 @@ void cpu_exec(uint64_t n) {
 
   switch (nemu_state.state) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
-    case NEMU_ABORT:  Log("Recent instructions:");
-                      recent_insts(&iringbuf);
+    case NEMU_ABORT:  
     case NEMU_END: 
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
