@@ -13,10 +13,13 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "utils.h"
+#include <assert.h>
 #include <cpu/cpu.h>
 #include <cpu/decode.h>
 #include <cpu/difftest.h>
 #include <locale.h>
+#include <string.h>
 
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
@@ -24,17 +27,54 @@
  * You can modify this value as you want.
  */
 #define MAX_INST_TO_PRINT 10
-
+#define RING_SIZE 10
+#define LOG_BUF_LEN 128
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
-void device_update();
+typedef struct {
+  char buf[RING_SIZE][LOG_BUF_LEN];
+  int head;   
+  int tail;   
+  int num;    
+} Queue;
 
+void init_queue(Queue *q) {
+  q->head = 0;
+  q->tail = 0;
+  q->num  = 0;
+}
+void push(Queue *q, const char *s) {
+  strncpy(q->buf[q->tail], s, LOG_BUF_LEN - 1);
+  q->buf[q->tail][LOG_BUF_LEN - 1] = '\0';
+  q->tail = (q->tail + 1) % RING_SIZE;
+  if (q->num < RING_SIZE) {
+    q->num++;
+  } else {
+    q->head = (q->head + 1) % RING_SIZE;
+  }
+}
+void recent_insts(const Queue *q) {
+  for (int i = 0; i < q->num; i++) {
+    int idx = (q->head + i) % RING_SIZE;
+    log_write("%s\n", q->buf[idx]);
+  }
+}
+static Queue iringbuf;
+static bool iringbuf_inited = false;
+static void init_iringbuf_once(void) {
+  if (!iringbuf_inited) {
+    init_queue(&iringbuf);
+    iringbuf_inited = true;
+  }
+}
+void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
+  push(&iringbuf, _this->logbuf);
 #endif
 #ifndef CONFIG_TARGET_AM
 #ifdef CONFIG_WATCHPOINT
@@ -48,6 +88,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
+  init_iringbuf_once();
   s->pc = pc;
   s->snpc = pc;
   isa_exec_once(s);
@@ -123,8 +164,9 @@ void cpu_exec(uint64_t n) {
 
   switch (nemu_state.state) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
-
-    case NEMU_END: case NEMU_ABORT:
+    case NEMU_ABORT:  Log("Recent instructions:");
+                      recent_insts(&iringbuf);
+    case NEMU_END:
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
