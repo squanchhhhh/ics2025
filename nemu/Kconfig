@@ -153,7 +153,16 @@ config ITRACE_COND
 
 config WATCHPOINT
   depends on TRACE
-  string "enable watchpoint"
+  string "watchpoint"
+  default 1
+
+config MTRACE
+  depends on TRACE
+  string "mtrace"
+  default 1
+config FTRACE
+  depends on TRACE
+  string "ftrace"
   default 1
 
 
