@@ -38,7 +38,8 @@ typedef struct {
   char buf[RING_SIZE][LOG_BUF_LEN];
   int head;   
   int tail;   
-  int num;    
+  int num;   
+  int error_idx; 
 } Queue;
 
 void init_queue(Queue *q) {
@@ -56,12 +57,19 @@ void push(Queue *q, const char *s) {
     q->head = (q->head + 1) % RING_SIZE;
   }
 }
-void recent_insts(const Queue *q) {
-  for (int i = 0; i < q->num; i++) {
-    int idx = (q->head + i) % RING_SIZE;
-    log_write("%s\n", q->buf[idx]);
+void recent_insts(Queue *q) {
+  int i = q->head;
+  int cnt = q->num;
+  while (cnt--) {
+    if (i == q->error_idx) {
+      log_write("-->%s\n", q->buf[i]);
+    } else {
+      log_write("   %s\n", q->buf[i]);
+    }
+    i = (i + 1) % RING_SIZE;
   }
 }
+
 static Queue iringbuf;
 static bool iringbuf_inited = false;
 static void init_iringbuf_once(void) {
@@ -142,6 +150,7 @@ static void statistic() {
 
 void assert_fail_msg() {
   Log("Recent instructions:");
+  iringbuf.error_idx = (iringbuf.tail + RING_SIZE - 1) % RING_SIZE;
   recent_insts(&iringbuf);
   isa_reg_display();
   statistic();
