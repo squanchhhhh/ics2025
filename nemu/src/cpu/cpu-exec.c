@@ -34,47 +34,42 @@ uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
-typedef struct {
+
+typedef struct{
   char buf[RING_SIZE][LOG_BUF_LEN];
-  int head;   
-  int tail;   
-  int num;   
-  int error_idx; 
-} Queue;
-
-void init_queue(Queue *q) {
-  q->head = 0;
-  q->tail = 0;
-  q->num  = 0;
-}
-void push(Queue *q, const char *s) {
-  strncpy(q->buf[q->tail], s, LOG_BUF_LEN - 1);
-  q->buf[q->tail][LOG_BUF_LEN - 1] = '\0';
-  q->tail = (q->tail + 1) % RING_SIZE;
-  if (q->num < RING_SIZE) {
-    q->num++;
-  } else {
-    q->head = (q->head + 1) % RING_SIZE;
+  int tail;
+  int error_idx;
+  int  num;
+}IRing;
+void push(IRing * r, const char * s){
+  strncpy(r->buf[r->tail], s, LOG_BUF_LEN - 1);
+  r->buf[r->tail][LOG_BUF_LEN - 1] = '\0';
+  r->tail = (r->tail+1)%RING_SIZE;
+  if (r->num < RING_SIZE){
+    r->num++;
   }
+  return;
 }
-void recent_insts(Queue *q) {
-  int i = q->head;
-  int cnt = q->num;
-  while (cnt--) {
-    if (i == q->error_idx) {
-      log_write("-->%s\n", q->buf[i]);
-    } else {
-      log_write("   %s\n", q->buf[i]);
+void init_iring(IRing * r){
+  r->tail = 0;
+  r->num = 0;
+}
+
+void recent_insts(IRing *r) {
+  int cnt = r->num;
+  for (int i = 0;i<cnt;i++){
+    if (i ==r->error_idx){
+      log_write("-->%s\n", r->buf[i]);
+    }else {
+      log_write("   %s\n", r->buf[i]);
     }
-    i = (i + 1) % RING_SIZE;
   }
 }
-
-static Queue iringbuf;
+static IRing iringbuf;
 static bool iringbuf_inited = false;
 static void init_iringbuf_once(void) {
   if (!iringbuf_inited) {
-    init_queue(&iringbuf);
+    init_iring(&iringbuf);
     iringbuf_inited = true;
   }
 }
