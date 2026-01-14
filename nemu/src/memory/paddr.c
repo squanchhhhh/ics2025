@@ -13,10 +13,13 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
 #include <memory/host.h>
 #include <memory/paddr.h>
 #include <device/mmio.h>
 #include <isa.h>
+#include <stdint.h>
+#include <string.h>
 
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
@@ -24,7 +27,65 @@ static uint8_t *pmem = NULL;
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 #ifdef CONFIG_MTRACE
-
+#define MTRACE_BUF_SIZE 32
+typedef enum {
+    MEM_READ,
+    MEM_WRITE
+} MemAccessType;
+typedef struct {
+    vaddr_t pc;          // PC
+    paddr_t addr;        // 地址
+    uint64_t data;       // 数据
+    int len;             // 长度（1/2/4/8）
+    MemAccessType type;  // 读 / 写
+} MTraceEntry;
+typedef struct {
+    MTraceEntry buf[MTRACE_BUF_SIZE];
+    int tail;
+    int num;      
+} MTraceBuffer;
+static inline void push(MTraceBuffer * buf,vaddr_t pc,paddr_t addr,uint64_t data,int len,MemAccessType type){
+    buf->buf[buf->tail].addr = addr;
+    buf->buf[buf->tail].data = data;
+    buf->buf[buf->tail].len = len;
+    buf->buf[buf->tail].pc = pc;
+    buf->buf[buf->tail].type = type;
+    buf->tail = (buf->tail+1)%MTRACE_BUF_SIZE;
+    if (buf->num<MTRACE_BUF_SIZE){
+    buf->num++;}
+}
+static MTraceBuffer mtrace_buf;
+static bool mtrace_inited = false;
+void init_mtrace(void) {
+    if (!mtrace_inited) {
+        mtrace_buf.num = 0;
+        mtrace_buf.tail = 0;
+        mtrace_inited = true;
+    }
+}
+void dump_mtrace(void) {
+    if (!mtrace_inited || mtrace_buf.num == 0) {
+        Log("No memory trace records.");
+        return;
+    }
+    Log("Recent memory trace (%d entries):", mtrace_buf.num);
+    int start = (mtrace_buf.tail - mtrace_buf.num + MTRACE_BUF_SIZE)
+                % MTRACE_BUF_SIZE;
+    for (int i = 0; i < mtrace_buf.num; i++) {
+        int idx = (start + i) % MTRACE_BUF_SIZE;
+        MTraceEntry *e = &mtrace_buf.buf[idx];
+        log_write(
+            "%s pc=" FMT_WORD
+            " addr=" FMT_PADDR
+            " len=%d data=0x%lx\n",
+            (e->type == MEM_READ) ? "R" : "W",
+            e->pc,
+            e->addr,
+            e->len,
+            (uint64_t)e->data
+        );
+    }
+}
 #endif
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
@@ -44,6 +105,9 @@ static void out_of_bound(paddr_t addr) {
 }
 
 void init_mem() {
+#ifdef CONFIG_MTRACE
+  init_mtrace();
+#endif
 #if   defined(CONFIG_PMEM_MALLOC)
   pmem = malloc(CONFIG_MSIZE);
   assert(pmem);
@@ -53,17 +117,26 @@ void init_mem() {
 }
 
 word_t paddr_read(paddr_t addr, int len) {
-  if (likely(in_pmem(addr))) return pmem_read(addr, len);
+  if (likely(in_pmem(addr))){
+    word_t data = pmem_read(addr, len);
+    #ifdef CONFIG_MTRACE
+    push(&mtrace_buf,cpu.pc,addr,data,len,MEM_READ);
+    #endif
+    return data;
+  }
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
-  #ifdef CONFIG_MTRACE
-    
-  #endif
   out_of_bound(addr);
   return 0;
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-  if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+  if (likely(in_pmem(addr))) { 
+    #ifdef CONFIG_MTRACE
+    push(&mtrace_buf,cpu.pc,addr,data,len,MEM_WRITE);
+    #endif
+    pmem_write(addr, len, data); 
+    return; 
+  }
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }

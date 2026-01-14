@@ -45,6 +45,7 @@ typedef MUXDEF(PMEM64, uint64_t, uint32_t) paddr_t;
 typedef uint16_t ioaddr_t;
 word_t paddr_read(paddr_t addr, int len);
 bool check_all_wp();
+void dump_mtrace(void);
 #include <debug.h>
 
 #endif

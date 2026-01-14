@@ -34,7 +34,6 @@ uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
-
 typedef struct{
   char buf[RING_SIZE][LOG_BUF_LEN];
   int tail;
@@ -54,7 +53,6 @@ void init_iring(IRing * r){
   r->tail = 0;
   r->num = 0;
 }
-
 void recent_insts(IRing *r) {
   int cnt = r->num;
   for (int i = 0;i<cnt;i++){
@@ -147,6 +145,9 @@ void assert_fail_msg() {
   Log("Recent instructions:");
   iringbuf.error_idx = (iringbuf.tail + RING_SIZE - 1) % RING_SIZE;
   recent_insts(&iringbuf);
+  #ifdef CONFIG_MTRACE
+  dump_mtrace();
+  #endif
   isa_reg_display();
   statistic();
 }
