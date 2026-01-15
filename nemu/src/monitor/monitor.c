@@ -120,7 +120,7 @@ int parse_elf() {
   Elf32_Ehdr *ehdr = (Elf32_Ehdr *)elf_buf;
   Elf32_Shdr *shdrs = (Elf32_Shdr *)(elf_buf + ehdr->e_shoff);
   Elf32_Shdr *shstr_shdr =
-      &shdrs[ehdr->e_shstrndx]; //将section header部分解释成一个表
+  &shdrs[ehdr->e_shstrndx]; //将section header部分解释成一个表
   const char *shstrtab = elf_buf + shstr_shdr->sh_offset;
   int sym_index = 0;
   int sym_link = 0;
@@ -130,9 +130,9 @@ int parse_elf() {
       sym_index = i;
       sym_link = shdrs[i].sh_link;
     }
-    Log("[%d] %s type=%u offset=0x%x size=0x%x link=%d\n", i, name,
-        shdrs[i].sh_type, shdrs[i].sh_offset, shdrs[i].sh_size,
-        shdrs[i].sh_link);
+    //Log("[%d] %s type=%u offset=0x%x size=0x%x link=%d\n", i, name,
+        //shdrs[i].sh_type, shdrs[i].sh_offset, shdrs[i].sh_size,
+        //shdrs[i].sh_link);
   }
   if (sym_index == 0) {
     Log("No .symtab found, ftrace disabled");
@@ -141,8 +141,7 @@ int parse_elf() {
   }
   
   Elf32_Shdr *symtab_sh = &shdrs[sym_index];
-  Elf32_Sym *symtab =
-      (Elf32_Sym *)(elf_buf + symtab_sh->sh_offset); //将这段内存解释为sym表
+  Elf32_Sym *symtab = (Elf32_Sym *)(elf_buf + symtab_sh->sh_offset); //将这段内存解释为sym表
   int nr_sym = symtab_sh->sh_size / symtab_sh->sh_entsize;
   Elf32_Shdr *strtab_sh = &shdrs[sym_link];
   const char *strtab = elf_buf + strtab_sh->sh_offset;
@@ -166,7 +165,7 @@ int parse_elf() {
 
     funcs[nr_func].begin = (vaddr_t)s->st_value;
     funcs[nr_func].end = funcs[nr_func].begin + s->st_size;
-
+    Log("func_name: %s,func_begin:%x,finc_end:%x\n",funcs[nr_func].name,funcs[nr_func].begin,funcs[nr_func].end);
     nr_func++;
   }
   return nr_func;
