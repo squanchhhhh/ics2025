@@ -13,6 +13,8 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
+#include "debug.h"
 #include "utils.h"
 #include <assert.h>
 #include <cpu/cpu.h>
@@ -20,20 +22,56 @@
 #include <cpu/difftest.h>
 #include <locale.h>
 #include <string.h>
-
+#include <sys/types.h>
+#include "trace/ftrace.h"
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
  * You can modify this value as you want.
  */
 #define MAX_INST_TO_PRINT 10
-#define RING_SIZE 10
-#define LOG_BUF_LEN 128
+
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
+//#ifdef CONFIG_ITRACE_COND
+//函数调用跟踪
+#define MAX_TRACE_EVENT 4096
+typedef enum { TRACE_CALL, TRACE_RET } trace_type;
+typedef struct {
+  trace_type type;
+  vaddr_t pc; // 调用地址
+  int func_id;
+} TraceEvent;
+TraceEvent te[MAX_TRACE_EVENT];
+int nr_trace_event = 0;
+void ftrace_print() {
+  int indentation = 0;
+  for (int i = 0; i < nr_trace_event; i++) {
+    Func f = funcs[te[i].func_id];
+    Log("%x:", te[i].pc);
+    if (te[i].type == TRACE_CALL) {
+      for (int j = 0; j < indentation; j++) {
+        Log(" ");
+      }
+      Log("call [%s@%x]\n", f.name, f.begin);
+      indentation++;
+    }
+    else if (te[i].type == TRACE_RET) {
+      indentation--;
+      if (indentation < 0) indentation = 0; 
+      for (int j = 0; j < indentation; j++) {
+        Log(" ");
+      }
+      Log("ret [%s]\n", f.name);
+    }
+  }
+}
+//指令缓冲区
+#define RING_SIZE 10
+#define LOG_BUF_LEN 128
 typedef struct{
   char buf[RING_SIZE][LOG_BUF_LEN];
   int tail;
@@ -71,6 +109,8 @@ static void init_iringbuf_once(void) {
     iringbuf_inited = true;
   }
 }
+//#endif
+
 void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
@@ -94,6 +134,9 @@ static void exec_once(Decode *s, vaddr_t pc) {
   s->snpc = pc;
   isa_exec_once(s);
   cpu.pc = s->dnpc;
+#ifdef CONFIG_FTRACE
+  
+#endif
 #ifdef CONFIG_ITRACE
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
@@ -125,7 +168,6 @@ static void execute(uint64_t n) {
   for (;n > 0; n --) {
     exec_once(&s, cpu.pc);
     g_nr_guest_inst ++;
-
     trace_and_difftest(&s, cpu.pc);
     if (nemu_state.state != NEMU_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
