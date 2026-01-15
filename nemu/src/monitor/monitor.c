@@ -53,7 +53,7 @@ static char *img_file = NULL;
 static char *elf_file = NULL;
 static int difftest_port = 1234;
 static char *elf_buf = NULL;
-
+int elf_flag = 0;
 static long load_img() {
   if (img_file == NULL) {
     Log("No image is given. Use the default build-in image.");
@@ -107,7 +107,13 @@ void init_funcs() {
   }
   return;
 }
+void open_elf(){
+  elf_flag = 1;
+}
 int parse_elf() {
+  if (elf_flag == 0){
+    return 0;
+  }
   elf_buf = load_elf();
   init_funcs();
   Elf32_Ehdr *ehdr = (Elf32_Ehdr *)elf_buf;
@@ -192,6 +198,7 @@ static int parse_args(int argc, char *argv[]) {
       break;
     case 'e':
       elf_file = optarg;
+      open_elf();
       break;
     case 1:
       img_file = optarg;
@@ -239,6 +246,7 @@ void init_monitor(int argc, char *argv[]) {
 
   /*解析elf*/
   parse_elf();
+
   /* Initialize the simple debugger. */
   init_sdb();
 
