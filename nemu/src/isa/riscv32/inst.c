@@ -144,7 +144,7 @@ static int decode_exec(Decode *s) {
   s->dnpc = target;
   R(rd) = ret;
   #ifdef CONFIG_FTRACE
-  if (rd==0 && src1 ==1){
+  if (s->isa.inst == 0x8067){
     Log("%x",s->pc);
     int fid = find_func_by_addr(s->pc);
     if (fid >= 0) ftrace_record(s->pc, fid, TRACE_RET);
