@@ -57,16 +57,7 @@ void dump_mtrace(void) {
     for (int i = 0; i < mtrace_buf.num; i++) {
         int idx = (start + i) % MTRACE_BUF_SIZE;
         MTraceEntry *e = &mtrace_buf.buf[idx];
-        log_write(
-            "%s pc=" FMT_WORD
-            " addr=" FMT_PADDR
-            " len=%d data=0x%lx\n",
-            (e->type == MEM_READ) ? "R" : "W",
-            e->pc,
-            e->addr,
-            e->len,
-            (uint64_t)e->data
-        );
+        printf("%s pc=%x addr=%x len=%d data=0x%lx data(dec)=%d\n", (e->type == MEM_READ) ? "R" : "W",e->pc,e->addr,e->len,(uint64_t)e->data,(int)e->data);
     }
 }
 
