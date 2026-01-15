@@ -37,7 +37,6 @@ static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
 
-
 #ifdef CONFIG_ITRACE_COND
 //指令缓冲区
 #define RING_SIZE 10

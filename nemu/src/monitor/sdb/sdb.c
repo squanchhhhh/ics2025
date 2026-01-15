@@ -17,8 +17,10 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "common.h"
 #include "sdb.h"
 #include "trace/ftrace.h"
+#include "trace/mtrace.h"
 static int is_batch_mode = false;
 
 void init_regex();
@@ -118,6 +120,10 @@ static int cmd_d(char*args){
   delete_wp(n);
   return 0;
 }
+static int cmd_m(char*args){
+  dump_mtrace();
+  return 0;
+}
 static int cmd_help(char *args);
 static int cmd_f(char*args){
   ftrace_print();
@@ -141,6 +147,7 @@ static struct {
   { "d", "delete number N watchpoint",cmd_d},
   { "t", "to test expr",expr_test},
   { "f", "show function tree",cmd_f},
+  { "m", "show mtrace",cmd_m}
   /* TODO: Add more commands */
 
 };

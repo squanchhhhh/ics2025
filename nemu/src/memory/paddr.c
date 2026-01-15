@@ -20,30 +20,13 @@
 #include <isa.h>
 #include <stdint.h>
 #include <string.h>
-
+#include "trace/mtrace.h"
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
 #else // CONFIG_PMEM_GARRAY
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
-#ifdef CONFIG_MTRACE
-#define MTRACE_BUF_SIZE 32
-typedef enum {
-    MEM_READ,
-    MEM_WRITE
-} MemAccessType;
-typedef struct {
-    vaddr_t pc;          // PC
-    paddr_t addr;        // 地址
-    uint64_t data;       // 数据
-    int len;             // 长度（1/2/4/8）
-    MemAccessType type;  // 读 / 写
-} MTraceEntry;
-typedef struct {
-    MTraceEntry buf[MTRACE_BUF_SIZE];
-    int tail;
-    int num;      
-} MTraceBuffer;
+
 static inline void push(MTraceBuffer * buf,vaddr_t pc,paddr_t addr,uint64_t data,int len,MemAccessType type){
     buf->buf[buf->tail].addr = addr;
     buf->buf[buf->tail].data = data;
@@ -86,7 +69,7 @@ void dump_mtrace(void) {
         );
     }
 }
-#endif
+
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
 
