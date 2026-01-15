@@ -143,13 +143,7 @@ static int decode_exec(Decode *s) {
   s->dnpc = target;
   R(rd) = ret;
   #ifdef CONFIG_FTRACE
-  if (rd == 1) {
-      int fid = find_func_by_addr(target);
-      if (fid >= 0) ftrace_record(s->pc, fid, TRACE_CALL);
-  } else if (rd == 0 && src1 == 1) { 
-      int fid = find_func_by_addr(s->pc);
-      if (fid >= 0) ftrace_record(s->pc, fid, TRACE_RET);
-  }
+
   #endif
   });
   INSTPAT("??????? ????? ????? 001 ????? 11000 11", bne    , B, if (src1!=src2) {s->dnpc = s->pc + imm;}); 
