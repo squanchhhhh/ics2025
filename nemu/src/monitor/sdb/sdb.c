@@ -18,7 +18,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
-
+#include "trace/ftrace.h"
 static int is_batch_mode = false;
 
 void init_regex();
@@ -119,6 +119,10 @@ static int cmd_d(char*args){
   return 0;
 }
 static int cmd_help(char *args);
+static int cmd_f(char*args){
+  ftrace_print();
+  return 0;
+}
 
 static struct {
   const char *name;
@@ -136,6 +140,7 @@ static struct {
   { "w", "w EXPR to set a watchpoint",cmd_w},
   { "d", "delete number N watchpoint",cmd_d},
   { "t", "to test expr",expr_test},
+  { "f", "show function tree",cmd_f},
   /* TODO: Add more commands */
 
 };

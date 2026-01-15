@@ -27,5 +27,5 @@ typedef struct {
 } TraceEvent;
 extern TraceEvent te[MAX_TRACE_EVENT];
 extern int nr_trace_event;
-
+void ftrace_print();
 #endif

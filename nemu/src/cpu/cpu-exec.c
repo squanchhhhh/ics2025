@@ -36,32 +36,7 @@ uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
-//#ifdef CONFIG_ITRACE_COND
-//函数调用跟踪
-#ifdef CONFIG_FTRACE
-void ftrace_print() {
-  int indentation = 0;
-  for (int i = 0; i < nr_trace_event; i++) {
-    Func f = funcs[te[i].func_id];
-    Log("%x:", te[i].pc);
-    if (te[i].type == TRACE_CALL) {
-      for (int j = 0; j < indentation; j++) {
-        Log(" ");
-      }
-      Log("call [%s@%x]\n", f.name, f.begin);
-      indentation++;
-    }
-    else if (te[i].type == TRACE_RET) {
-      indentation--;
-      if (indentation < 0) indentation = 0; 
-      for (int j = 0; j < indentation; j++) {
-        Log(" ");
-      }
-      Log("ret [%s]\n", f.name);
-    }
-  }
-}
-#endif
+
 
 #ifdef CONFIG_ITRACE_COND
 //指令缓冲区
