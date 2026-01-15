@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include "common.h"
+#include "debug.h"
 #include "local-include/reg.h"
 #include <cpu/cpu.h>
 #include <cpu/ifetch.h>
@@ -143,7 +144,9 @@ static int decode_exec(Decode *s) {
   s->dnpc = target;
   R(rd) = ret;
   #ifdef CONFIG_FTRACE
-
+  Log("%x",s->pc);
+  int fid = find_func_by_addr(s->pc);
+  if (fid >= 0) ftrace_record(s->pc, fid, TRACE_RET);
   #endif
   });
   INSTPAT("??????? ????? ????? 001 ????? 11000 11", bne    , B, if (src1!=src2) {s->dnpc = s->pc + imm;}); 
