@@ -28,6 +28,9 @@ static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
 static inline void push(MTraceBuffer * buf,vaddr_t pc,paddr_t addr,uint64_t data,int len,MemAccessType type){
+  if(addr == pc){
+    return ;
+  }
     buf->buf[buf->tail].addr = addr;
     buf->buf[buf->tail].data = data;
     buf->buf[buf->tail].len = len;
