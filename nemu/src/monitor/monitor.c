@@ -165,7 +165,7 @@ int parse_elf() {
 
     funcs[nr_func].begin = (vaddr_t)s->st_value;
     funcs[nr_func].end = funcs[nr_func].begin + s->st_size;
-    Log("func_name: %s,func_begin:%x,finc_end:%x\n",funcs[nr_func].name,funcs[nr_func].begin,funcs[nr_func].end);
+    Log("func_name: %s, func_begin:%x, finc_end:%x\n",funcs[nr_func].name,funcs[nr_func].begin,funcs[nr_func].end);
     nr_func++;
   }
   return nr_func;
