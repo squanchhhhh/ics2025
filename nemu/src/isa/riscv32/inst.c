@@ -144,14 +144,12 @@ static int decode_exec(Decode *s) {
   R(rd) = ret;
   #ifdef CONFIG_FTRACE
     if (rd == 1) {
-      // call or tail-call
       int fid = find_func_by_addr(target);
       if (fid >= 0) {
         ftrace_record(s->pc, fid,TRACE_CALL);
       }
     }
     else if (rd == 0 && src1 == 1 && imm == 0) {
-      // ret
       int fid = find_func_by_addr(s->pc);
       if (fid >= 0) {
         ftrace_record(s->pc, fid,TRACE_RET);
