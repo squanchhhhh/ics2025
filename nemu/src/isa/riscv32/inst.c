@@ -13,11 +13,12 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
 #include "local-include/reg.h"
 #include <cpu/cpu.h>
 #include <cpu/ifetch.h>
 #include <cpu/decode.h>
-
+#include "trace/ftrace.h"
 #define R(i) gpr(i)
 #define Mr vaddr_read
 #define Mw vaddr_write
@@ -120,9 +121,44 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 101 ????? 11000 11", bge    , B, if ((sword_t)src1 >= (sword_t)src2) {s->dnpc = s->pc + imm;});
   INSTPAT("??????? ????? ????? 100 ????? 11000 11", blt    , B, if ((sword_t)src1 < (sword_t)src2) s->dnpc = s->pc + imm;);
   INSTPAT("??????? ????? ????? 110 ????? 11000 11", bltu   , B, if (src1 < src2) s->dnpc = s->pc + imm;);
-  INSTPAT("??????? ????? ????? 111 ????? 11000 11", bgeu   , B,if (src1 >= src2) s->dnpc = s->pc + imm;);
-  INSTPAT("???????????????????? ?????    11011 11", jal    , J, R(rd) = s->pc + 4; s->dnpc = s->pc + imm;);
-  INSTPAT("????????????  ????? 000 ????? 11001 11", jalr   , I, word_t ret = s->pc + 4;s->dnpc = (src1 + imm) & ~1;R(rd) = ret; ); 
+  INSTPAT("??????? ????? ????? 111 ????? 11000 11", bgeu   , B, if (src1 >= src2) s->dnpc = s->pc + imm;);
+  INSTPAT("???????????????????? ?????    11011 11", jal    , J, 
+  {
+    word_t ret = s->pc + 4;
+    R(rd) = ret;
+    s->dnpc = s->pc + imm;
+  #ifdef CONFIG_FTRACE
+    if (rd == 1) { // ra
+      int fid = find_func_by_addr(s->dnpc);
+      if (fid >= 0) {
+        ftrace_record(s->pc, fid,TRACE_CALL);
+      }
+    }
+  #endif
+  });
+  INSTPAT("????????????  ????? 000 ????? 11001 11", jalr    , I, 
+  {
+  word_t ret = s->pc + 4;
+  vaddr_t target = (src1 + imm) & ~1;
+  s->dnpc = target;
+  R(rd) = ret;
+  #ifdef CONFIG_FTRACE
+    if (rd == 1) {
+      // call or tail-call
+      int fid = find_func_by_addr(target);
+      if (fid >= 0) {
+        ftrace_record(s->pc, fid,TRACE_CALL);
+      }
+    }
+    else if (rd == 0 && src1 == 1 && imm == 0) {
+      // ret
+      int fid = find_func_by_addr(s->pc);
+      if (fid >= 0) {
+        ftrace_record(s->pc, fid,TRACE_RET);
+      }
+    }
+  #endif
+  });
   INSTPAT("??????? ????? ????? 001 ????? 11000 11", bne    , B, if (src1!=src2) {s->dnpc = s->pc + imm;}); 
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
@@ -136,4 +172,13 @@ static int decode_exec(Decode *s) {
 int isa_exec_once(Decode *s) {
   s->isa.inst = inst_fetch(&s->snpc, 4);
   return decode_exec(s);
+}
+TraceEvent te[MAX_TRACE_EVENT];
+int nr_trace_event = 0;
+void ftrace_record(vaddr_t caller_pc,int fid,trace_type type){
+  te[nr_trace_event].type = type;
+  te[nr_trace_event].func_id = fid;
+  te[nr_trace_event].pc = caller_pc;
+  nr_trace_event++;
+  return ;
 }

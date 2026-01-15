@@ -38,15 +38,7 @@ static bool g_print_step = false;
 
 //#ifdef CONFIG_ITRACE_COND
 //函数调用跟踪
-#define MAX_TRACE_EVENT 4096
-typedef enum { TRACE_CALL, TRACE_RET } trace_type;
-typedef struct {
-  trace_type type;
-  vaddr_t pc; // 调用地址
-  int func_id;
-} TraceEvent;
-TraceEvent te[MAX_TRACE_EVENT];
-int nr_trace_event = 0;
+#ifdef CONFIG_FTRACE
 void ftrace_print() {
   int indentation = 0;
   for (int i = 0; i < nr_trace_event; i++) {
@@ -69,6 +61,9 @@ void ftrace_print() {
     }
   }
 }
+#endif
+
+#ifdef CONFIG_ITRACE_COND
 //指令缓冲区
 #define RING_SIZE 10
 #define LOG_BUF_LEN 128
@@ -109,7 +104,7 @@ static void init_iringbuf_once(void) {
     iringbuf_inited = true;
   }
 }
-//#endif
+#endif
 
 void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
@@ -129,7 +124,6 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
-  init_iringbuf_once();
   s->pc = pc;
   s->snpc = pc;
   isa_exec_once(s);
@@ -138,6 +132,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   
 #endif
 #ifdef CONFIG_ITRACE
+  init_iringbuf_once();
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
   int ilen = s->snpc - s->pc;
