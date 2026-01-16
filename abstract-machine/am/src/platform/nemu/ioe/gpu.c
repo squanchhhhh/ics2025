@@ -1,6 +1,5 @@
 #include <am.h>
 #include <nemu.h>
-#include <sys/types.h>
 
 #define SYNC_ADDR (VGACTL_ADDR + 4)
 static int screen_w = 0;
