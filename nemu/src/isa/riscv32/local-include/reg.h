@@ -29,5 +29,6 @@ static inline const char* reg_name(int idx) {
   extern const char* regs[];
   return regs[check_reg_idx(idx)];
 }
-
+word_t csr_read(uint32_t addr);
+void csr_write(uint32_t addr, word_t data);
 #endif
