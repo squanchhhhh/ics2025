@@ -28,6 +28,7 @@ static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
 static inline void push(MTraceBuffer * buf,vaddr_t pc,paddr_t addr,uint64_t data,int len,MemAccessType type){
+  //排除取指
   if(addr == pc){
     return ;
   }
