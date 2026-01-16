@@ -6,9 +6,10 @@ static int screen_w = 0;
 static int screen_h = 0;
 void __am_gpu_init() {
   uint32_t wh = inl(VGACTL_ADDR);
-  screen_w = wh & 0xffff;
-  screen_h = (wh >> 16) & 0xffff;
+  screen_w = (wh >> 16) & 0xffff;
+  screen_h = wh & 0xffff;
 }
+
 
 void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {
   if (screen_w == 0 || screen_h == 0) {
