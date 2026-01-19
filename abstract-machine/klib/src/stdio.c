@@ -32,10 +32,31 @@ int itoa(char *buf, int x) {
   return len;
 }
 
+int itox(char *buf, uint32_t x) {
+  char tmp[16];
+  char hex_map[] = "0123456789abcdef";
+  int i = 0;
+
+  if (x == 0) {
+    buf[0] = '0';
+    return 1;
+  }
+
+  while (x > 0) {
+    tmp[i++] = hex_map[x % 16];
+    x /= 16;
+  }
+
+  int len = 0;
+  while (i > 0) {
+    buf[len++] = tmp[--i];
+  }
+  return len;
+}
 
 typedef struct {
-    void (*putc)(char c, void *ctx); 
-    void *ctx;                       
+  void (*putc)(char c, void *ctx);
+  void *ctx;
 } PrintHandler;
 //对于带n的输出，需要记录字符流的去向以及写入的字符数
 typedef struct {
@@ -53,31 +74,55 @@ int vfmt_print(putc_handler_t handler, void *ctx, const char *fmt, va_list ap) {
     } else {
       fmt++;
       switch (*fmt) {
-        case 's': {
-          char *s = va_arg(ap, char *);
-          if (!s) s = "(null)";
-          while (*s) {
-            handler(*s++, ctx);
-            char_count++;
-          }
-          break;
-        }
-        case 'd': {
-          int d = va_arg(ap, int);
-          char buf[32];
-          int len = itoa(buf, d); 
-          for (int i = 0; i < len; i++) {
-            handler(buf[i], ctx);
-            char_count++;
-          }
-          break;
-        }
-        case 'c': {
-          char c = (char)va_arg(ap, int);
-          handler(c, ctx);
+      case 's': {
+        char *s = va_arg(ap, char *);
+        if (!s)
+          s = "(null)";
+        while (*s) {
+          handler(*s++, ctx);
           char_count++;
-          break;
         }
+        break;
+      }
+      case 'd': {
+        int d = va_arg(ap, int);
+        char buf[32];
+        int len = itoa(buf, d);
+        for (int i = 0; i < len; i++) {
+          handler(buf[i], ctx);
+          char_count++;
+        }
+        break;
+      }
+      case 'c': {
+        char c = (char)va_arg(ap, int);
+        handler(c, ctx);
+        char_count++;
+        break;
+      }
+      case 'x': {
+        uint32_t x = va_arg(ap, uint32_t);
+        char buf[32];
+        int len = itox(buf, x);
+        for (int i = 0; i < len; i++) {
+          handler(buf[i], ctx);
+          char_count++;
+        }
+        break;
+      }
+      case 'p': {
+        uintptr_t p = (uintptr_t)va_arg(ap, void *);
+        handler('0', ctx);
+        handler('x', ctx);
+        char_count += 2;
+        char buf[32];
+        int len = itox(buf, p);
+        for (int i = 0; i < len; i++) {
+          handler(buf[i], ctx);
+          char_count++;
+        }
+        break;
+      }
       }
     }
     fmt++;
@@ -96,9 +141,7 @@ void snprintf_handler(char c, void *ctx) {
 }
 
 //将字符流输出给uart
-void uart_handler(char c, void *ctx) {
-  putch(c); 
-}
+void uart_handler(char c, void *ctx) { putch(c); }
 
 int printf(const char *fmt, ...) {
   va_list ap;
