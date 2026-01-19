@@ -5,13 +5,11 @@
 
 void __am_input_keybrd(AM_INPUT_KEYBRD_T *kbd) {
   uint32_t key = inl(KBD_ADDR);
-
   if (key == 0) {
-
     kbd->keydown = 0;
     kbd->keycode = AM_KEY_NONE;
   } else {
-        char test = 'a';
+    char test = 'a';
     putch(test);
     kbd->keydown = (key & KEYDOWN_MASK) ? 1 : 0;
     kbd->keycode = key & ~KEYDOWN_MASK;
