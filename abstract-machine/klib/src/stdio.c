@@ -6,72 +6,7 @@
 #include <string.h>
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
-int itoa(char *buf, int x);
-int fmt_resolve(char * out,const char * fmt,va_list ap){
-  int out_index = 0;
-  while (*fmt) {
-    if (*fmt != '%') {
-      out[out_index++] = *fmt++;
-      continue;
-    }
-    fmt++;
-    switch (*fmt) {
-    case 'd': {
-      int x = va_arg(ap, int);
-      int len = itoa(&out[out_index], x);
-      out_index += len;
-      break;
-    }
-    case 's': {
-      char *s = va_arg(ap, char *);
-      int len = strlen(s);
-      memcpy(&out[out_index], s, len);
-      out_index += len;
-      break;
-    }
-    }
-    fmt++;
-  }
-  out[out_index] = '\0';
-  return out_index;
-}
-
 typedef void (*putc_handler_t)(char c, void *ctx);
-int handle_int_output(putc_handler_t handler, void *ctx, int x) {
-  char num_buf[16]; 
-  int len = itoa(num_buf, x); 
-
-  for (int i = 0; i < len; i++) {
-    handler(num_buf[i], ctx);
-  }
-  return len;
-}
-int vfmt_print(putc_handler_t handler, void *ctx, const char *fmt, va_list ap) {
-  int cnt = 0;
-  while (*fmt) {
-    if (*fmt != '%') {
-      handler(*fmt++, ctx);
-      cnt++;
-      continue;
-    }
-    fmt++;
-    switch (*fmt) {
-      case 's': {
-        char *s = va_arg(ap, char *);
-        if (!s) s = "(null)";
-        while (*s) { handler(*s++, ctx); cnt++; }
-        break;
-      }
-      case 'd': {
-        int x = va_arg(ap, int);
-        cnt += handle_int_output(handler, ctx, x);
-        break;
-      }
-    }
-    fmt++;
-  }
-  return cnt;
-}
 int itoa(char *buf, int x) {
   char tmp[16];
   int i = 0;
@@ -97,43 +32,107 @@ int itoa(char *buf, int x) {
   return len;
 }
 
-void uart_putc(char c, void *ctx) {
-  putch(c);
+
+typedef struct {
+    void (*putc)(char c, void *ctx); 
+    void *ctx;                       
+} PrintHandler;
+//对于带n的输出，需要记录字符流的去向以及写入的字符数
+typedef struct {
+  char *out;
+  size_t n;
+  size_t written; // 实际写入内存的字符数
+} SnprintfCtx;
+
+int vfmt_print(putc_handler_t handler, void *ctx, const char *fmt, va_list ap) {
+  int char_count = 0;
+  while (*fmt) {
+    if (*fmt != '%') {
+      handler(*fmt, ctx);
+      char_count++;
+    } else {
+      fmt++;
+      switch (*fmt) {
+        case 's': {
+          char *s = va_arg(ap, char *);
+          if (!s) s = "(null)";
+          while (*s) {
+            handler(*s++, ctx);
+            char_count++;
+          }
+          break;
+        }
+        case 'd': {
+          int d = va_arg(ap, int);
+          char buf[32];
+          int len = itoa(buf, d); 
+          for (int i = 0; i < len; i++) {
+            handler(buf[i], ctx);
+            char_count++;
+          }
+          break;
+        }
+        case 'c': {
+          char c = (char)va_arg(ap, int);
+          handler(c, ctx);
+          char_count++;
+          break;
+        }
+      }
+    }
+    fmt++;
+  }
+  return char_count;
+}
+void snprintf_handler(char c, void *ctx) {
+  SnprintfCtx *s_ctx = (SnprintfCtx *)ctx;
+  //每写入一个字符就对written进行++
+  //需要留一个位置给'\0'
+  if (s_ctx->written < s_ctx->n - 1) {
+    s_ctx->out[s_ctx->written] = c;
+  }
+  //返回本来想要写入的长度
+  s_ctx->written++;
+}
+
+//将字符流输出给uart
+void uart_handler(char c, void *ctx) {
+  putch(c); 
 }
 
 int printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  int len = vfmt_print(uart_putc, NULL, fmt, ap);
+  int len = vfmt_print(uart_handler, NULL, fmt, ap);
   va_end(ap);
   return len;
 }
+int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
+  SnprintfCtx ctx = {out, n, 0};
+  int total_len = vfmt_print(snprintf_handler, &ctx, fmt, ap);
+  // 结束后补 \0
+  if (n > 0) {
+    size_t final_pos = (ctx.written < n) ? ctx.written : n - 1;
+    out[final_pos] = '\0';
+  }
+  return total_len;
+}
 int vsprintf(char *out, const char *fmt, va_list ap) {
-  panic("Not implemented");
+  return vsnprintf(out, (size_t)-1, fmt, ap);
 }
-
-void mem_putc(char c, void *ctx) {
-  char **p = (char **)ctx;
-  **p = c;
-  (*p)++;
-}
-
 int sprintf(char *out, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  char *ptr = out;
-  int len = vfmt_print(mem_putc, &ptr, fmt, ap);
-  *ptr = '\0';
+  int len = vsprintf(out, fmt, ap);
   va_end(ap);
   return len;
 }
-
 int snprintf(char *out, size_t n, const char *fmt, ...) {
-  panic("Not implemented");
-}
-
-int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
-  panic("Not implemented");
+  va_list ap;
+  va_start(ap, fmt);
+  int len = vsnprintf(out, n, fmt, ap);
+  va_end(ap);
+  return len;
 }
 
 #endif
