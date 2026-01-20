@@ -33,6 +33,7 @@ void do_syscall(Context *ctx) {
       break;
 
     case SYS_write: 
+      printf("Write fd:%d, buf:%p, len:%d\n", a[1], a[2], a[3]);
       ctx->GPRx = sys_write(a[1], (void *)a[2], a[3]);
       break;
 
