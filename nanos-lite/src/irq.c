@@ -3,10 +3,10 @@
 static Context* do_event(Event e, Context* c) {
   switch (e.event) {
     case EVENT_YIELD:
-      printf("Yield event recognized!\n");
+      //printf("Yield event recognized!\n");
       break;
     case EVENT_SYSCALL:
-      printf("Syscall event recognized!\n");
+      //printf("Syscall event recognized!\n");
       do_syscall(c);
       break;
     default: 
