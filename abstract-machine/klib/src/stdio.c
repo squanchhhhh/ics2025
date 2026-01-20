@@ -54,10 +54,6 @@ int itox(char *buf, uint32_t x) {
   return len;
 }
 
-typedef struct {
-  void (*putc)(char c, void *ctx);
-  void *ctx;
-} PrintHandler;
 //对于带n的输出，需要记录字符流的去向以及写入的字符数
 typedef struct {
   char *out;
