@@ -4,7 +4,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 typedef void (*putc_handler_t)(char c, void *ctx);
 int itoa(char *buf, int x) {
@@ -60,6 +59,20 @@ typedef struct {
   size_t n;
   size_t written; // 实际写入内存的字符数
 } SnprintfCtx;
+
+void snprintf_handler(char c, void *ctx) {
+  SnprintfCtx *s_ctx = (SnprintfCtx *)ctx;
+  //每写入一个字符就对written进行++
+  //需要留一个位置给'\0'
+  if (s_ctx->written < s_ctx->n - 1) {
+    s_ctx->out[s_ctx->written] = c;
+  }
+  //返回本来想要写入的长度
+  s_ctx->written++;
+}
+
+//将字符流输出给uart
+void uart_handler(char c, void *ctx) { putch(c); }
 
 int vfmt_print(putc_handler_t handler, void *ctx, const char *fmt, va_list ap) {
   int char_count = 0;
@@ -125,19 +138,6 @@ int vfmt_print(putc_handler_t handler, void *ctx, const char *fmt, va_list ap) {
   }
   return char_count;
 }
-void snprintf_handler(char c, void *ctx) {
-  SnprintfCtx *s_ctx = (SnprintfCtx *)ctx;
-  //每写入一个字符就对written进行++
-  //需要留一个位置给'\0'
-  if (s_ctx->written < s_ctx->n - 1) {
-    s_ctx->out[s_ctx->written] = c;
-  }
-  //返回本来想要写入的长度
-  s_ctx->written++;
-}
-
-//将字符流输出给uart
-void uart_handler(char c, void *ctx) { putch(c); }
 
 int printf(const char *fmt, ...) {
   va_list ap;
@@ -146,6 +146,7 @@ int printf(const char *fmt, ...) {
   va_end(ap);
   return len;
 }
+
 int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
   SnprintfCtx ctx = {out, n, 0};
   int total_len = vfmt_print(snprintf_handler, &ctx, fmt, ap);
