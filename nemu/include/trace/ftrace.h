@@ -22,7 +22,7 @@ void ftrace_record(vaddr_t caller_pc,int fid,trace_type type);
 
 typedef struct {
   trace_type type;
-  vaddr_t pc; // 调用地址
+  vaddr_t pc; 
   int func_id;
 } TraceEvent;
 extern TraceEvent te[MAX_TRACE_EVENT];
