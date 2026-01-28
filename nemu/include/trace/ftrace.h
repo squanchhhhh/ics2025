@@ -3,29 +3,34 @@
 
 #include <common.h>
 
+//最多解析128个函数
 #define FUNC_NUM 128
 
 typedef struct {
-  bool valid;
-  char name[32];
-  vaddr_t begin;
-  vaddr_t end;
-} Func;
+  bool valid;    //有效位，用于排除某些函数
+  char name[32]; //函数名
+  vaddr_t begin; //函数开始地址，由  Elf32_Addr	st_value;		/* Symbol value */ 给出
+  vaddr_t end;  //函数结束地址，由st_value+ Elf32_Wordst_size;		/* Symbol size */给出
+} Func;   
 
-extern Func funcs[FUNC_NUM];
-extern int nr_func;
+extern Func funcs[FUNC_NUM]; //函数数组
+extern int nr_func; //解析后的函数个数
 
-typedef enum { TRACE_CALL, TRACE_RET } trace_type;
-int find_func_by_addr(vaddr_t addr);
-void ftrace_record(vaddr_t caller_pc,int fid,trace_type type);
+int find_func_by_addr(vaddr_t addr);  //根据函数地址获取函数名 [begin,end)
+void init_funcs();
+
 #define MAX_TRACE_EVENT 4096
+
+typedef enum { TRACE_CALL, TRACE_RET } trace_type;  //事件类型
 
 typedef struct {
   trace_type type;
   vaddr_t pc; 
   int func_id;
 } TraceEvent;
-extern TraceEvent te[MAX_TRACE_EVENT];
-extern int nr_trace_event;
-void ftrace_print();
+extern TraceEvent te[MAX_TRACE_EVENT];  //事件数组
+extern int nr_trace_event;              //事件个数
+void ftrace_record(vaddr_t caller_pc,int fid,trace_type type); //记录调用者的pc地址，函数数组下标，调用类型
+void ftrace_print();  //输出
+
 #endif

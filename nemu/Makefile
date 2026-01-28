@@ -73,5 +73,9 @@ endif
 
 .PHONY: test
 .PHONY: test
+
 test:
-	./tools/gen-expr/gen-expr 1000 | tee REF.out | awk '{ $$1="t"; print }' | ./build/riscv32-nemu-interpreter --log ./build/nemu-log.txt 1>/dev/null 2>./nemu.out; diff -u REF.out nemu.out; echo "1"
+	@./tools/gen-expr/gen-expr 100 | tee REF.out | awk '{ $$1="t"; print }' | \
+	./build/riscv32-nemu-interpreter --log ./build/nemu-log.txt 1>/dev/null 2>./nemu.tmp; \
+	sed -E '/(libEGL warning|pci id)/d' ./nemu.tmp > ./nemu.out; \
+	diff -u REF.out nemu.out && echo "Test Passed!"

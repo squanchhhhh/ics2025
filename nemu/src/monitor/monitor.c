@@ -20,7 +20,7 @@
 #include <isa.h>
 #include <memory/paddr.h>
 #include <string.h>
-
+#include "trace/ftrace.h"
 void init_rand();
 void init_log(const char *log_file);
 void init_mem();
@@ -94,26 +94,6 @@ char *load_elf() {
   return buf;
 }
 
-#include "trace/ftrace.h"
-#define FUNC_NUM 128
-Func funcs[FUNC_NUM];
-int nr_func = 0;
-int find_func_by_addr(vaddr_t addr) {
-  for (int i = 0; i < nr_func; i++) {
-    if (funcs[i].valid &&
-        addr >= funcs[i].begin &&
-        addr <  funcs[i].end) {
-      return i;
-    }
-  }
-  return -1;
-}
-void init_funcs() {
-  for (int i = 0; i < FUNC_NUM; i++) {
-    funcs[i].valid = 0;
-  }
-  return;
-}
 void open_elf(){
   elf_flag = 1;
 }
@@ -155,20 +135,19 @@ int parse_elf() {
   nr_func = 0;
   for (int i = 0; i < nr_sym; i++) {
     Elf32_Sym *s = &symtab[i];
-
-    if (ELF32_ST_TYPE(s->st_info) != STT_FUNC)  //跳过非函数，0大小，大于FUNC_NUM
+    //跳过非函数，0大小，大于FUNC_NUM的情况
+    if (ELF32_ST_TYPE(s->st_info) != STT_FUNC)  
       continue;
     if (s->st_size == 0)
       continue;
     if (nr_func >= FUNC_NUM)
       break;
-
+    //填充函数名和函数有效位
     const char *name = strtab + s->st_name;
-
     funcs[nr_func].valid = true;
     strncpy(funcs[nr_func].name, name, sizeof(funcs[nr_func].name) - 1);
     funcs[nr_func].name[sizeof(funcs[nr_func].name) - 1] = '\0';
-
+    //设置函数范围
     funcs[nr_func].begin = (vaddr_t)s->st_value;
     funcs[nr_func].end = funcs[nr_func].begin + s->st_size;
     Log("func_name: %s, func_begin:%x, finc_end:%x",funcs[nr_func].name,funcs[nr_func].begin,funcs[nr_func].end);
