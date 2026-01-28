@@ -23,3 +23,7 @@ typedef struct {
     int num;      
 } MTraceBuffer;
 void dump_mtrace(void) ;
+void push_mtrace(MTraceBuffer * buf,vaddr_t pc,paddr_t addr,uint64_t data,int len,MemAccessType type);
+extern MTraceBuffer mtrace_buf;
+extern bool mtrace_inited;
+void init_mtrace(void);

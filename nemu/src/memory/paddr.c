@@ -27,44 +27,6 @@ static uint8_t *pmem = NULL;
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
-static inline void push(MTraceBuffer * buf,vaddr_t pc,paddr_t addr,uint64_t data,int len,MemAccessType type){
-  //排除取指
-  if(addr == pc){
-    return ;
-  }
-    buf->buf[buf->tail].addr = addr;
-    buf->buf[buf->tail].data = data;
-    buf->buf[buf->tail].len = len;
-    buf->buf[buf->tail].pc = pc;
-    buf->buf[buf->tail].type = type;
-    buf->tail = (buf->tail+1)%MTRACE_BUF_SIZE;
-    if (buf->num<MTRACE_BUF_SIZE){
-    buf->num++;}
-}
-static MTraceBuffer mtrace_buf;
-static bool mtrace_inited = false;
-void init_mtrace(void) {
-    if (!mtrace_inited) {
-        mtrace_buf.num = 0;
-        mtrace_buf.tail = 0;
-        mtrace_inited = true;
-    }
-}
-void dump_mtrace(void) {
-    if (!mtrace_inited || mtrace_buf.num == 0) {
-        Log("No memory trace records.");
-        return;
-    }
-    Log("Recent memory trace (%d entries):", mtrace_buf.num);
-    int start = (mtrace_buf.tail - mtrace_buf.num + MTRACE_BUF_SIZE)
-                % MTRACE_BUF_SIZE;
-    for (int i = 0; i < mtrace_buf.num; i++) {
-        int idx = (start + i) % MTRACE_BUF_SIZE;
-        MTraceEntry *e = &mtrace_buf.buf[idx];
-        printf("%s pc=%x addr=%x len=%d data=0x%08lx data(dec)=%d\n", (e->type == MEM_READ) ? "R" : "W",e->pc,e->addr,e->len,(uint64_t)e->data,(int)e->data);
-    }
-}
-
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
 
@@ -98,7 +60,7 @@ word_t paddr_read(paddr_t addr, int len) {
   if (likely(in_pmem(addr))){
     word_t data = pmem_read(addr, len);
     #ifdef CONFIG_MTRACE
-    push(&mtrace_buf,cpu.pc,addr,data,len,MEM_READ);
+    push_mtrace(&mtrace_buf,cpu.pc,addr,data,len,MEM_READ);
     #endif
     return data;
   }
@@ -110,7 +72,7 @@ word_t paddr_read(paddr_t addr, int len) {
 void paddr_write(paddr_t addr, int len, word_t data) {
   if (likely(in_pmem(addr))) { 
     #ifdef CONFIG_MTRACE
-    push(&mtrace_buf,cpu.pc,addr,data,len,MEM_WRITE);
+    push_mtrace(&mtrace_buf,cpu.pc,addr,data,len,MEM_WRITE);
     #endif
     pmem_write(addr, len, data); 
     return; 
