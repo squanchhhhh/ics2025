@@ -20,12 +20,18 @@
 static uint32_t *rtc_port_base = NULL;
 
 static void rtc_io_handler(uint32_t offset, int len, bool is_write) {
-  assert(offset == 0 || offset == 4|| offset==8 || offset==12 || offset==16||offset==24);
-  if (!is_write && offset == 4) {
+  if (!is_write) {
     uint64_t us = get_time();
     rtc_port_base[0] = (uint32_t)us;
     rtc_port_base[1] = us >> 32;
-    get_date(&rtc_port_base[5],&rtc_port_base[4],&rtc_port_base[3],&rtc_port_base[2]);
+
+    uint32_t y, m, d, hh, mm, ss;
+    get_date(&y, &m, &d, &hh, &mm, &ss);
+
+    rtc_port_base[2] = ss; 
+    rtc_port_base[3] = mm; 
+    rtc_port_base[4] = hh; 
+    rtc_port_base[5] = d | (m << 8) | (y << 16); 
   }
 }
 
