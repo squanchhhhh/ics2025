@@ -25,7 +25,7 @@ static void rtc_io_handler(uint32_t offset, int len, bool is_write) {
     uint64_t us = get_time();
     rtc_port_base[0] = (uint32_t)us;
     rtc_port_base[1] = us >> 32;
-    get_date(&rtc_port_base[7],&rtc_port_base[6],&rtc_port_base[5],&rtc_port_base[4],&rtc_port_base[3],&rtc_port_base[2]);
+    get_date(&rtc_port_base[5],&rtc_port_base[4],&rtc_port_base[3],&rtc_port_base[2]);
   }
 }
 
@@ -39,11 +39,11 @@ static void timer_intr() {
 #endif
 
 void init_timer() {
-  rtc_port_base = (uint32_t *)new_space(32); //修改为32
+  rtc_port_base = (uint32_t *)new_space(24); //修改为32
 #ifdef CONFIG_HAS_PORT_IO
   add_pio_map ("rtc", CONFIG_RTC_PORT, rtc_port_base, 8, rtc_io_handler);
 #else
-  add_mmio_map("rtc", CONFIG_RTC_MMIO, rtc_port_base, 32, rtc_io_handler);  //修改为32，用后面的数据来获取当前年月日
+  add_mmio_map("rtc", CONFIG_RTC_MMIO, rtc_port_base, 24, rtc_io_handler);  //修改为32，用后面的数据来获取当前年月日
 #endif
   IFNDEF(CONFIG_TARGET_AM, add_alarm_handle(timer_intr));
 }

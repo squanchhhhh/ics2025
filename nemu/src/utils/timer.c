@@ -46,12 +46,10 @@ void get_date_internal(struct tm *tm){
       *tm = *tmp; 
   }
 }
-void get_date(uint32_t *year, uint32_t *month, uint32_t *day, uint32_t *hour, uint32_t *minute, uint32_t *second) {
+void get_date(uint32_t *year, uint32_t *month, uint32_t *day, uint32_t *hour) {
   struct tm tm_buf;
   get_date_internal(&tm_buf);
   
-  if (second) *second = tm_buf.tm_sec;
-  if (minute) *minute = tm_buf.tm_min;
   if (hour)   *hour   = tm_buf.tm_hour;
   if (day)    *day    = tm_buf.tm_mday;
   if (month)  *month  = tm_buf.tm_mon + 1;   
