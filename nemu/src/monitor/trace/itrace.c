@@ -16,9 +16,9 @@ void print_recent_insts() {
   int cnt = iringbuf.num;
   for (int i = 0;i<cnt;i++){
     if (i ==iringbuf.error_idx){
-      log_write("-->%s\n", iringbuf.buf[i]);
+      printf("-->%s\n", iringbuf.buf[i]);
     }else {
-      log_write("   %s\n", iringbuf.buf[i]);
+      printf("   %s\n", iringbuf.buf[i]);
     }
   }
 }
