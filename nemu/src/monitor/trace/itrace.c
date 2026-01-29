@@ -26,4 +26,5 @@ void print_recent_insts() {
 void init_iring(){
   iringbuf.tail = 0;
   iringbuf.num = 0;
+  iringbuf.error_idx = -1;
 }
