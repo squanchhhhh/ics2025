@@ -19,7 +19,6 @@ void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {
   rtc->second = *(volatile uint32_t *)(RTC_ADDR + 8);
   rtc->minute = *(volatile uint32_t *)(RTC_ADDR + 12);
   rtc->hour   = *(volatile uint32_t *)(RTC_ADDR + 16);
-  
   uint32_t combined = *(volatile uint32_t *)(RTC_ADDR + 20);
   rtc->day    = combined & 0xff;
   rtc->month  = (combined >> 8) & 0xff;
