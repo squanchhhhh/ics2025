@@ -21,6 +21,7 @@
 #include <memory/paddr.h>
 #include <string.h>
 #include "trace/ftrace.h"
+#include "trace/itrace.h"
 void init_rand();
 void init_log(const char *log_file);
 void init_mem();
@@ -237,6 +238,9 @@ void init_monitor(int argc, char *argv[]) {
 
   /* Initialize the simple debugger. */
   init_sdb();
+ 
+  /*初始化指令缓冲区*/
+  init_iring();
 
   IFDEF(CONFIG_ITRACE, init_disasm());
 

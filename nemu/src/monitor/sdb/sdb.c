@@ -20,6 +20,7 @@
 #include "common.h"
 #include "sdb.h"
 #include "trace/ftrace.h"
+#include "trace/itrace.h"
 #include "trace/mtrace.h"
 static int is_batch_mode = false;
 
@@ -129,6 +130,10 @@ static int cmd_f(char*args){
   ftrace_print();
   return 0;
 }
+static int cmd_i(char*args){
+  print_recent_insts();
+  return 0;
+}
 
 static struct {
   const char *name;
@@ -147,7 +152,8 @@ static struct {
   { "d", "delete number N watchpoint",cmd_d},
   { "t", "to test expr",expr_test},
   { "f", "show function tree",cmd_f},
-  { "m", "show mtrace",cmd_m}
+  { "m", "show mtrace",cmd_m},
+  {"i","print recent insts",cmd_i}
   /* TODO: Add more commands */
 
 };
