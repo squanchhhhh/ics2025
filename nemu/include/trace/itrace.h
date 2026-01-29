@@ -7,6 +7,7 @@
 
 #define RING_SIZE 10
 #define LOG_BUF_LEN 128
+
 typedef struct{
   char buf[RING_SIZE][LOG_BUF_LEN];
   int tail;
