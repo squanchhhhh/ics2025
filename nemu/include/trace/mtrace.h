@@ -2,8 +2,6 @@
 #define __MTRACE_H__
 
 #include <common.h>
-#endif
-
 
 #define MTRACE_BUF_SIZE 32
 typedef enum {
@@ -27,3 +25,5 @@ void push_mtrace(MTraceBuffer * buf,vaddr_t pc,paddr_t addr,uint64_t data,int le
 extern MTraceBuffer mtrace_buf;
 extern bool mtrace_inited;
 void init_mtrace(void);
+
+#endif

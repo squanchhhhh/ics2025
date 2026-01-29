@@ -24,6 +24,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "trace/ftrace.h"
+#include "trace/itrace.h"
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
@@ -36,55 +37,11 @@ uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
-
-#ifdef CONFIG_ITRACE_COND
-//指令缓冲区
-#define RING_SIZE 10
-#define LOG_BUF_LEN 128
-typedef struct{
-  char buf[RING_SIZE][LOG_BUF_LEN];
-  int tail;
-  int error_idx;
-  int  num;
-}IRing;
-void push(IRing * r, const char * s){
-  strncpy(r->buf[r->tail], s, LOG_BUF_LEN - 1);
-  r->buf[r->tail][LOG_BUF_LEN - 1] = '\0';
-  r->tail = (r->tail+1)%RING_SIZE;
-  if (r->num < RING_SIZE){
-    r->num++;
-  }
-  return;
-}
-void init_iring(IRing * r){
-  r->tail = 0;
-  r->num = 0;
-}
-void recent_insts(IRing *r) {
-  int cnt = r->num;
-  for (int i = 0;i<cnt;i++){
-    if (i ==r->error_idx){
-      log_write("-->%s\n", r->buf[i]);
-    }else {
-      log_write("   %s\n", r->buf[i]);
-    }
-  }
-}
-static IRing iringbuf;
-static bool iringbuf_inited = false;
-static void init_iringbuf_once(void) {
-  if (!iringbuf_inited) {
-    init_iring(&iringbuf);
-    iringbuf_inited = true;
-  }
-}
-#endif
-
 void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
-  push(&iringbuf, _this->logbuf);
+  push_inst( _this->logbuf);
 #endif
 #ifndef CONFIG_TARGET_AM
 #ifdef CONFIG_WATCHPOINT
@@ -106,7 +63,6 @@ static void exec_once(Decode *s, vaddr_t pc) {
   
 #endif
 #ifdef CONFIG_ITRACE
-  init_iringbuf_once();
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
   int ilen = s->snpc - s->pc;
@@ -155,7 +111,7 @@ static void statistic() {
 void assert_fail_msg() {
   Log("Recent instructions:");
   iringbuf.error_idx = (iringbuf.tail + RING_SIZE - 1) % RING_SIZE;
-  recent_insts(&iringbuf);
+  print_recent_insts();
   #ifdef CONFIG_MTRACE
   dump_mtrace();
   #endif

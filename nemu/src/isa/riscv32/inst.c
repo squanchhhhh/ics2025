@@ -185,37 +185,3 @@ int isa_exec_once(Decode *s) {
   s->isa.inst = inst_fetch(&s->snpc, 4);
   return decode_exec(s);
 }
-FTraceEntry te[MAX_FUNC_TRACE];
-int nr_func_trace_event = 0;
-void ftrace_record(vaddr_t caller_pc,int fid,FTraceType type){
-  te[nr_func_trace_event].type = type;
-  te[nr_func_trace_event].func_id = fid;
-  te[nr_func_trace_event].pc = caller_pc;
-  nr_func_trace_event++;
-  return ;
-}
-//函数调用跟踪
-#ifdef CONFIG_FTRACE
-void ftrace_print() {
-  int indentation = 0;
-  for (int i = 0; i < nr_func_trace_event; i++) {
-    Func f = funcs[te[i].func_id];
-    printf("%x:", te[i].pc);
-    if (te[i].type == FUNC_CALL) {
-      for (int j = 0; j < indentation; j++) {
-        printf(" ");
-      }
-      printf("call [%s@%x]\n", f.name, f.begin);
-      indentation++;
-    }
-    else if (te[i].type == FUNC_RET) {
-      indentation--;
-      if (indentation < 0) indentation = 0; 
-      for (int j = 0; j < indentation; j++) {
-        printf(" ");
-      }
-      printf("ret [%s]\n", f.name);
-    }
-  }
-}
-#endif
