@@ -12,7 +12,7 @@ do {
     h2 = *(volatile uint32_t *)(RTC_ADDR + 4); 
 } while (h1 != h2); //防止出现进位
 
-uint64_t uptime = ((uint64_t)h2 << 32) | l;
+  uptime->us = ((uint64_t)h2 << 32) | l;
 }
 
 void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {
