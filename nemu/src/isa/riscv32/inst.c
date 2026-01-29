@@ -149,7 +149,7 @@ static int decode_exec(Decode *s) {
     if (fid >= 0) ftrace_record(s->pc, fid, FUNC_CALL);
   }
   if (rd == 0 && BITS(s->isa.inst, 19, 15) == 1){
-    Log("ret rd:%d,src1:%x",rd,src1);   // src1是取值后的值！！！
+    //og("ret rd:%d,src1:%x",rd,src1);   // src1是取值后的值！！！
     int fid = find_func_by_addr(s->pc);
     if (fid >= 0) ftrace_record(s->pc, fid, FUNC_RET);
   }
