@@ -1,5 +1,5 @@
 #include "trace/ftrace.h"
-#define FUNC_NUM 128
+
 Func funcs[FUNC_NUM];
 int nr_func = 0;
 int find_func_by_addr(vaddr_t addr) {

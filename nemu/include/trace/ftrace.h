@@ -19,18 +19,18 @@ extern int nr_func; //解析后的函数个数
 int find_func_by_addr(vaddr_t addr);  //根据函数地址获取函数名 [begin,end)
 void init_funcs();
 
-#define MAX_TRACE_EVENT 4096
+#define MAX_FUNC_TRACE 4096
 
-typedef enum { TRACE_CALL, TRACE_RET } trace_type;  //事件类型
+typedef enum { FUNC_CALL, FUNC_RET } FTraceType;  //事件类型
 
 typedef struct {
-  trace_type type;
+  FTraceType type;
   vaddr_t pc; 
   int func_id;
-} TraceEvent;
-extern TraceEvent te[MAX_TRACE_EVENT];  //事件数组
-extern int nr_trace_event;              //事件个数
-void ftrace_record(vaddr_t caller_pc,int fid,trace_type type); //记录调用者的pc地址，函数数组下标，调用类型
+} FTraceEntry;
+extern FTraceEntry te[MAX_FUNC_TRACE];  //事件数组
+extern int nr_func_trace_event;              //事件个数
+void ftrace_record(vaddr_t caller_pc,int fid,FTraceType type); //记录调用者的pc地址，函数数组下标，调用类型
 void ftrace_print();  //输出
 
 #endif
