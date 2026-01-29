@@ -5,9 +5,14 @@ void __am_timer_init() {
 }
 
 void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
-  uint32_t low  = *(volatile uint32_t *)(RTC_ADDR);
-  uint32_t high = *(volatile uint32_t *)(RTC_ADDR + 4);
-  uptime->us = ((uint64_t)high << 32) | low;
+uint32_t h1, h2, l;
+do {
+    h1 = *(volatile uint32_t *)(RTC_ADDR + 4); 
+    l  = *(volatile uint32_t *)(RTC_ADDR);     
+    h2 = *(volatile uint32_t *)(RTC_ADDR + 4); 
+} while (h1 != h2); //防止出现进位
+
+uint64_t uptime = ((uint64_t)h2 << 32) | l;
 }
 
 void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {
