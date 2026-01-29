@@ -156,10 +156,16 @@ config WATCHPOINT
   string "watchpoint"
   default 1
 
+config ITRACE_ERROR_LOG
+  depends on TRACE
+  string "itrace_err_log"
+  default 1
+
 config MTRACE
   depends on TRACE
   string "mtrace"
   default 1
+
 config FTRACE
   depends on TRACE
   string "ftrace"
