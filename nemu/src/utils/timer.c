@@ -12,7 +12,8 @@
 *
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
-
+#include <time.h>
+#include "macro.h"
 #include <common.h>
 #include MUXDEF(CONFIG_TIMER_GETTIMEOFDAY, <sys/time.h>, <time.h>)
 
@@ -36,6 +37,25 @@ static uint64_t get_time_internal() {
   uint64_t us = now.tv_sec * 1000000 + now.tv_nsec / 1000;
 #endif
   return us;
+}
+
+void get_date_internal(struct tm *tm){
+  time_t t = time(NULL);
+  struct tm *tmp = localtime(&t);
+  if (tm != NULL && tmp != NULL) {
+      *tm = *tmp; 
+  }
+}
+void get_date(uint32_t *year, uint32_t *month, uint32_t *day, uint32_t *hour, uint32_t *minute, uint32_t *second) {
+  struct tm tm_buf;
+  get_date_internal(&tm_buf);
+  
+  if (second) *second = tm_buf.tm_sec;
+  if (minute) *minute = tm_buf.tm_min;
+  if (hour)   *hour   = tm_buf.tm_hour;
+  if (day)    *day    = tm_buf.tm_mday;
+  if (month)  *month  = tm_buf.tm_mon + 1;   
+  if (year)   *year   = tm_buf.tm_year + 1900; 
 }
 
 uint64_t get_time() {

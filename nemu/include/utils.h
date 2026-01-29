@@ -17,6 +17,7 @@
 #define __UTILS_H__
 
 #include <common.h>
+#include <stdint.h>
 
 // ----------- state -----------
 
@@ -33,6 +34,7 @@ extern NEMUState nemu_state;
 // ----------- timer -----------
 
 uint64_t get_time();
+void get_date(uint32_t * year,uint32_t * month,uint32_t * day,uint32_t *hour,uint32_t *minute,uint32_t *second) ;
 
 // ----------- log -----------
 
