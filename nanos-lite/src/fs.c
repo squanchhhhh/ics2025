@@ -100,7 +100,7 @@ size_t fs_read(int fd, void *buf, size_t len){
 
 void init_fs() {
   char buf[BSIZE];
-  bread(buf, 1 * BSIZE); 
+  bread(buf, 1 ); 
   memcpy(&sb_copy, buf, sizeof(sb_copy));
 
   if (sb_copy.magic != 0x20010124) panic("Magic Mismatch!");
