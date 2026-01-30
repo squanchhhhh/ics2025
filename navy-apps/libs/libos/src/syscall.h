@@ -22,4 +22,6 @@ enum {
   SYS_times,
   SYS_gettimeofday
 };
+void do_syscall(Context *ctx);
+
 #endif
