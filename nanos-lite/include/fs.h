@@ -53,9 +53,13 @@ typedef struct {
   bool used;          // 槽位是否被占用
 } OpenFile;
 
-OpenFile system_open_table[MAX_OPEN_FILES]; // 系统打开文件表
+extern OpenFile system_open_table[]; // 系统打开文件表
+size_t fs_lseek(int fd, size_t offset, int whence);
 
+size_t fs_read(int fd, void *buf, size_t len) ;
 
+int fs_open(const char *filename, int flags, int mode);
+void fstate(int fd,struct dinode*d);
 #ifndef SEEK_SET
 enum {SEEK_SET, SEEK_CUR, SEEK_END};
 #endif
