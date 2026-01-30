@@ -15,15 +15,22 @@ static const char *keyname[256] __attribute__((used)) = {
 };
 
 size_t serial_write(const void *buf, size_t offset, size_t len) {
-  return 0;
+  const char *str = (const char *)buf;
+  for (size_t i = 0; i < len; i++) {
+    io_write(AM_UART_TX, str[i]);
+  }
+  return len;
 }
 
 size_t events_read(void *buf, size_t offset, size_t len) {
+  //ioe_read(AM_INPUT_KEYBRD,buf);
   return 0;
 }
 
 size_t dispinfo_read(void *buf, size_t offset, size_t len) {
+  //ioe_read(AM_GPU_CONFIG,buf);
   return 0;
+
 }
 
 size_t fb_write(const void *buf, size_t offset, size_t len) {

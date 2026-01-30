@@ -9,6 +9,15 @@ size_t sys_write(int fd, const void *buf, size_t count) {
   }
   return -1;
 }
+
+int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
+  if (tv != NULL) {
+    uint64_t us = io_read(AM_TIMER_UPTIME).us;
+    tv->tv_sec = us / 1000000;   
+    tv->tv_usec = (uint32_t)(us % 1000000); 
+  }
+  return 0; 
+}
 //GPR1 映射到 a7 (系统调用号)
 //GPR2 映射到 a0 (第一个参数)
 //GPR3 参数2
@@ -38,6 +47,10 @@ void do_syscall(Context *ctx) {
 
     case SYS_brk: 
       ctx->GPRx = 0; 
+      break;
+
+   case SYS_gettimeofday:
+      ctx->GPRx = sys_gettimeofday((struct timeval *)ctx->GPR1, (struct timezone *)ctx->GPR2);
       break;
     default: 
       panic("Unhandled syscall ID = %d", a[0]);
