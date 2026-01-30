@@ -128,7 +128,7 @@ void init_fs() {
     f->read = NULL;  
     f->write = NULL; 
     f->ref = 1;
-    Log("load file %s.", f->name);
+    Log("load file %s , filesize : %d\n", f->name,f->inode.size);
     nr_static_file++;
   }
 
