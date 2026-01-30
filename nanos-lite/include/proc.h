@@ -3,9 +3,8 @@
 
 #include <common.h>
 #include <memory.h>
-
 #define STACK_SIZE (8 * PGSIZE)
-
+#define MAX_NR_PROC_FILE 32
 typedef union {
   uint8_t stack[STACK_SIZE] PG_ALIGN;
   struct {
@@ -14,6 +13,7 @@ typedef union {
     // we do not free memory, so use `max_brk' to determine when to call _map()
     uintptr_t max_brk;
   };
+  int fd_table[MAX_NR_PROC_FILE];
 } PCB;
 
 extern PCB *current;

@@ -4,16 +4,13 @@
 #include <common.h>
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
-#define BSIZE 4096
 
 #define BSIZE 4096
-#define DISK_BLOCKS 8192
-#define MAX_INODES 1024
 #define NDIRECT 12
 #define DIRSIZ 14
-#define MAX_FILE 64
 #define MAX_NR_PROC_FILE 32
-
+#define MAX_OPEN_FILES 1024
+#define MAX_STATIC_FILE 64
 struct dirent {
   uint16_t inum;       
   char name[DIRSIZ];   
@@ -42,14 +39,23 @@ struct dinode {
 
 typedef struct {
   char *name;          
-  size_t open_offset;  // 读写offset
-  bool used;           // 是否有进程在使用文件
   struct dinode inode; // 磁盘inode
+  int ref;
   ReadFn read;
   WriteFn write;
 } Finfo;
 
-extern Finfo file_table[];
+extern Finfo file_table[];  //静态文件表
+
+typedef struct {
+  int file_idx;       // 指向静态 file_table 的下标
+  size_t open_offset; // 为每次open掉哟个使用独立的偏移量
+  bool used;          // 槽位是否被占用
+} OpenFile;
+
+OpenFile system_open_table[MAX_OPEN_FILES]; // 系统打开文件表
+
+
 #ifndef SEEK_SET
 enum {SEEK_SET, SEEK_CUR, SEEK_END};
 #endif
