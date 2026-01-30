@@ -185,7 +185,7 @@ fsimg: $(addprefix apps/, $(APPS)) $(addprefix tests/, $(TESTS))
 
 MKFS = $(NAVY_HOME)/tools/mkfs.py
 TARGET=/home/parallels/ics2025/nanos-lite/build/ramdisk.img
-RAMDISK = build/ramdisk.img
+RAMDISK = tools/ramdisk.img
 RAMDISK_H = build/ramdisk.h
 ifeq ("x","y")
 $(RAMDISK): fsimg
