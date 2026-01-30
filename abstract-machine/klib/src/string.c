@@ -110,4 +110,12 @@ int memcmp(const void *s1, const void *s2, size_t n) {
     return 0;
 }
 
+char* strdup(const char* s) {
+    size_t len = strlen(s) + 1; 
+    char* new_str = malloc(len);
+    if (new_str) {
+        strcpy(new_str, s);
+    }
+    return new_str;
+}
 #endif

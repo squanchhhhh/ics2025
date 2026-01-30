@@ -121,7 +121,7 @@ void init_fs() {
 
     Finfo *f = &file_table[nr_static_file];
     
-    strcpy(f->name, dir_entries[i].name);
+    f->name = strdup(dir_entries[i].name); 
     
     get_dinode(dir_entries[i].inum, &f->inode);
     
