@@ -154,7 +154,7 @@ uint32_t create_img() {
 
 uint32_t add_file(char *filename, char *alias) {
     struct superblock sp;
-    int img_fd = open("ramdisk.img", O_RDWR);
+    int img_fd = open("./ramdisk.img", O_RDWR);
     
     unsigned char sb_buf[BSIZE];
     bread(img_fd, 1, sb_buf);
