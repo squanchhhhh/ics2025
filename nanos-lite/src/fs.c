@@ -29,14 +29,18 @@ int bread(char * buf,int offset){
 int bwrite(char * buf,int offset){
   return ramdisk_write(buf,offset*BSIZE,BSIZE);
 }
+static struct superblock sb_copy;
+
 void init_fs() {
   char buf[BSIZE];
   bread(buf, 1);
-  struct superblock sb;
-  memcpy(&sb, buf, sizeof(sb));
-  printf("%x\n",sb.magic);
-  // TODO: initialize the size of /dev/fb
-}
+  memcpy(&sb_copy, buf, sizeof(sb_copy));
 
+  if (sb_copy.magic == 0x20010124) {
+    Log("FileSystem recognized! Root Inode: %d", sb_copy.root_inum);
+  } else {
+    panic("Magic Mismatch: %x", sb_copy.magic);
+  }
+}
 
 
