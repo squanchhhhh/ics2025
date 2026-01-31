@@ -1,9 +1,28 @@
+/* * Nanos-lite Virtual File System (VFS) Module
+ * * --- 底层磁盘与 Inode 辅助函数 ---
+ * - bread(buf, offset): 以块(BSIZE)为单位读取物理磁盘。
+ * - bwrite(buf, offset): 以块(BSIZE)为单位写入物理磁盘。
+ * - bmap(f, logical_idx): 将文件的逻辑块号映射为物理块号（处理数据分布）。
+ * - get_dinode(inum, di): 根据 Inode 编号从磁盘读取原始 Inode 结构。
+ * * --- 系统打开文件表管理 ---
+ * - alloc_system_fd(): 在全局表 system_open_table 中分配一个空项，返回索引。
+ * - free_system_fd(s_idx): 释放全局表中的指定项。
+ * * --- 核心文件系统接口 (对接 System Calls) ---
+ * - fs_open(name, flags, mode): 查找文件并关联到系统打开文件表。
+ * - fs_read(fd, buf, len): 根据 open_offset 从物理块或设备读取数据，并更新偏移。
+ * - fs_write(fd, buf,len): 向设备或物理块写入数据。
+ * - fs_lseek(fd, offset, whence): 修改文件的读写指针 open_offset。
+ * - fstate(fd, d): 获取指定文件的 Inode 信息（状态）。
+ * * --- 初始化 ---
+ * - init_fs(): 读取超级块(SB)，解析根目录，将磁盘文件加载到 file_table。
+ */
 #include "common.h"
 #include "debug.h"
 #include "proc.h"
 #include <fs.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB};
 
@@ -100,13 +119,16 @@ void fstate(int fd,struct dinode*d){
 }
 
 size_t fs_read(int fd, void *buf, size_t len) {
+  if (fd < 0 || current->fd_table[fd] < 0) return -1;
   int s_idx = current->fd_table[fd];
   OpenFile *of = &system_open_table[s_idx];
   Finfo *f = &file_table[of->file_idx];
 
   // 特殊设备文件
   if (f->read != NULL) {
-    return f->read(buf, 0, len); 
+    size_t result = f->read(buf, of->open_offset, len);
+    of->open_offset += result;
+    return result; 
   }
 
   // 边界检查
@@ -135,6 +157,45 @@ size_t fs_read(int fd, void *buf, size_t len) {
   of->open_offset = current_off;
 
   return len; 
+}
+
+//ssize_t write(int fd, const void *buf, size_t count);
+size_t fs_write(int fd,void*buf,int len){
+  if (fd < 0 || current->fd_table[fd] < 0) return -1;
+  int s_idx = current->fd_table[fd];
+  OpenFile *of = &system_open_table[s_idx];
+  Finfo *f = &file_table[of->file_idx];
+
+  // 特殊设备文件
+  if (f->write != NULL) {
+    size_t result = f->write(buf,of->open_offset, len);
+    of->open_offset += result;
+    return result; 
+  }
+
+  if (of->open_offset >= f->inode.size) return 0;
+  if (of->open_offset + len > f->inode.size) {
+    len = f->inode.size - of->open_offset; 
+  }
+  //TODO copy mkfs.c中的分配函数来实现文件的写入，当前设计中只能写入已经分配的盘块。
+  size_t to_write = len;
+  size_t current_off = of->open_offset;
+  while (to_write > 0) {
+    uint32_t l_block = current_off / BSIZE;
+    uint32_t b_offset = current_off % BSIZE;
+    uint32_t p_block = bmap(f, l_block);
+
+    size_t can_write = BSIZE - b_offset;
+    size_t actual_write = (to_write < can_write) ? to_write : can_write;
+
+    ramdisk_write((char *)buf + (len - to_write), p_block * BSIZE + b_offset, actual_write);
+
+    current_off += actual_write;
+    to_write -= actual_write;
+  }
+
+  of->open_offset = current_off;
+  return len;
 }
 
 size_t fs_lseek(int fd, size_t offset, int whence) {
