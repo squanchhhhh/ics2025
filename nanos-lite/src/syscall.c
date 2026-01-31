@@ -19,6 +19,7 @@ int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
     tv->tv_sec = us / 1000000;   
     tv->tv_usec = (uint32_t)(us % 1000000); 
   }
+  printf("gettime\n");
   return 0; 
 }
 //GPR1 映射到 a7 (系统调用号)
