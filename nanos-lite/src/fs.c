@@ -40,8 +40,8 @@ size_t invalid_write(const void *buf, size_t offset, size_t len) {
 /* This is the information about all files in disk. */
 Finfo file_table[] __attribute__((used)) = {
   [FD_STDIN]  = { .name = "stdin",  .read = invalid_read, .write = invalid_write },
-  [FD_STDOUT] = { .name = "stdout", .read = invalid_read, .write = serial_write },
-  [FD_STDERR] = { .name = "stderr", .read = invalid_read, .write = serial_write },
+  [FD_STDOUT] = { .name = "stdout", .read = invalid_read, .write = invalid_write },
+  [FD_STDERR] = { .name = "stderr", .read = invalid_read, .write = invalid_write },
   //#include "file.h"
 };
 int nr_static_file = 3;
