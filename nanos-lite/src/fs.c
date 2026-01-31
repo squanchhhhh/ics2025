@@ -22,7 +22,7 @@
 #include <fs.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "device.h"
 
 enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB};
 
@@ -38,11 +38,11 @@ size_t invalid_write(const void *buf, size_t offset, size_t len) {
 }
 
 /* This is the information about all files in disk. */
-Finfo file_table[MAX_STATIC_FILE] __attribute__((used)) = {
-  [FD_STDIN]  = { .name = "stdin", .read = invalid_read, .write = invalid_write },
-  [FD_STDOUT] = { .name = "stdout", .read = invalid_read, .write = invalid_write },
-  [FD_STDERR] = { .name = "stderr", .read = invalid_read, .write = invalid_write },
-  //#include "files.h" 
+Finfo file_table[] __attribute__((used)) = {
+  [FD_STDIN]  = { .name = "stdin",  .read = invalid_read, .write = invalid_write },
+  [FD_STDOUT] = { .name = "stdout", .read = invalid_read, .write = serial_write },
+  [FD_STDERR] = { .name = "stderr", .read = invalid_read, .write = serial_write },
+
 };
 int nr_static_file = 3;
 OpenFile system_open_table[MAX_OPEN_FILES];
