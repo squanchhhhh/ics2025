@@ -15,8 +15,7 @@ size_t sys_write(int fd, const void *buf, size_t count) {
 
 int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
   if (tv != NULL) {
-    //uint64_t us = io_read(AM_TIMER_UPTIME).us;
-    int us = 0;
+    uint64_t us = io_read(AM_TIMER_UPTIME).us;
     tv->tv_sec = us / 1000000;   
     tv->tv_usec = (uint32_t)(us % 1000000); 
   }
