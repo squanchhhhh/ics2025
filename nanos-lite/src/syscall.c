@@ -1,7 +1,7 @@
 #include <common.h>
 #include <stdio.h>
 #include "syscall.h"
-
+#include "fs.h"
 struct timezone;
 size_t sys_write(int fd, const void *buf, size_t count) {
   if (fd == 1 || fd == 2) {
@@ -56,6 +56,7 @@ void do_syscall(Context *ctx) {
 
    case SYS_gettimeofday:
       printf("SYS_gettimeofday\n");
+      printf("file_table addr: %p\n", file_table);
       ctx->GPRx = sys_gettimeofday((struct timeval *)ctx->GPR2, (struct timezone *)ctx->GPR3);
       break;
     default: 
