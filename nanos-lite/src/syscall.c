@@ -1,16 +1,8 @@
 #include <common.h>
+#include <stdio.h>
 #include "syscall.h"
 
-struct timeval {
-    int  tv_sec;     /* seconds */
-    int  tv_usec;    /* microseconds */
-};
-
-struct timezone {
-    int tz_minuteswest;     /* minutes west of Greenwich */
-    int tz_dsttime;         /* type of DST correction */
-};
-
+struct timezone;
 size_t sys_write(int fd, const void *buf, size_t count) {
   if (fd == 1 || fd == 2) {
     for (size_t i = 0; i < count; i++) {
@@ -61,6 +53,7 @@ void do_syscall(Context *ctx) {
       break;
 
    case SYS_gettimeofday:
+      printf("SYS_gettimeofday\n");
       ctx->GPRx = sys_gettimeofday((struct timeval *)ctx->GPR2, (struct timezone *)ctx->GPR3);
       break;
     default: 
