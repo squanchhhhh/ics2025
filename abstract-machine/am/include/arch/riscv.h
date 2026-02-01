@@ -17,7 +17,7 @@ struct Context {
 #ifdef __riscv_e
 #define GPR1 gpr[15] // a5
 #else
-#define GPR1 gpr[17] // a7
+#define GPR1 gpr[17] // a7 系统调用号
 #endif
 
 #define GPR2 gpr[10] // a0: 第 1 个参数
