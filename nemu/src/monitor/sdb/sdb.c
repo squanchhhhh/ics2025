@@ -222,6 +222,11 @@ void sdb_mainloop() {
 
     /* extract the first token as the command */
     char *cmd = strtok(str, " ");
+    if (is_ui_initialized) {
+        int max_y = getmaxy(stdscr);
+        move(max_y - 2, 0); // 移动到倒数第 2 行
+        refresh();          // 刷新物理光标位置
+    }
     if (cmd == NULL) { continue; }
 
     /* treat the remaining string as the arguments,

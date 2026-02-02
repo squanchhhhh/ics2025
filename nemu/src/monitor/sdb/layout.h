@@ -1,6 +1,7 @@
 #ifndef __LAYOUT_H__
 #define __LAYOUT_H__
 #include <ncurses.h>
+extern bool is_ui_initialized;
 // 枚举成员应该是整数，用于 switch-case 逻辑
 enum {
     LAYOUT_ASM,

@@ -4,7 +4,7 @@
 WINDOW *win_src = NULL;
 WINDOW *win_asm = NULL;
 WINDOW *win_cmd = NULL;
-static bool is_ui_initialized = false;
+bool is_ui_initialized = false;
 
 void ui_init() {
     if (is_ui_initialized) return;
