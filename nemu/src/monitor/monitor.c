@@ -64,6 +64,13 @@ static long load_img() {
   FILE *fp = fopen(img_file, "rb");
   Assert(fp, "Can not open '%s'", img_file);
 
+  //test 暂时直接load同名elf
+  int len = strlen(img_file);
+  elf_file = strdup(img_file);
+  elf_file[len-1] = 'f';
+  elf_file[len-2] = 'l';
+  elf_file[len-3] = 'e';
+
   fseek(fp, 0, SEEK_END);
   long size = ftell(fp);
 
