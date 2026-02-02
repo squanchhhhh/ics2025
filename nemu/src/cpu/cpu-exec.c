@@ -88,7 +88,6 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
-  printf("DEBUG: elf_file path is [%s], PC is [0x%08x]\n", elf_file, s->pc);
   if (elf_file[0] != '\0') {
     char cmd[1024];
     // -p 选项可以直接输出 "at /path/to/file.c:line"

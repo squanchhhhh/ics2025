@@ -22,6 +22,7 @@
 #include "trace/ftrace.h"
 #include "trace/itrace.h"
 #include "trace/mtrace.h"
+#include "layout.h"
 static int is_batch_mode = false;
 
 void init_regex();
@@ -89,6 +90,7 @@ static int cmd_ph(char*args){
 }
 
 static int cmd_x(char * args){
+  //"x n addr"
   char *n_str  = strtok(args, " ");
   char *addr_str  = strtok(NULL, " ");
   int n = atoi(n_str);
@@ -134,6 +136,19 @@ static int cmd_i(char*args){
   print_recent_insts();
   return 0;
 }
+static int cmd_layout(char *args) {
+    char *cmd = strtok(args, " ");
+    if (cmd == NULL) return 0;
+
+    if (strcmp(cmd, "asm") == 0) {
+        ui_set_layout(LAYOUT_ASM);
+    } else if (strcmp(cmd, "split") == 0) {
+        ui_set_layout(LAYOUT_SPLIT);
+    } else if (strcmp(cmd, "src") == 0) {
+        ui_set_layout(LAYOUT_SRC);
+    }
+    return 0;
+}
 
 static struct {
   const char *name;
@@ -153,7 +168,8 @@ static struct {
   { "t", "to test expr",expr_test},
   { "f", "show function tree",cmd_f},
   { "m", "show mtrace",cmd_m},
-  {"i","print recent insts",cmd_i}
+  {"i","print recent insts",cmd_i},
+  {"layout","layout asm,src,split",cmd_layout}
   /* TODO: Add more commands */
 
 };
