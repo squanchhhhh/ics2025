@@ -12,6 +12,7 @@
 *
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
+#include "debug.h"
 #include <assert.h>
 #include <device/map.h>
 #include <utils.h>
@@ -28,12 +29,14 @@ static void disk_io_handler(uint32_t addr, int len, bool is_write) {
   if (fseek(disk_fp, offset, SEEK_SET) != 0) return;
 
   if (is_write) {
-    int i = fwrite(disk_space + offset, len, 1, disk_fp);
-    assert(i==0);
+    size_t n = fwrite(disk_space + offset, len, 1, disk_fp);
+    if (n != 1) Log("Warning: Disk write failed");
     fflush(disk_fp); // 确保立即写入 Ubuntu 磁盘
   } else {
-    int i = fread(disk_space + offset, len, 1, disk_fp);
-    assert(i==0);
+    size_t i = fread(disk_space + offset, len, 1, disk_fp);
+    if (i != 1 && len > 0) {
+    Log("Disk read potential issue at offset 0x%x (requested 1 element, got %zu)", offset, i);
+}
   }
 }
 
