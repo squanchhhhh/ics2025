@@ -25,28 +25,27 @@ static uint32_t disk_regs[3];
 static FILE *disk_fp = NULL;
 
 static void handle_disk_transfer() {
-    printf("DEBUG: NEMU DISK TRANSFER TRIGGERED! blk=%d\n", disk_regs[0]);
   uint32_t blk_no  = disk_regs[DISK_BLOCK_REG / 4];
   uint32_t mem_ptr = disk_regs[DISK_MEM_REG / 4];
   uint32_t cmd     = disk_regs[DISK_CTRL_REG / 4];
 
+  // 强制打印，确认读取到的参数
+  printf("NEMU DISK OP: blk=%d, mem=0x%08x, cmd=%d\n", blk_no, mem_ptr, cmd);
+
   void *host_ptr = guest_to_host(mem_ptr);
-  
   if (fseek(disk_fp, blk_no * DISK_BLOCK_SIZE, SEEK_SET) != 0) {
-    Log("Disk Error: fseek failed");
+    perror("fseek");
     return;
   }
-  Log("Disk %s: blk=%d, mem=0x%08x", cmd == 0 ? "Read" : "Write", blk_no, mem_ptr);
 
   if (cmd == 0) { // Read
-    if (fread(host_ptr, DISK_BLOCK_SIZE, 1, disk_fp) != 1) Log("Disk Read Failed");
-  } else if (cmd == 1) { // Write
-    if (fwrite(host_ptr, DISK_BLOCK_SIZE, 1, disk_fp) != 1) Log("Disk Write Failed");
+    if (fread(host_ptr, DISK_BLOCK_SIZE, 1, disk_fp) != 1) {
+      printf("Disk Read Error at blk %d\n", blk_no);
+    }
+  } else { // Write
+    fwrite(host_ptr, DISK_BLOCK_SIZE, 1, disk_fp);
     fflush(disk_fp);
   }
-
-  // 状态回滚：设置为 0 表示 Ready
-  disk_regs[DISK_CTRL_REG / 4] = 0;
 }
 static void disk_io_handler(uint32_t addr, int len, bool is_write) {
   uint32_t offset = addr - CONFIG_DISK_CTL_MMIO;
