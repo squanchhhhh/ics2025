@@ -139,14 +139,12 @@ static int cmd_i(char*args){
 }
 static int cmd_layout(char *args) {
   printf("%s\n",args);
-    char *cmd = strtok(args, " ");
-    if (cmd == NULL) return 0;
 
-    if (strcmp(cmd, "asm") == 0) {
+    if (strcmp(args, "asm") == 0) {
         ui_set_layout(LAYOUT_ASM);
-    } else if (strcmp(cmd, "split") == 0) {
+    } else if (strcmp(args, "split") == 0) {
         ui_set_layout(LAYOUT_SPLIT);
-    } else if (strcmp(cmd, "src") == 0) {
+    } else if (strcmp(args, "src") == 0) {
         ui_set_layout(LAYOUT_SRC);
     }
     mvwprintw(stdscr, 0, 0, "Layout set! Press any key to return to NEMU prompt...");
