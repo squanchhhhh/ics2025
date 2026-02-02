@@ -26,6 +26,7 @@ static uint32_t disk_regs[3];
 static FILE *disk_fp = NULL;
 
 static void handle_disk_transfer() {
+    printf("call handle_disk_transfer\n");
   uint32_t blk_no  = disk_regs[DISK_BLOCK_REG / 4];
   uint32_t mem_ptr = disk_regs[DISK_MEM_REG / 4];
   uint32_t cmd     = disk_regs[DISK_CTRL_REG / 4];
