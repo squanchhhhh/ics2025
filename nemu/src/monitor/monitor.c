@@ -22,7 +22,6 @@
 #include <string.h>
 #include "trace/itrace.h"
 #include "trace/elf.h"
-#include "trace/ramdisk.h"
 
 void init_rand();
 void init_log(const char *log_file);
@@ -55,7 +54,6 @@ static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static int difftest_port = 1234;
 static char *elf_file = NULL;
-char *ramdisk_file = NULL;
 
 static long load_img() {
   if (img_file == NULL) {
@@ -110,9 +108,6 @@ static int parse_args(int argc, char *argv[]) {
       break;
     case 'e':
       elf_file = optarg;
-      break;
-    case 'r':
-      ramdisk_file = optarg;
       break;
     case 1:
       img_file = optarg;
