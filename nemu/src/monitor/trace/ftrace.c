@@ -1,56 +1,66 @@
-#include "trace/ftrace.h"
+#include <trace/ftrace.h>
+#include <trace/elf.h>
 
-Func funcs[FUNC_NUM];
-int nr_func = 0;
+static FTraceEntry te[MAX_FUNC_TRACE];
+static int nr_func_trace_event = 0;
 
-int find_func_by_addr(vaddr_t addr) {
-  for (int i = 0; i < nr_func; i++) {
-    if (funcs[i].valid &&
-        addr >= funcs[i].begin &&
-        addr <  funcs[i].end) {
-      return i;
+/**
+ * 记录追踪事件
+ */
+void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type) {
+  // 1. 如果没加载 ELF，记录也没有意义
+  if (!is_elf_loaded()) return;
+
+  // 2. 检查缓冲区是否溢出
+  if (nr_func_trace_event >= MAX_FUNC_TRACE) {
+    static bool warned = false;
+    if (!warned) {
+      Log("ftrace: trace event buffer is full!");
+      warned = true;
     }
+    return;
   }
-  return -1;
-}
 
-void init_funcs() {
-  for (int i = 0; i < FUNC_NUM; i++) {
-    funcs[i].valid = 0;
+  // 3. 通过 elf 模块查询目标地址所属的函数 ID
+  int fid = elf_find_func_by_addr(target_addr);
+  if (fid == -1) {
+    // 找不到符号可能是跳到了非函数区域，或者符号表不全
+    return; 
   }
-  return;
-}
 
-FTraceEntry te[MAX_FUNC_TRACE];
-int nr_func_trace_event = 0;
-//函数调用记录
-void ftrace_record(vaddr_t caller_pc,int fid,FTraceType type){
-  te[nr_func_trace_event].type = type;
-  te[nr_func_trace_event].func_id = fid;
+  // 4. 写入记录
   te[nr_func_trace_event].pc = caller_pc;
+  te[nr_func_trace_event].func_id = fid;
+  te[nr_func_trace_event].type = type;
   nr_func_trace_event++;
-  return ;
 }
-//函数调用跟踪
+
+/**
+ * 格式化打印追踪记录
+ */
 void ftrace_print() {
+  printf("------- [ FTrace Log ] -------\n");
   int indentation = 0;
+
   for (int i = 0; i < nr_func_trace_event; i++) {
-    Func f = funcs[te[i].func_id];
-    printf("%x:", te[i].pc);
+    Func *f = elf_get_func_by_id(te[i].func_id);
+    if (!f) continue;
+
+    // 打印当前的 PC 地址
+    printf("0x%08x: ", te[i].pc);
+
     if (te[i].type == FUNC_CALL) {
-      for (int j = 0; j < indentation; j++) {
-        printf(" ");
-      }
-      printf("call [%s@%x]\n", f.name, f.begin);
+      // 处理缩进
+      for (int j = 0; j < indentation; j++) printf("  ");
+      printf("call [%s@0x%08x]\n", f->name, f->begin);
       indentation++;
-    }
+    } 
     else if (te[i].type == FUNC_RET) {
       indentation--;
-      if (indentation < 0) indentation = 0; 
-      for (int j = 0; j < indentation; j++) {
-        printf(" ");
-      }
-      printf("ret [%s]\n", f.name);
+      if (indentation < 0) indentation = 0;
+      for (int j = 0; j < indentation; j++) printf("  ");
+      printf("ret  [%s]\n", f->name);
     }
   }
+  printf("------------------------------\n");
 }

@@ -16,12 +16,14 @@
 #include "common.h"
 #include "debug.h"
 #include <assert.h>
-#include <elf.h>
+#include <bits/getopt_core.h>
 #include <isa.h>
 #include <memory/paddr.h>
 #include <string.h>
-#include "trace/ftrace.h"
 #include "trace/itrace.h"
+#include "trace/elf.h"
+#include "trace/ramdisk.h"
+
 void init_rand();
 void init_log(const char *log_file);
 void init_mem();
@@ -51,10 +53,10 @@ void sdb_set_batch_mode();
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
 static char *img_file = NULL;
-static char *elf_file = NULL;
 static int difftest_port = 1234;
-static char *elf_buf = NULL;
-int elf_flag = 0;
+static char *elf_file = NULL;
+char *ramdisk_file = NULL;
+
 static long load_img() {
   if (img_file == NULL) {
     Log("No image is given. Use the default build-in image.");
@@ -77,86 +79,6 @@ static long load_img() {
   return size;
 }
 
-char *load_elf() {
-  if (elf_file == NULL) {
-    Log("No image is given.");
-    assert(0);
-  }
-  FILE *fp = fopen(elf_file, "rb");
-  Assert(fp, "Can not open '%s'", elf_file);
-  fseek(fp, 0, SEEK_END);
-  long size = ftell(fp);
-  Log("The elf is %s, size = %ld", elf_file, size);
-  char *buf = (char *)malloc(size);
-  fseek(fp, 0, SEEK_SET);
-  int ret = fread(buf, size, 1, fp);
-  assert(ret == 1);
-  fclose(fp);
-  return buf;
-}
-
-void open_elf(){
-  elf_flag = 1;
-}
-int parse_elf() {
-  if (elf_flag == 0){
-    return 0;
-  }
-  elf_buf = load_elf();
-  init_funcs();
-  Elf32_Ehdr *ehdr = (Elf32_Ehdr *)elf_buf;
-  Elf32_Shdr *shdrs = (Elf32_Shdr *)(elf_buf + ehdr->e_shoff);
-  Elf32_Shdr *shstr_shdr =
-  &shdrs[ehdr->e_shstrndx]; //将section header部分解释成一个表
-  const char *shstrtab = elf_buf + shstr_shdr->sh_offset;
-  int sym_index = 0;
-  int sym_link = 0;
-  for (int i = 0; i < ehdr->e_shnum; i++) {
-    const char *name = shstrtab + shdrs[i].sh_name;
-    if (strcmp(name, ".symtab") == 0) {
-      sym_index = i;
-      sym_link = shdrs[i].sh_link;
-    }
-    //Log("[%d] %s type=%u offset=0x%x size=0x%x link=%d\n", i, name,
-        //shdrs[i].sh_type, shdrs[i].sh_offset, shdrs[i].sh_size,
-        //shdrs[i].sh_link);
-  }
-  if (sym_index == 0) {
-    Log("No .symtab found, ftrace disabled");
-    assert(0);
-    return 0;
-  }
-  
-  Elf32_Shdr *symtab_sh = &shdrs[sym_index];
-  Elf32_Sym *symtab = (Elf32_Sym *)(elf_buf + symtab_sh->sh_offset); //将这段内存解释为sym表
-  int nr_sym = symtab_sh->sh_size / symtab_sh->sh_entsize;
-  Elf32_Shdr *strtab_sh = &shdrs[sym_link];
-  const char *strtab = elf_buf + strtab_sh->sh_offset;
- 
-  nr_func = 0;
-  for (int i = 0; i < nr_sym; i++) {
-    Elf32_Sym *s = &symtab[i];
-    //跳过非函数，0大小，大于FUNC_NUM的情况
-    if (ELF32_ST_TYPE(s->st_info) != STT_FUNC)  
-      continue;
-    if (s->st_size == 0)
-      continue;
-    if (nr_func >= FUNC_NUM)
-      break;
-    //填充函数名和函数有效位
-    const char *name = strtab + s->st_name;
-    funcs[nr_func].valid = true;
-    strncpy(funcs[nr_func].name, name, sizeof(funcs[nr_func].name) - 1);
-    funcs[nr_func].name[sizeof(funcs[nr_func].name) - 1] = '\0';
-    //设置函数范围
-    funcs[nr_func].begin = (vaddr_t)s->st_value;
-    funcs[nr_func].end = funcs[nr_func].begin + s->st_size;
-    Log("func_name: %s, func_begin:%x, finc_end:%x",funcs[nr_func].name,funcs[nr_func].begin,funcs[nr_func].end);
-    nr_func++;
-  }
-  return nr_func;
-}
-
 static int parse_args(int argc, char *argv[]) {
   for (int i = 0; i < argc; i++) {
   Log("argv[%d] = %s", i, argv[i]);
@@ -168,10 +90,11 @@ static int parse_args(int argc, char *argv[]) {
       {"port", required_argument, NULL, 'p'},
       {"help", no_argument, NULL, 'h'},
       {"elf", required_argument, NULL, 'e'},
+      {"ramdisk", required_argument, NULL, 'r'},
       {0, 0, NULL, 0},
   };
   int o;
-  while ((o = getopt_long(argc, argv, "-bhl:d:p:e:", table, NULL)) != -1) {
+  while ((o = getopt_long(argc, argv, "-bhl:d:p:e:r:", table, NULL)) != -1) {
     switch (o) {
     case 'b':
       sdb_set_batch_mode();
@@ -187,7 +110,9 @@ static int parse_args(int argc, char *argv[]) {
       break;
     case 'e':
       elf_file = optarg;
-      open_elf();
+      break;
+    case 'r':
+      ramdisk_file = optarg;
       break;
     case 1:
       img_file = optarg;
@@ -230,11 +155,12 @@ void init_monitor(int argc, char *argv[]) {
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img();
 
+  if (elf_file != NULL) {
+    init_elf(elf_file); 
+  }
+
   /* Initialize differential testing. */
   init_difftest(diff_so_file, img_size, difftest_port);
-
-  /*解析elf*/
-  parse_elf();
 
   /* Initialize the simple debugger. */
   init_sdb();

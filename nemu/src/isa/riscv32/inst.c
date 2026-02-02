@@ -20,6 +20,7 @@
 #include <cpu/ifetch.h>
 #include <cpu/decode.h>
 #include "trace/ftrace.h"
+#include "trace/elf.h"
 #define R(i) gpr(i)
 #define Mr vaddr_read
 #define Mw vaddr_write
@@ -129,12 +130,9 @@ static int decode_exec(Decode *s) {
     R(rd) = ret;
     s->dnpc = s->pc + imm;
   #ifdef CONFIG_FTRACE
-    if (rd == 1) { // ra
-      int fid = find_func_by_addr(s->dnpc);
-      if (fid >= 0) {
-        ftrace_record(s->pc, fid,FUNC_CALL);
+    if (rd == 1 || rd == 5) { 
+        ftrace_record(s->pc, s->dnpc, FUNC_CALL);
       }
-    }
   #endif
   });
   INSTPAT("????????????  ????? 000 ????? 11001 11", jalr    , I, 
@@ -144,14 +142,13 @@ static int decode_exec(Decode *s) {
   s->dnpc = target;
   R(rd) = ret;
   #ifdef CONFIG_FTRACE
-  if(rd == 1){
-    int fid = find_func_by_addr(target);
-    if (fid >= 0) ftrace_record(s->pc, fid, FUNC_CALL);
+  // 1. 判断是否为返回 (ret): 通常是 jalr x0, 0(ra) 即 rd=0, rs1=1
+  if (rd == 0 && BITS(s->isa.inst, 19, 15) == 1) {
+    ftrace_record(s->pc, s->pc, FUNC_RET);
   }
-  if (rd == 0 && BITS(s->isa.inst, 19, 15) == 1){
-    //og("ret rd:%d,src1:%x",rd,src1);   // src1是取值后的值！！！
-    int fid = find_func_by_addr(s->pc);
-    if (fid >= 0) ftrace_record(s->pc, fid, FUNC_RET);
+  // 2. 判断是否为调用 (call): rd 为 ra 或 t0
+  else if (rd == 1 || rd == 5) {
+    ftrace_record(s->pc, target, FUNC_CALL);
   }
   #endif
   });

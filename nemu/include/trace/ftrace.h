@@ -3,34 +3,27 @@
 
 #include <common.h>
 
-//最多解析128个函数
-#define FUNC_NUM 128
+// 追踪事件类型
+typedef enum {
+  FUNC_CALL,
+  FUNC_RET
+} FTraceType;
 
+// 单条追踪记录
 typedef struct {
-  bool valid;    //有效位，用于排除某些函数
-  char name[32]; //函数名
-  vaddr_t begin; //函数开始地址，由  Elf32_Addr	st_value;		/* Symbol value */ 给出
-  vaddr_t end;  //函数结束地址，由st_value+ Elf32_Wordst_size;		/* Symbol size */给出
-} Func;   
-
-extern Func funcs[FUNC_NUM]; //函数数组
-extern int nr_func; //解析后的函数个数
-
-int find_func_by_addr(vaddr_t addr);  //根据函数地址获取函数名 [begin,end)
-void init_funcs();
-
-#define MAX_FUNC_TRACE 4096
-
-typedef enum { FUNC_CALL, FUNC_RET } FTraceType;  //事件类型
-
-typedef struct {
-  FTraceType type;
-  vaddr_t pc; 
-  int func_id;
+  vaddr_t pc;       // 发起调用的指令地址 (caller_pc)
+  int func_id;      // 目标函数在 elf 模块中的 ID
+  FTraceType type;  // 事件类型：call 或 ret
 } FTraceEntry;
-extern FTraceEntry te[MAX_FUNC_TRACE];  //事件数组
-extern int nr_func_trace_event;              //事件个数
-void ftrace_record(vaddr_t caller_pc,int fid,FTraceType type); //记录调用者的pc地址，函数数组下标，调用类型
-void ftrace_print();  //输出
 
-#endif
+#define MAX_FUNC_TRACE 1024
+
+// 记录一次函数调用或返回
+// target_addr: call 指令的目标地址（用于查询函数名）
+// caller_pc:   当前 call 指令本身的地址（用于打印显示）
+void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type);
+
+// 打印所有追踪记录
+void ftrace_print();
+
+#endif // __FTRACE_H__
