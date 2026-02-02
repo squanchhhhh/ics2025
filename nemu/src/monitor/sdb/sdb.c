@@ -139,8 +139,8 @@ static int cmd_i(char*args){
 }
 static int cmd_layout(char *args) {
   printf("%s\n",args);
-
     if (strcmp(args, "asm") == 0) {
+      printf("asm12\n");
         ui_set_layout(LAYOUT_ASM);
     } else if (strcmp(args, "split") == 0) {
         ui_set_layout(LAYOUT_SPLIT);
