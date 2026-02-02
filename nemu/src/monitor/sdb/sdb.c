@@ -147,6 +147,14 @@ static int cmd_layout(char *args) {
     } else if (strcmp(args, "src") == 0) {
         ui_set_layout(LAYOUT_SRC);
     }
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+    (void)max_x;
+    // 假设你给命令行留了最后 5 行，我们把光标移到倒数第 5 行开头
+    move(max_y - 5, 0); 
+    refresh(); 
+
+    // 注意：把 getch() 删掉，否则你得按一下键才出提示符
     return 0;
 }
 
