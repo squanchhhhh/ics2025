@@ -49,22 +49,26 @@ static void handle_disk_transfer() {
     fflush(disk_fp);
   }
 }
-static void disk_io_handler(uint32_t addr, int len, bool is_write) {
-    printf("call disk_io_handler\n");
-  uint32_t offset = addr - CONFIG_DISK_CTL_MMIO;
+static uint32_t *disk_base = NULL; // 模仿串口，改用指针
+static void disk_io_handler(uint32_t offset, int len, bool is_write) {
+  // 模仿串口：不管 len 到底是多少，先看是不是写了 CTRL 寄存器
   if (is_write && offset == DISK_CTRL_REG) {
+    // 此时数据已经由 mmio_write 填入 disk_base[2] 了（如果是先填数据后调用的逻辑）
+    // 或者我们需要手动同步
     handle_disk_transfer();
   }
 }
-
 void init_disk() {
+  // 1. 获取镜像路径
   const char *path = getenv("DISK_IMG");
   if (path == NULL) return;
-
   disk_fp = fopen(path, "r+b");
-  Assert(disk_fp, "Cannot open disk image at %s", path);
+  Assert(disk_fp, "Cannot open disk image");
 
-  add_mmio_map("disk", CONFIG_DISK_CTL_MMIO, disk_regs, 12, disk_io_handler);
+  // 2. 模仿串口：申请空间
+  disk_base = (uint32_t *)new_space(12); // 3个寄存器 * 4字节
 
-  Log("Block Device simulated via MMIO at [0x%08x]", CONFIG_DISK_CTL_MMIO);
+  // 3. 注册：注意最后一个参数是回调函数
+  add_mmio_map("disk", CONFIG_DISK_CTL_MMIO, disk_base, 12, disk_io_handler);
 }
+
