@@ -88,7 +88,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
-  
+  printf("DEBUG: elf_file path is [%s], PC is [0x%08x]\n", elf_file, s->pc);
   if (elf_file[0] != '\0') {
     char cmd[512];
     // 构造 addr2line 命令，-p 参数可以让输出更简洁（在一行内）
