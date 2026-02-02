@@ -90,19 +90,44 @@ static void exec_once(Decode *s, vaddr_t pc) {
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
   printf("DEBUG: elf_file path is [%s], PC is [0x%08x]\n", elf_file, s->pc);
   if (elf_file[0] != '\0') {
-    char cmd[512];
-    // 构造 addr2line 命令，-p 参数可以让输出更简洁（在一行内）
-    sprintf(cmd, "addr2line -e %s %x -p", elf_file, s->pc);
+    char cmd[1024];
+    // -p 选项可以直接输出 "at /path/to/file.c:line"
+    snprintf(cmd, sizeof(cmd), "addr2line -e %s 0x%08x -p", elf_file, s->pc);
     
     FILE *fp = popen(cmd, "r");
     if (fp) {
-      char source_buf[256];
-      if (fgets(source_buf, sizeof(source_buf), fp)) {
-        // 去掉末尾换行符
-        source_buf[strcspn(source_buf, "\r\n")] = 0;
-        // 追加到 logbuf 或者直接打印
-        strncat(s->logbuf, "  # ", sizeof(s->logbuf) - strlen(s->logbuf) - 1);
-        strncat(s->logbuf, source_buf, sizeof(s->logbuf) - strlen(s->logbuf) - 1);
+      char buf[512];
+      if (fgets(buf, sizeof(buf), fp) && buf[0] != '?') {
+        buf[strcspn(buf, "\r\n")] = 0; // 去掉换行
+        
+        // 打印源码位置（用青色高亮）
+        printf(ANSI_FMT("  # %s", ANSI_FG_CYAN), buf);
+
+        // 进阶：提取文件名和行号打印源码内容
+        // 格式通常是: main at /path/to/main.c:19
+        char *path_ptr = strrchr(buf, ' '); // 找到最后一个空格，后面就是路径:行号
+        if (path_ptr) {
+          char *colon = strrchr(path_ptr, ':');
+          if (colon) {
+            *colon = '\0';
+            char *line_num = colon + 1;
+            char *file_path = path_ptr + 1;
+            
+            char sed_cmd[1024];
+            // 使用 sed 提取该行并去掉首尾空格
+            snprintf(sed_cmd, sizeof(sed_cmd), "sed -n '%sp' %s | xargs echo", line_num, file_path);
+            FILE *fsrc = popen(sed_cmd, "r");
+            if (fsrc) {
+              char code[512];
+              if (fgets(code, sizeof(code), fsrc)) {
+                code[strcspn(code, "\r\n")] = 0;
+                // 打印源码内容（用黄色高亮）
+                printf(ANSI_FMT("  => %s", ANSI_FG_YELLOW), code);
+              }
+              pclose(fsrc);
+            }
+          }
+        }
       }
       pclose(fp);
     }
