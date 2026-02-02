@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <trace/elf.h>
 
-static char *elf_buf = NULL;
+char *elf_buf = NULL;
 static Func funcs[FUNC_NUM];
 static int nr_func = 0;
 static bool elf_loaded = false;

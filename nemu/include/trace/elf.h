@@ -2,7 +2,8 @@
 #define __ELF_H__
 
 #include <common.h>
-
+extern char *elf_buf;
+extern char *elf_file;
 // 函数符号结构体
 typedef struct {
   char name[64];

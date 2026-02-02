@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include "trace/ftrace.h"
 #include "trace/itrace.h"
+#include "trace/elf.h"
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
@@ -87,6 +88,25 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
+  
+  if (elf_file[0] != '\0') {
+    char cmd[512];
+    // 构造 addr2line 命令，-p 参数可以让输出更简洁（在一行内）
+    sprintf(cmd, "addr2line -e %s %x -p", elf_file, s->pc);
+    
+    FILE *fp = popen(cmd, "r");
+    if (fp) {
+      char source_buf[256];
+      if (fgets(source_buf, sizeof(source_buf), fp)) {
+        // 去掉末尾换行符
+        source_buf[strcspn(source_buf, "\r\n")] = 0;
+        // 追加到 logbuf 或者直接打印
+        strncat(s->logbuf, "  # ", sizeof(s->logbuf) - strlen(s->logbuf) - 1);
+        strncat(s->logbuf, source_buf, sizeof(s->logbuf) - strlen(s->logbuf) - 1);
+      }
+      pclose(fp);
+    }
+  }
 #endif
 }
 
