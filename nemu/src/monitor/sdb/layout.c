@@ -1,4 +1,4 @@
-#include <ncurses.h>
+
 #include <stdio.h>
 #include "layout.h"
 WINDOW *win_src = NULL;
@@ -94,3 +94,11 @@ void ui_draw_source_view() {
     // 暂时先留空
 }
 
+
+void ui_init() {
+    initscr();     // 必须第一个调用
+    raw();         // 禁用行缓冲
+    noecho();      // 不回显
+    curs_set(0);   // 隐藏光标
+    refresh();     // 刷新 stdscr
+}
