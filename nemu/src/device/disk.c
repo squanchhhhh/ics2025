@@ -27,9 +27,9 @@ static FILE *disk_fp = NULL;
 
 static void handle_disk_transfer() {
     printf("call handle_disk_transfer\n");
-  uint32_t blk_no  = disk_regs[DISK_BLOCK_REG / 4];
-  uint32_t mem_ptr = disk_regs[DISK_MEM_REG / 4];
-  uint32_t cmd     = disk_regs[DISK_CTRL_REG / 4];
+    uint32_t blk_no  = disk_regs[DISK_BLOCK_REG / 4]; 
+  uint32_t mem_ptr = disk_regs[DISK_MEM_REG / 4];   
+  uint32_t cmd     = disk_regs[DISK_CTRL_REG / 4];  
 
   // 强制打印，确认读取到的参数
   printf("NEMU DISK OP: blk=%d, mem=0x%08x, cmd=%d\n", blk_no, mem_ptr, cmd);

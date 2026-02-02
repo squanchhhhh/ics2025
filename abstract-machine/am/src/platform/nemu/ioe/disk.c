@@ -1,7 +1,6 @@
 #include <am.h>
 #include <nemu.h>
 
-// 对应我们在 NEMU 中定义的寄存器偏移
 #define DISK_BLOCK_REG (DISK_ADDR + 0)
 #define DISK_MEM_REG   (DISK_ADDR + 4)
 #define DISK_CTRL_REG  (DISK_ADDR + 8)
