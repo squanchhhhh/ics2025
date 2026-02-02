@@ -13,6 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 #include <device/map.h>
+#include <stdio.h>
 #include <utils.h>
 #include <memory/paddr.h>
 
@@ -48,6 +49,7 @@ static void handle_disk_transfer() {
   }
 }
 static void disk_io_handler(uint32_t addr, int len, bool is_write) {
+    printf("call disk_io_handler\n");
   uint32_t offset = addr - CONFIG_DISK_CTL_MMIO;
   if (is_write && offset == DISK_CTRL_REG) {
     handle_disk_transfer();
