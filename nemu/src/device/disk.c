@@ -22,16 +22,13 @@
 #define DISK_CTRL_REG  8  
 #define DISK_BLOCK_SIZE 4096
 
-static uint32_t *disk_base = NULL; // 模仿串口，改用指针
+static uint32_t *disk_base = NULL; 
 static FILE *disk_fp = NULL;
 
 static void handle_disk_transfer() {
-    printf("call handle_disk_transfer\n");
-    uint32_t blk_no  = disk_base[0];
+  uint32_t blk_no  = disk_base[0];
   uint32_t mem_ptr = disk_base[1]; 
   uint32_t cmd     = disk_base[2];
-  // 强制打印，确认读取到的参数
-  printf("NEMU DISK OP: blk=%d, mem=0x%08x, cmd=%d\n", blk_no, mem_ptr, cmd);
 
   void *host_ptr = guest_to_host(mem_ptr);
   if (fseek(disk_fp, blk_no * DISK_BLOCK_SIZE, SEEK_SET) != 0) {
@@ -39,11 +36,11 @@ static void handle_disk_transfer() {
     return;
   }
 
-  if (cmd == 0) { // Read
+  if (cmd == 0) { 
     if (fread(host_ptr, DISK_BLOCK_SIZE, 1, disk_fp) != 1) {
       printf("Disk Read Error at blk %d\n", blk_no);
     }
-  } else { // Write
+  } else { 
     fwrite(host_ptr, DISK_BLOCK_SIZE, 1, disk_fp);
     fflush(disk_fp);
   }
@@ -51,11 +48,11 @@ static void handle_disk_transfer() {
 
 
 static void disk_io_handler(uint32_t offset, int len, bool is_write) {
-    printf("call disk_io_handler and offset = %d,len=%d,iswrite=%d\n",offset,len,is_write);
   if (is_write && offset == DISK_CTRL_REG) {
     handle_disk_transfer();
   }
 }
+
 void init_disk() {
   const char *path = getenv("DISK_IMG");
   if (path == NULL) return;
