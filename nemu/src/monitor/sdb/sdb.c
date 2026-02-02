@@ -147,9 +147,6 @@ static int cmd_layout(char *args) {
     } else if (strcmp(args, "src") == 0) {
         ui_set_layout(LAYOUT_SRC);
     }
-    mvwprintw(stdscr, 0, 0, "Layout set! Press any key to return to NEMU prompt...");
-    refresh();
-    getch();
     return 0;
 }
 
