@@ -85,7 +85,7 @@ CFLAGS   += -O2 -MMD -Wall -Werror $(INCFLAGS) \
             -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector \
             -Wno-main -U_FORTIFY_SOURCE -fvisibility=hidden
 CXXFLAGS +=  $(CFLAGS) -ffreestanding -fno-rtti -fno-exceptions
-ASFLAGS  += -MMD $(INCFLAGS)
+ASFLAGS  += -MMD $(INCFLAGS) -g -Wa,-g
 LDFLAGS  += -z noexecstack $(addprefix -T, $(LDSCRIPTS))
 
 ## 4. Arch-Specific Configurations
