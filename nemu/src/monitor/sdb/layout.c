@@ -92,29 +92,65 @@ void ui_set_layout(int mode) {
     }
     ui_refresh_all();
 }
+
+#include <common.h> // 包含 vaddr_t 等定义
+
+// 外部函数声明
+extern void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+extern uint8_t* guest_to_host(paddr_t paddr); 
+
+#define CMD_AREA_HEIGHT 5 // 底部留给命令行的空行数
+
 void ui_draw_asm_view() {
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
 
-    // 计算分界线：假设下方留 5 行给命令行
-    int cmd_height = 5;
-    int asm_height = max_y - cmd_height;
+    // 1. 计算窗口尺寸
+    int asm_height = max_y - CMD_AREA_HEIGHT;
+    if (asm_height < 3) return; // 屏幕太小就不画了
 
-    // 创建上方窗口 (高度为 asm_height, 宽度全屏, 从 0,0 开始)
+    // 2. 创建/重置窗口
+    if (win_asm != NULL) delwin(win_asm);
     win_asm = newwin(asm_height, max_x, 0, 0);
-    
-    // 画个漂亮的边框
-    box(win_asm, 0, 0);
-    mvwprintw(win_asm, 0, 2, " Assembly View (PC: 0x%08x) ", 0x80000000);
 
-    // 在窗口内显示点测试代码（稍后换成真正的反汇编）
-    for (int i = 1; i < asm_height - 1; i++) {
-        mvwprintw(win_asm, i, 2, "0x%08x:  addi x0, x0, 0", 0x80000000+ (i-1)*4);
+    // 3. 画框和标题
+    box(win_asm, 0, 0);
+    wattron(win_asm, A_BOLD);
+    mvwaddstr(win_asm, 0, 2, " Assembly (Static PC: 0x80000000) ");
+    wattroff(win_asm, A_BOLD);
+
+    // 4. 反汇编逻辑
+    vaddr_t pc = 0x80000000; // 临时硬编码
+    char buf[128];
+    int rows = asm_height - 2; // 去掉上下边框可用的行数
+
+    for (int i = 0; i < rows; i++) {
+        vaddr_t cur_pc = pc + i * 4;
+        
+        // 安全读取内存：直接转换物理地址获取指令字节
+        // 注意：这里假设 0x80000000 在你的物理内存映射范围内
+        uint8_t *code = guest_to_host(cur_pc); 
+        
+        // 执行反汇编
+        disassemble(buf, sizeof(buf), cur_pc, code, 4);
+
+        // 5. 渲染到窗口
+        if (i == 0) {
+            wattron(win_asm, A_REVERSE); // 第一行高亮
+            mvwprintw(win_asm, i + 1, 1, "=> %s", buf);
+            wattroff(win_asm, A_REVERSE);
+        } else {
+            mvwprintw(win_asm, i + 1, 1, "   %s", buf);
+        }
     }
 
+    // 6. 刷新窗口缓冲区
     wnoutrefresh(win_asm);
-    // 注意：这里不要在下方创建 win_cmd，
-    // 因为 readline 会直接在屏幕最后几行输出。
+    
+    // 7. 【物理隔离关键】强制移动光标到窗口下方
+    // 这样下次输入命令时，(nemu) 提示符会出现在窗口下方的空白区
+    move(asm_height + 1, 0); 
+    refresh();
 }
 void ui_draw_source_view() {
     // 暂时先留空
