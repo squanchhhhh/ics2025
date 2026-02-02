@@ -17,6 +17,7 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <stdio.h>
 #include "common.h"
 #include "sdb.h"
 #include "trace/ftrace.h"
@@ -137,6 +138,7 @@ static int cmd_i(char*args){
   return 0;
 }
 static int cmd_layout(char *args) {
+  printf("%s\n",args);
     char *cmd = strtok(args, " ");
     if (cmd == NULL) return 0;
 
