@@ -23,7 +23,7 @@ static FILE *disk_fp = NULL;
 static uint8_t *disk_space = NULL;
 
 static void disk_io_handler(uint32_t addr, int len, bool is_write) {
-  uint32_t offset = addr - DISK_BASE;
+  uint32_t offset = addr;
   Log("DEBUG: addr=0x%08x, DISK_BASE=0x%08x", addr, DISK_BASE);
   if (disk_fp == NULL) return;
 
