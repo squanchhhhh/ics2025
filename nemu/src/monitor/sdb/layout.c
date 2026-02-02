@@ -83,9 +83,13 @@ void ui_set_layout(int mode) {
     ui_refresh_all();
 }
 void ui_draw_asm_view() {
-    // 暂时先留空，或者画个简单的框
+    int my, mx;
+    getmaxyx(stdscr, my, mx);
+    win_asm = newwin(my - 2, mx, 0, 0); // 创建一个几乎全屏的窗口
+    box(win_asm, 0, 0);                 // 画边框
+    mvwprintw(win_asm, 1, 1, "Testing: Assembly View Active"); 
+    wnoutrefresh(win_asm);
 }
-
 void ui_draw_source_view() {
     // 暂时先留空
 }
