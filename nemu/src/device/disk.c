@@ -35,6 +35,7 @@ static void handle_disk_transfer() {
     Log("Disk Error: fseek failed");
     return;
   }
+  Log("Disk %s: blk=%d, mem=0x%08x", cmd == 0 ? "Read" : "Write", blk_no, mem_ptr);
 
   if (cmd == 0) { // Read
     if (fread(host_ptr, DISK_BLOCK_SIZE, 1, disk_fp) != 1) Log("Disk Read Failed");
