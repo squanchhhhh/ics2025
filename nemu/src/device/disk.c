@@ -12,51 +12,70 @@
 *
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
-#include "debug.h"
-#include <assert.h>
 #include <device/map.h>
 #include <utils.h>
+#include <memory/paddr.h>
 
-#define DISK_BASE 0x40000000
-#define DISK_SIZE 0x2000000  // 32MB 
+/* 定义寄存器偏移 */
+#define DISK_BLOCK_REG 0  
+#define DISK_MEM_REG   4  
+#define DISK_CTRL_REG  8  
+
+#define DISK_BLOCK_SIZE 4096
+
+static uint32_t disk_regs[3]; 
 static FILE *disk_fp = NULL;
-static uint8_t *disk_space = NULL;
 
-static void disk_io_handler(uint32_t addr, int len, bool is_write) {
-  uint32_t offset = addr;
-  Log("DEBUG: addr=0x%08x, DISK_BASE=0x%08x", addr, DISK_BASE);
-  if (disk_fp == NULL) return;
+/* 模拟硬件内部的搬运逻辑 */
+static void handle_disk_transfer() {
+  uint32_t blk_no  = disk_regs[DISK_BLOCK_REG / 4];
+  uint32_t mem_ptr = disk_regs[DISK_MEM_REG / 4];
+  uint32_t cmd     = disk_regs[DISK_CTRL_REG / 4];
 
-  if (fseek(disk_fp, offset, SEEK_SET) != 0) return;
+  // 使用 guest_to_host 转换地址
+  void *host_ptr = guest_to_host(mem_ptr);
+  
+  if (fseek(disk_fp, blk_no * DISK_BLOCK_SIZE, SEEK_SET) != 0) {
+    Log("Disk Error: fseek failed");
+    return;
+  }
 
-  if (is_write) {
-    size_t n = fwrite(disk_space + offset, len, 1, disk_fp);
-    if (n != 1) Log("Warning: Disk write failed");
-    fflush(disk_fp); // 确保立即写入 Ubuntu 磁盘
-  } else {
-    size_t i = fread(disk_space + offset, len, 1, disk_fp);
-    if (i != 1 && len > 0) {
-    Log("Disk read potential issue at offset 0x%x (requested 1 element, got %zu)", offset, i);
+  if (cmd == 0) { // Read
+    if (fread(host_ptr, DISK_BLOCK_SIZE, 1, disk_fp) != 1) Log("Disk Read Failed");
+  } else if (cmd == 1) { // Write
+    if (fwrite(host_ptr, DISK_BLOCK_SIZE, 1, disk_fp) != 1) Log("Disk Write Failed");
+    fflush(disk_fp);
+  }
+
+  // 状态回滚：设置为 0 表示 Ready
+  disk_regs[DISK_CTRL_REG / 4] = 0;
 }
+
+/* 修正后的回调函数：去掉最后的 void *data */
+static void disk_io_handler(uint32_t addr, int len, bool is_write) {
+  uint32_t offset = addr - CONFIG_DISK_CTL_MMIO;
+
+  // 在这个版本的 NEMU 中，当 disk_io_handler 被调用时，
+  // 映射好的 disk_regs 数组已经由 mmio_write 自动更新了（如果是写操作）。
+  // 我们只需要检查是否触发了控制寄存器。
+
+  if (is_write && offset == DISK_CTRL_REG && len == 4) {
+    handle_disk_transfer();
   }
 }
 
 void init_disk() {
   const char *path = getenv("DISK_IMG");
-  if (path == NULL) {
-    Log("DISK_IMG not set, disk device disabled.");
-    return;
-  }
+  if (path == NULL) return;
 
   disk_fp = fopen(path, "r+b");
   Assert(disk_fp, "Cannot open disk image at %s", path);
 
-  disk_space = (uint8_t *)malloc(DISK_SIZE);
-  Assert(disk_space, "Malloc disk space failed");
+  // 注册 MMIO
+  // 参数 3: disk_regs 作为存储空间
+  // 参数 4: 12 字节长度
+  // 参数 5: 符合 io_callback_t 定义的回调
+  add_mmio_map("disk", CONFIG_DISK_CTL_MMIO, disk_regs, 12, disk_io_handler);
 
-  memset(disk_space, 0, DISK_SIZE);
-  add_mmio_map("disk", DISK_BASE, disk_space, DISK_SIZE, disk_io_handler);
-
-  Log("Real-world Disk simulated at [0x%08x, 0x%08x] using %s", 
-      DISK_BASE, DISK_BASE + DISK_SIZE - 1, path);
+  Log("Block Device simulated via MMIO at [0x%08x]", CONFIG_DISK_CTL_MMIO);
 }
