@@ -4,7 +4,16 @@
 WINDOW *win_src = NULL;
 WINDOW *win_asm = NULL;
 WINDOW *win_cmd = NULL;
+static bool is_ui_initialized = false;
 
+void ui_init() {
+    if (is_ui_initialized) return;
+    initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    is_ui_initialized = true;
+}
 void ui_clear_all() {
     // 安全地销毁窗口并释放资源
     if (win_src != NULL) {
@@ -73,6 +82,7 @@ void ui_draw_split_view() {
 int current_layout = LAYOUT_NONE; 
 
 void ui_set_layout(int mode) {
+    ui_init();
     current_layout = mode;
     ui_clear_all();
     switch(mode) {
@@ -92,13 +102,4 @@ void ui_draw_asm_view() {
 }
 void ui_draw_source_view() {
     // 暂时先留空
-}
-
-
-void ui_init() {
-    initscr();     // 必须第一个调用
-    raw();         // 禁用行缓冲
-    noecho();      // 不回显
-    curs_set(0);   // 隐藏光标
-    refresh();     // 刷新 stdscr
 }
