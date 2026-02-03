@@ -15,9 +15,10 @@
 
 #ifndef __SDB_H__
 #define __SDB_H__
-
 #include <common.h>
 
+int sdb_execute(char *str);
+extern int NR_CMD;
 word_t expr(char *e, bool *success);
 void current_wp();
 void delete_wp(int n) ;

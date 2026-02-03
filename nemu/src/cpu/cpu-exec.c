@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include "trace/ftrace.h"
 #include "trace/itrace.h"
+#include "trace/mtrace.h"
 #include "trace/elf.h"
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.

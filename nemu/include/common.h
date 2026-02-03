@@ -45,7 +45,14 @@ typedef MUXDEF(PMEM64, uint64_t, uint32_t) paddr_t;
 typedef uint16_t ioaddr_t;
 word_t paddr_read(paddr_t addr, int len);
 bool check_all_wp();
-void dump_mtrace(void);
+
 #include <debug.h>
 
+
+#include <ncurses.h>
+extern bool is_tui_mode;
+extern WINDOW *tui_win;
+// 劫持 printf
+int nemu_printf(const char *fmt, ...);
+#define printf(...) nemu_printf(__VA_ARGS__)
 #endif

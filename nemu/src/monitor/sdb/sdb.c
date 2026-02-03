@@ -23,9 +23,8 @@
 #include "trace/ftrace.h"
 #include "trace/itrace.h"
 #include "trace/mtrace.h"
-#include "layout.h"
+#include "tui.h"
 static int is_batch_mode = false;
-
 void init_regex();
 void init_wp_pool();
 
@@ -137,25 +136,21 @@ static int cmd_i(char*args){
   print_recent_insts();
   return 0;
 }
-static int cmd_layout(char *args) {
-  printf("%s\n",args);
-    if (strcmp(args, "asm") == 0) {
-      printf("asm12\n");
-        ui_set_layout(LAYOUT_ASM);
-    } else if (strcmp(args, "split") == 0) {
-        ui_set_layout(LAYOUT_SPLIT);
-    } else if (strcmp(args, "src") == 0) {
-        ui_set_layout(LAYOUT_SRC);
-    }
-    int max_y, max_x;
-    getmaxyx(stdscr, max_y, max_x);
-    (void)max_x;
-    // 假设你给命令行留了最后 5 行，我们把光标移到倒数第 5 行开头
-    move(max_y - 5, 0); 
-    refresh(); 
 
-    // 注意：把 getch() 删掉，否则你得按一下键才出提示符
-    return 0;
+int nemu_printf(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int n = 0;
+
+    if (is_tui_mode && tui_win != NULL) {
+        vw_printw(tui_win, fmt, ap);
+        wrefresh(tui_win);
+    } else {
+        n = vprintf(fmt, ap);
+    }
+
+    va_end(ap);
+    return n;
 }
 
 static struct {
@@ -210,50 +205,38 @@ static int cmd_help(char *args) {
 void sdb_set_batch_mode() {
   is_batch_mode = true;
 }
+int sdb_execute(char *str) {
+  if (str == NULL) return 0;
+  char *cmd = strtok(str, " ");
+  if (cmd == NULL) return 0;
+  char *args = strtok(NULL, "");
+  if (args == NULL) {
+    args = ""; 
+  }
+  for (int i = 0; i < NR_CMD; i++) {
+    if (strcmp(cmd, cmd_table[i].name) == 0) {
+      return cmd_table[i].handler(args);
+    }
+  }
+  printf("Unknown command '%s'\n", cmd);
+  return 0;
+}
 
 void sdb_mainloop() {
   if (is_batch_mode) {
-    cmd_c(NULL);
+    cmd_c(NULL); 
     return;
   }
 
   for (char *str; (str = rl_gets()) != NULL; ) {
-    char *str_end = str + strlen(str);
-
-    /* extract the first token as the command */
-    char *cmd = strtok(str, " ");
-    if (is_ui_initialized) {
-        int max_y = getmaxy(stdscr);
-        move(max_y - 2, 0); // 移动到倒数第 2 行
-        refresh();          // 刷新物理光标位置
+    char *str_copy = strdup(str);
+    if (sdb_execute(str_copy) < 0) {
+      free(str_copy);
+      break;
     }
-    if (cmd == NULL) { continue; }
-
-    /* treat the remaining string as the arguments,
-     * which may need further parsing
-     */
-    char *args = cmd + strlen(cmd) + 1;
-    if (args >= str_end) {
-      args = NULL;
-    }
-
-#ifdef CONFIG_DEVICE
-    extern void sdl_clear_event_queue();
-    sdl_clear_event_queue();
-#endif
-
-    int i;
-    for (i = 0; i < NR_CMD; i ++) {
-      if (strcmp(cmd, cmd_table[i].name) == 0) {
-        if (cmd_table[i].handler(args) < 0) { return; }
-        break;
-      }
-    }
-
-    if (i == NR_CMD) { printf("Unknown command '%s'\n", cmd); }
+    free(str_copy);
   }
 }
-
 void init_sdb() {
   /* Compile the regular expressions. */
   init_regex();
