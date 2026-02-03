@@ -65,33 +65,31 @@ int cmd_layout(char *args) {
 void refresh_code_window() {
     if (!is_tui_mode || code_win == NULL) return;
 
-    werase(code_win); // 清空窗口
-    box(code_win, 0, 0); // 画个边框显得专业
+    werase(code_win);
+    box(code_win, 0, 0);
     
-    vaddr_t pc = cpu.pc;
-    char buf[128];
-    int rows = getmaxy(code_win);
-
-    // 绘制标题
+    int rows, cols;
+    getmaxyx(code_win, rows, cols);
+    (void)cols;
     mvwprintw(code_win, 0, 2, "[ Assembly Code ]");
 
-    // 连续反汇编接下来的指令（假设每条 4 字节）
+    vaddr_t pc = cpu.pc;
     for (int i = 0; i < rows - 2; i++) {
-        vaddr_t cur_pc = pc + (i * 4);
+        vaddr_t cur_pc = pc + i * 4;
+        
+        // 增加安全检查：确保不越界物理内存
+        if (cur_pc < CONFIG_MBASE || cur_pc >= CONFIG_MBASE + CONFIG_MSIZE) break;
+
         uint32_t inst = vaddr_read(cur_pc, 4);
-        
-        // 调用 NEMU 原有的 disassemble
-        // 这里的 p 传入 buf，最后 4 是指令长度
-        extern void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-        disassemble(buf, sizeof(buf), cur_pc, (uint8_t *)&inst, 4);
+        char buf[128] = "";
 
-        if (i == 0) wattron(code_win, A_REVERSE | COLOR_PAIR(2)); // 高亮当前正在执行的行
-        
-        // 打印地址和反汇编结果
+        // 如果 disassemble 崩溃，先用 16 进制代替调试
+        // disassemble(buf, sizeof(buf), cur_pc, (uint8_t *)&inst, 4);
+        snprintf(buf, sizeof(buf), "0x%08x (asm hidden for debug)", inst);
+
+        if (i == 0) wattron(code_win, A_REVERSE);
         mvwprintw(code_win, i + 1, 2, "0x%08x: %s", cur_pc, buf);
-        
-        if (i == 0) wattroff(code_win, A_REVERSE | COLOR_PAIR(2));
+        if (i == 0) wattroff(code_win, A_REVERSE);
     }
-
     wrefresh(code_win);
 }
