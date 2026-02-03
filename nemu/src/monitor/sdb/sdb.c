@@ -50,10 +50,9 @@ static int cmd_c(char *args) {
   cpu_exec(-1);
   return 0;
 }
-// 问题1：printf是行缓冲，在接收到\n之后才会输出
-// 单步执行
+
 static int cmd_si(char * args){
-  if(args == NULL){
+if (args == NULL || *args == '\0') {
     cpu_exec(1);
     return 0;
   }
