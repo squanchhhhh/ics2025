@@ -65,31 +65,45 @@ int cmd_layout(char *args) {
 void refresh_code_window() {
     if (!is_tui_mode || code_win == NULL) return;
 
-    werase(code_win);
-    box(code_win, 0, 0);
+    werase(code_win); 
+    box(code_win, 0, 0); 
     
-    int rows, cols;
+    int rows,cols;
     getmaxyx(code_win, rows, cols);
     (void)cols;
     mvwprintw(code_win, 0, 2, "[ Assembly Code ]");
 
+    // 为了让体验更好，我们可以让当前 PC 显示在窗口的上方第 3 行左右
+    // 这样既能看到当前指令，也能看到一点点已经跑过的“历史”
     vaddr_t pc = cpu.pc;
+    vaddr_t start_pc = pc - (2 * 4); // 向上回溯 2 条指令
+    if (start_pc < 0x80000000) start_pc = 0x80000000;
+
     for (int i = 0; i < rows - 2; i++) {
-        vaddr_t cur_pc = pc + i * 4;
+        vaddr_t cur_pc = start_pc + (i * 4);
         
-        // 增加安全检查：确保不越界物理内存
-        if (cur_pc < CONFIG_MBASE || cur_pc >= CONFIG_MBASE + CONFIG_MSIZE) break;
+        // 边界检查：不要读取超过物理内存范围的地址
+        if (cur_pc < 0x80000000 || cur_pc >= 0x88000000) break; 
 
         uint32_t inst = vaddr_read(cur_pc, 4);
-        char buf[128] = "";
+        char asm_buf[128];
+        
+        // 如果你还没解决那个 assert 崩溃，可以先保留 snprintf 调试
+        // 如果解决了，就取消下面这行的注释：
+        // disassemble(asm_buf, sizeof(asm_buf), cur_pc, (uint8_t *)&inst, 4);
+        snprintf(asm_buf, sizeof(asm_buf), "0x%08x  (asm)", inst); 
 
-        // 如果 disassemble 崩溃，先用 16 进制代替调试
-        // disassemble(buf, sizeof(buf), cur_pc, (uint8_t *)&inst, 4);
-        snprintf(buf, sizeof(buf), "0x%08x (asm hidden for debug)", inst);
-
-        if (i == 0) wattron(code_win, A_REVERSE);
-        mvwprintw(code_win, i + 1, 2, "0x%08x: %s", cur_pc, buf);
-        if (i == 0) wattroff(code_win, A_REVERSE);
+        // --- 核心修改部分：绘制箭头和高亮 ---
+        if (cur_pc == pc) {
+            // 当前执行行：绘制箭头 + 反色显示
+            wattron(code_win, A_REVERSE | COLOR_PAIR(2)); 
+            mvwprintw(code_win, i + 1, 1, "  --> 0x%08x: %s ", cur_pc, asm_buf);
+            wattroff(code_win, A_REVERSE | COLOR_PAIR(2));
+        } else {
+            // 非执行行：只打印地址和指令，前面留出箭头的空间
+            mvwprintw(code_win, i + 1, 1, "      0x%08x: %s ", cur_pc, asm_buf);
+        }
     }
+
     wrefresh(code_win);
 }
