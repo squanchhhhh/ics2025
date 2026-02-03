@@ -4,135 +4,192 @@
 #include "sdb.h"
 #include "tui.h"
 #include <memory/vaddr.h>
+#include "trace/elf.h"
+#include <ncurses.h>
+#include <stdlib.h>
+
 bool is_tui_mode = false;
-WINDOW *tui_win = NULL;  // 下半部分：命令窗口
-WINDOW *code_win = NULL; // 上半部分：汇编窗口
+WINDOW *tui_win = NULL;   // 底部：命令窗口
+WINDOW *code_win = NULL;  // 左侧：汇编窗口
+WINDOW *src_win = NULL;   // 右侧：源码窗口
+
+// 源码缓存
+static char current_src_file[256] = "";
+static char *src_lines[4096]; 
+static int line_count = 0;
+
+// --- 工具函数：获取源码位置 ---
+void get_pc_source(uint32_t pc, char *filename, int *line) {
+    char cmd[512];
+    sprintf(cmd, "riscv64-unknown-elf-addr2line -e %s %08x", elf_file, pc);
+    
+    FILE *fp = popen(cmd, "r");
+    if (fp) {
+        char buffer[512];
+        if (fgets(buffer, sizeof(buffer), fp)) {
+            char *colon = strrchr(buffer, ':');
+            if (colon && *(colon + 1) != '?') {
+                *colon = '\0';
+                strcpy(filename, buffer);
+                *line = atoi(colon + 1);
+            } else {
+                strcpy(filename, "unknown");
+                *line = -1;
+            }
+        }
+        pclose(fp);
+    }
+}
+
+// --- 工具函数：加载源码到内存 ---
+void load_source_file(const char *filename) {
+    if (strcmp(current_src_file, filename) == 0) return;
+
+    // 释放旧缓存
+    for (int i = 0; i < line_count; i++) free(src_lines[i]);
+    line_count = 0;
+
+    FILE *fp = fopen(filename, "r");
+    if (!fp) {
+        strcpy(current_src_file, "File Not Found");
+        return;
+    }
+
+    char buf[512];
+    while (fgets(buf, sizeof(buf), fp) && line_count < 4096) {
+        src_lines[line_count++] = strdup(buf);
+    }
+    fclose(fp);
+    strcpy(current_src_file, filename);
+}
+
+// --- 窗口刷新：汇编 ---
+void refresh_code_window() {
+    if (!is_tui_mode || code_win == NULL) return;
+    werase(code_win);
+    box(code_win, 0, 0);
+    int rows, cols;
+    getmaxyx(code_win, rows, cols);
+    (void)cols;
+    mvwprintw(code_win, 0, 2, "[ Assembly ]");
+
+    vaddr_t pc = cpu.pc;
+    vaddr_t start_pc = (pc >= 0x8000000c) ? (pc - 12) : 0x80000000;
+
+    int current_row = 1;
+    for (int i = 0; current_row < rows - 1; i++) {
+        vaddr_t cur_pc = start_pc + (i * 4);
+        if (cur_pc < 0x80000000 || cur_pc >= 0x88000000) break;
+
+        // 函数名标注
+        int func_id = elf_find_func_by_addr(cur_pc);
+        if (func_id != -1) {
+            Func *f = elf_get_func_by_id(func_id);
+            if (cur_pc == f->begin) {
+                wattron(code_win, COLOR_PAIR(4) | A_BOLD);
+                mvwprintw(code_win, current_row++, 2, "<%s>:", f->name);
+                wattroff(code_win, COLOR_PAIR(4) | A_BOLD);
+                if (current_row >= rows - 1) break;
+            }
+        }
+
+        uint32_t inst = vaddr_read(cur_pc, 4);
+        char asm_buf[128];
+        void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+        disassemble(asm_buf, sizeof(asm_buf), cur_pc, (uint8_t *)&inst, 4);
+
+        if (cur_pc == pc) wattron(code_win, A_REVERSE | COLOR_PAIR(2));
+        mvwprintw(code_win, current_row++, 1, "%s 0x%08x: %s", 
+                  (cur_pc == pc ? "->" : "  "), cur_pc, asm_buf);
+        if (cur_pc == pc) wattroff(code_win, A_REVERSE | COLOR_PAIR(2));
+    }
+    wrefresh(code_win);
+}
+
+// --- 窗口刷新：源码 ---
+void refresh_src_window() {
+    if (!is_tui_mode || src_win == NULL) return;
+    werase(src_win);
+    box(src_win, 0, 0);
+    
+    char filename[256];
+    int line_num = -1;
+    get_pc_source(cpu.pc, filename, &line_num);
+
+    if (line_num != -1) {
+        load_source_file(filename);
+        int rows, cols;
+        getmaxyx(src_win, rows, cols);
+        mvwprintw(src_win, 0, 2, "[ Source: %s ]", strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename);
+
+        int start_line = (line_num > rows / 2) ? (line_num - rows / 2) : 1;
+        for (int i = 0; i < rows - 2; i++) {
+            int cur_l = start_line + i;
+            if (cur_l > line_count) break;
+            if (cur_l == line_num) wattron(src_win, A_REVERSE | COLOR_PAIR(2));
+            mvwprintw(src_win, i + 1, 1, "%4d | %.*s", cur_l, cols - 10, src_lines[cur_l - 1]);
+            if (cur_l == line_num) wattroff(src_win, A_REVERSE | COLOR_PAIR(2));
+        }
+    } else {
+        mvwprintw(src_win, 0, 2, "[ Source: Unknown ]");
+        mvwprintw(src_win, 2, 2, "No debug info at PC 0x%08x", cpu.pc);
+    }
+    wrefresh(src_win);
+}
 
 void init_tui() {
     initscr();
-    start_color(); // 开启颜色
-    init_pair(2, COLOR_GREEN, COLOR_BLACK); // 对应你代码里的 COLOR_PAIR(2)
-    
+    start_color();
+    init_pair(2, COLOR_GREEN, COLOR_BLACK); // 高亮行
+    init_pair(4, COLOR_YELLOW, COLOR_BLACK); // 函数名
     cbreak();
     noecho();
-    
+
     int rows, cols;
     getmaxyx(stdscr, rows, cols);
 
-    // 1. 创建上半部分的汇编窗口（占据上方 rows-10 行）
-    code_win = newwin(rows - 10, cols, 0, 0);
-    
-    // 2. 创建下半部分的命令窗口（占据下方 10 行）
-    tui_win = newwin(10, cols, rows - 10, 0);
+    int cmd_h = 10;
+    int body_h = rows - cmd_h;
+    int asm_w = cols * 0.45;
+
+    code_win = newwin(body_h, asm_w, 0, 0);
+    src_win = newwin(body_h, cols - asm_w, 0, asm_w);
+    tui_win = newwin(cmd_h, cols, body_h, 0);
+
     scrollok(tui_win, TRUE);
     keypad(tui_win, TRUE);
-
     is_tui_mode = true;
-    
-    // 初始化时刷一次汇编
-    refresh_code_window();
 }
 
 void deinit_tui() {
     is_tui_mode = false;
     if (code_win) delwin(code_win);
+    if (src_win) delwin(src_win);
     if (tui_win) delwin(tui_win);
     endwin();
 }
+
 int cmd_layout(char *args) {
     init_tui();
-    
     char buf[128];
     while (is_tui_mode) {
-        // 每次循环开始前，强行刷新一次汇编窗口，确保它是最新的
-        refresh_code_window(); 
+        refresh_code_window();
+        refresh_src_window();
 
-        wprintw(tui_win, "(nemu-tui) ");
+        wattron(tui_win, A_BOLD | COLOR_PAIR(2));
+        int cur_y, cur_x;
+        getyx(tui_win, cur_y, cur_x); (void)cur_x; // 获取当前行
+        mvwprintw(tui_win, cur_y, 0, "(nemu-tui) ");
+        wattroff(tui_win, A_BOLD | COLOR_PAIR(2));
         wrefresh(tui_win);
         
         echo();
         if (wgetnstr(tui_win, buf, sizeof(buf) - 1) == ERR) break;
         noecho();
 
-        if (sdb_execute(buf) < 0) break; 
-        
-        // 执行完命令（比如 si）后，这里会进入下一轮循环并刷新 refresh_code_window
+        if (strcmp(buf, "q") == 0) { is_tui_mode = false; break; }
+        sdb_execute(buf); 
     }
-
     deinit_tui();
     return 0;
-}
-#include <trace/elf.h> 
-
-void refresh_code_window() {
-    if (!is_tui_mode || code_win == NULL) return;
-
-    werase(code_win);
-    box(code_win, 0, 0);
-    
-    int rows, cols;
-    getmaxyx(code_win, rows, cols);
-    (void)cols;
-    mvwprintw(code_win, 0, 2, "[ Assembly Code ]");
-
-    vaddr_t pc = cpu.pc;
-    // 计算显示起始位置：让当前 PC 尽量处于窗口上方第 3 行 (索引 2)
-    // 这样可以看到前两条指令作为上下文
-    vaddr_t start_pc = (pc >= 0x80000008) ? (pc - 8) : 0x80000000;
-
-    int current_row = 1; // 从第 1 行开始绘制（第 0 行是边框）
-    
-    for (int i = 0; current_row < rows - 1; i++) {
-        vaddr_t cur_pc = start_pc + (i * 4);
-        
-        // 1. 物理内存边界检查 (RISC-V 默认内存范围)
-        if (cur_pc < 0x80000000 || cur_pc >= 0x88000000) break;
-
-        // 2. 函数标签检测：如果该地址是一个函数的开头，打印一行函数名
-        int func_id = elf_find_func_by_addr(cur_pc);
-        if (func_id != -1) {
-            Func *f = elf_get_func_by_id(func_id);
-            if (cur_pc == f->begin) {
-                wattron(code_win, COLOR_PAIR(4) | A_BOLD); // 假设 4 是黄色
-                mvwprintw(code_win, current_row++, 2, "<%s>:", f->name);
-                wattroff(code_win, COLOR_PAIR(4) | A_BOLD);
-                
-                // 如果打印完函数名已经没位置了，就跳出
-                if (current_row >= rows - 1) break;
-            }
-        }
-
-        // 3. 读取指令并进行反汇编
-        uint32_t inst = vaddr_read(cur_pc, 4);
-        char asm_buf[128];
-
-        /* * 逻辑过滤：
-         * 1. 如果地址不在任何已知函数范围内 -> 视为数据
-         * 2. 如果指令低两位不是 0x3 -> 视为非标准 RV32 指令或对齐
-         * 3. 常见的魔数填充
-         */
-        if (func_id == -1 || (inst & 0x3) != 0x3 || inst == 0 || inst == 0xdeadbe00) {
-            snprintf(asm_buf, sizeof(asm_buf), ".word  0x%08x", inst);
-        } else {
-            void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-            disassemble(asm_buf, sizeof(asm_buf), cur_pc, (uint8_t *)&inst, 4);
-        }
-
-        // 4. 绘制指令行
-        bool is_current = (cur_pc == pc);
-        if (is_current) {
-            wattron(code_win, A_REVERSE | COLOR_PAIR(2)); // 高亮当前行
-        }
-
-        // 格式说明: [标志] [地址] [十六进制] [汇编助记符]
-        mvwprintw(code_win, current_row++, 1, "%s 0x%08x:  %08x  %s", 
-                  (is_current ? "-->" : "   "), 
-                  cur_pc, inst, asm_buf);
-
-        if (is_current) {
-            wattroff(code_win, A_REVERSE | COLOR_PAIR(2));
-        }
-    }
-
-    wrefresh(code_win);
 }
