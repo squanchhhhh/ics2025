@@ -5,5 +5,5 @@ int cmd_layout(char *args);
 
 void init_tui();
 void deinit_tui();
-
+void refresh_code_window();
 #endif // __LAYOUT_H__
