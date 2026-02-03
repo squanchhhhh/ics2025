@@ -1,4 +1,4 @@
-/* tui.c */
+/* --- tui.c --- */
 #include <common.h>
 #include <isa.h>
 #include "sdb.h"
@@ -8,16 +8,45 @@
 #include <ncurses.h>
 #include <stdlib.h>
 
+/* --- 函数原型声明 (Function Prototypes) --- */
+
+// 调用外部工具 addr2line，根据当前的 PC 值获取对应的源码文件名和行号
+void get_pc_source(uint32_t pc, char *filename, int *line);
+
+// 将指定的源码文件读取并缓存到内存中，避免频繁的磁盘 IO 操作
+void load_source_file(const char *filename);
+
+// 刷新左侧的汇编窗口，显示当前 PC 附近的指令、函数名标签及高亮当前行
+void refresh_code_window();
+
+// 刷新右侧的源码窗口，根据 get_pc_source 的结果同步显示对应的代码上下文
+void refresh_src_window();
+
+// 初始化 ncurses 环境，配置颜色对，并分配汇编、源码、命令三个子窗口的布局
+void init_tui();
+
+// 关闭 ncurses 模式，释放所有窗口句柄并恢复终端的标准显示设置
+void deinit_tui();
+
+// SDB 命令处理函数：进入 TUI 交互模式，循环接管输入直到用户退出
+int cmd_layout(char *args);
+
+// 引用外部定义：反汇编接口，用于将机器码转为人类可读的汇编字符串
+void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+
+
+/* --- 变量定义 --- */
+
 bool is_tui_mode = false;
-WINDOW *tui_win = NULL;   // 底部：命令窗口
-WINDOW *code_win = NULL;  // 左侧：汇编窗口
-WINDOW *src_win = NULL;   // 右侧：源码窗口
+WINDOW *tui_win = NULL;   // 底部：命令交互窗口
+WINDOW *code_win = NULL;  // 左侧：汇编显示窗口
+WINDOW *src_win = NULL;   // 右侧：源码显示窗口
 
-// 源码缓存
-static char current_src_file[256] = "";
-static char *src_lines[4096]; 
-static int line_count = 0;
+static char current_src_file[256] = ""; // 当前缓存的源码文件名
+static char *src_lines[4096];           // 源码行缓存数组
+static int line_count = 0;              // 当前文件的总行数
 
+/* --- 函数具体实现 (后略) --- */
 // --- 工具函数：获取源码位置 ---
 void get_pc_source(uint32_t pc, char *filename, int *line) {
     char cmd[512];
