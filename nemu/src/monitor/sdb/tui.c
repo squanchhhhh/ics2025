@@ -90,8 +90,9 @@ void refresh_code_window() {
         
         // 如果你还没解决那个 assert 崩溃，可以先保留 snprintf 调试
         // 如果解决了，就取消下面这行的注释：
-        // disassemble(asm_buf, sizeof(asm_buf), cur_pc, (uint8_t *)&inst, 4);
-        snprintf(asm_buf, sizeof(asm_buf), "0x%08x  (asm)", inst); 
+        void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+        disassemble(asm_buf, sizeof(asm_buf), cur_pc, (uint8_t *)&inst, 4);
+        //snprintf(asm_buf, sizeof(asm_buf), "0x%08x  (asm)", inst); 
 
         // --- 核心修改部分：绘制箭头和高亮 ---
         if (cur_pc == pc) {
