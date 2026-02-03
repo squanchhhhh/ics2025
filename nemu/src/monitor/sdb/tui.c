@@ -98,11 +98,15 @@ void refresh_code_window() {
         if (cur_pc == pc) {
             // 当前执行行：绘制箭头 + 反色显示
             wattron(code_win, A_REVERSE | COLOR_PAIR(2)); 
-            mvwprintw(code_win, i + 1, 1, "  --> 0x%08x: %s ", cur_pc, asm_buf);
+            mvwprintw(code_win, i + 1, 1, "%s 0x%08x: %08x  %s", 
+          (cur_pc == pc ? " -->" : "    "), 
+          cur_pc, inst, asm_buf);
             wattroff(code_win, A_REVERSE | COLOR_PAIR(2));
         } else {
             // 非执行行：只打印地址和指令，前面留出箭头的空间
-            mvwprintw(code_win, i + 1, 1, "      0x%08x: %s ", cur_pc, asm_buf);
+            mvwprintw(code_win, i + 1, 1, "%s 0x%08x: %08x  %s", 
+          (cur_pc == pc ? " -->" : "    "), 
+          cur_pc, inst, asm_buf);
         }
     }
 
