@@ -28,15 +28,12 @@ int cmd_layout(char *args) {
     init_tui();
     
     char buf[128];
-    // TUI 模式下的主循环
     while (is_tui_mode) {
         wprintw(tui_win, "(nemu-tui) ");
         wrefresh(tui_win);
         echo();
         if (wgetnstr(tui_win, buf, sizeof(buf) - 1) == ERR) break;
         noecho();
-
-        // 直接调用 sdb_execute，内部的所有 printf 现在都会自动进 tui_win
         if (sdb_execute(buf) < 0) break; 
     }
 

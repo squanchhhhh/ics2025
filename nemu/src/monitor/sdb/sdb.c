@@ -205,6 +205,7 @@ static int cmd_help(char *args) {
 void sdb_set_batch_mode() {
   is_batch_mode = true;
 }
+
 int sdb_execute(char *str) {
   if (str == NULL) return 0;
   char *cmd = strtok(str, " ");
