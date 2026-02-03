@@ -147,6 +147,7 @@ int nemu_printf(const char *fmt, ...) {
         wrefresh(tui_win);
     } else {
         n = vprintf(fmt, ap);
+        fflush(stdout);
     }
 
     va_end(ap);
