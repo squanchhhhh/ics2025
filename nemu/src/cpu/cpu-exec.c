@@ -89,49 +89,6 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
-  if (elf_file[0] != '\0') {
-    char cmd[1024];
-    // -p 选项可以直接输出 "at /path/to/file.c:line"
-    snprintf(cmd, sizeof(cmd), "addr2line -e %s 0x%08x -p", elf_file, s->pc);
-    
-    FILE *fp = popen(cmd, "r");
-    if (fp) {
-      char buf[512];
-      if (fgets(buf, sizeof(buf), fp) && buf[0] != '?') {
-        buf[strcspn(buf, "\r\n")] = 0; // 去掉换行
-        
-        // 打印源码位置（用青色高亮）
-        printf(ANSI_FMT("  # %s", ANSI_FG_CYAN), buf);
-
-        // 进阶：提取文件名和行号打印源码内容
-        // 格式通常是: main at /path/to/main.c:19
-        char *path_ptr = strrchr(buf, ' '); // 找到最后一个空格，后面就是路径:行号
-        if (path_ptr) {
-          char *colon = strrchr(path_ptr, ':');
-          if (colon) {
-            *colon = '\0';
-            char *line_num = colon + 1;
-            char *file_path = path_ptr + 1;
-            
-            char sed_cmd[1024];
-            // 使用 sed 提取该行并去掉首尾空格
-            snprintf(sed_cmd, sizeof(sed_cmd), "sed -n '%sp' %s | xargs echo", line_num, file_path);
-            FILE *fsrc = popen(sed_cmd, "r");
-            if (fsrc) {
-              char code[512];
-              if (fgets(code, sizeof(code), fsrc)) {
-                code[strcspn(code, "\r\n")] = 0;
-                // 打印源码内容（用黄色高亮）
-                printf(ANSI_FMT("  => %s", ANSI_FG_YELLOW), code);
-              }
-              pclose(fsrc);
-            }
-          }
-        }
-      }
-      pclose(fp);
-    }
-  }
 #endif
 }
 
