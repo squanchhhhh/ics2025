@@ -67,9 +67,7 @@ static long load_img() {
   //test 暂时直接load同名elf
   int len = strlen(img_file);
   elf_file = strdup(img_file);
-  elf_file[len-1] = 'f';
-  elf_file[len-2] = 'l';
-  elf_file[len-3] = 'e';
+  memcpy(elf_file + len - 3, "elf", 3);
 
   fseek(fp, 0, SEEK_END);
   long size = ftell(fp);
