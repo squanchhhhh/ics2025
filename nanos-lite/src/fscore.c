@@ -184,6 +184,7 @@ uint32_t dir_lookup(struct dinode *dp, const char *name) {
         }
         offset += bytes_to_read;
     }
+    printf("cannot find dir %s\n",name);
 
     return 0; 
 }
