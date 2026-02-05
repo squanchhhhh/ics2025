@@ -212,16 +212,11 @@ int dir_link(struct dinode *dp, const char *name, uint32_t inum) {
 }
 
 int iget(int inum,struct dinode * inode){
-    printf("inum = %d\n",inum);
     static struct dinode buf[IPB];
     int block_offset = inum /IPB + sb.inode_start;
-    printf("inode_start offset %d\n",sb.inode_start);
     int inode_offset = inum %IPB;
-    printf("inode offset %d\n",inode_offset);
     disk_read(buf, block_offset);
-    printf("%d\n",buf[inode_offset].size);
     memcpy(inode, &buf[inode_offset], sizeof(struct dinode));
-    printf("get indeo size %d\n",inode->size);
     return 0;
 }
 const char* skipelem(const char *path, char *name) {
@@ -246,7 +241,9 @@ uint32_t namei(const char *path) {
     if (iget(inum, &curr_inode) < 0) return 0;
     while ((path = skipelem(path, name)) != NULL) {
         printf("path %s\n",path);
+
         uint32_t next_inum = dir_lookup(&curr_inode, name);
+                printf("%d\n",next_inum);
         if (next_inum == 0) return 0; 
         inum = next_inum;
         if (iget(inum, &curr_inode) < 0) return 0;
