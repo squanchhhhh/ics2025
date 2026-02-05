@@ -165,6 +165,7 @@ uint32_t balloc() {
 }
 
 uint32_t dir_lookup(struct dinode *dp, const char *name) {
+    printf("try to find dir %s\n",name);
     if (dp->type != TYPE_DIR) return 0;
     static struct dirent buf[DPB];
     uint32_t offset = 0;
