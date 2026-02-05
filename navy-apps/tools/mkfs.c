@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
     disk_read(buf, 1);
     struct superblock *temp_sb = (struct superblock *)buf;
 
-    if (temp_sb->magic != 0x20010124) {
+    if (temp_sb->magic != 0x20010124 || strcmp(argv[1],"init")) {
         init_fs();
         disk_read(buf, 1); // 初始化后再读一次
     }
