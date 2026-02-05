@@ -245,6 +245,7 @@ uint32_t namei(const char *path) {
     struct dinode curr_inode;
     if (iget(inum, &curr_inode) < 0) return 0;
     while ((path = skipelem(path, name)) != NULL) {
+        printf("path %s\n",path);
         uint32_t next_inum = dir_lookup(&curr_inode, name);
         if (next_inum == 0) return 0; 
         inum = next_inum;
