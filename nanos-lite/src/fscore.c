@@ -217,6 +217,7 @@ int iget(int inum,struct dinode * inode){
     int inode_offset = inum %IPB;
     disk_read(buf, block_offset);
     memcpy(inode, &buf[inode_offset], sizeof(struct dinode));
+    printf("get indeo %d\n",inode->size);
     return 0;
 }
 const char* skipelem(const char *path, char *name) {
