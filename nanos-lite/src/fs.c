@@ -37,6 +37,7 @@ Finfo file_table[MAX_MEM_INODES] __attribute__((used)) = {
   //{.name="/dev/events",  .read = events_read,  .write = invalid_write}, 
   //{.name="/proc/dispinfo",  .read = dispinfo_read, .write = invalid_write}, 
 };
+#define STATIC_FILE 4
 
 void init_fs(){
   //  读取super_block
@@ -53,7 +54,7 @@ void init_fs(){
         sb.root_inum, sb.inode_start, IPB);
   //  初始化内存 Inode 表 (file_table)
   for (int i = 0; i < MAX_MEM_INODES; i++) {
-    if (i <= FD_STDERR) {
+    if (i <= STATIC_FILE) {
       file_table[i].ref = 1;
       file_table[i].inum = 0xFFFFFFFF; 
     } else {
