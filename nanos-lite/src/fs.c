@@ -111,6 +111,7 @@ void free_system_fd(int s_idx){
 
 //--
 int vfs_open(const char *path, int flags) {
+    printf("try to open file %s\n",path);
     uint32_t inum = namei(path);
     if (inum == 0) return -1;
 
