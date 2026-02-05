@@ -43,6 +43,7 @@ void init_fs(){
     sb.bmap_data_start = 1024;
     sb.inode_start = 3;
     sb.data_start = 19;
+    sb.root_inum = 1;
     sb.ninodes = 1024;
     sb.nblocks = 8173;
     sb.root_inum = 1;
