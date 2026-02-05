@@ -174,7 +174,11 @@ uint32_t dir_lookup(struct dinode *dp, const char *name) {
         if (offset + bytes_to_read > dp->size) {
             bytes_to_read = dp->size - offset;
         }
-        if (inode_read(dp, buf, offset, bytes_to_read) == 0) break;
+        int ret = inode_read(dp, buf, offset, bytes_to_read);
+        if (ret <= 0) {
+            printf("[DEBUG] inode_read returned %d at offset %d, dp->size is %d\n", ret, offset, dp->size);
+            break; 
+        }
         int num_entries = bytes_to_read / sizeof(struct dirent);
         for (int i = 0; i < num_entries; i++) {
             if (buf[i].inum != 0 && strcmp(buf[i].name, name) == 0) {
@@ -185,7 +189,6 @@ uint32_t dir_lookup(struct dinode *dp, const char *name) {
         offset += bytes_to_read;
     }
     printf("cannot find dir %s\n",name);
-
     return 0; 
 }
 
