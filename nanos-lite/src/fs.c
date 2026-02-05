@@ -129,12 +129,11 @@ void free_system_fd(int s_idx){
 int vfs_open(const char *path, int flags) {
     printf("try to open file %s\n",path);
     uint32_t inum = namei(path);
-    printf("inum :%d\n",inum);
     if (inum == 0) return -1;
 
     int f_idx = find_or_alloc_finfo(inum, path);
     if (f_idx < 0) return -1;
-
+    printf("open file %s , fd = %d\n",path,f_idx);
     return alloc_system_fd(f_idx, flags);
 }
 int sys_open(const char *path, int flags) {
