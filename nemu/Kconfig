@@ -153,23 +153,23 @@ config ITRACE_COND
 
 config WATCHPOINT
   depends on TRACE
-  string "watchpoint"
-  default 1
+  bool "watchpoint"
+  default y
 
 config ITRACE_ERROR_LOG
   depends on TRACE
-  string "itrace_err_log"
-  default 1
+  bool "itrace_err_log"
+  default y
 
 config MTRACE
   depends on TRACE
-  string "mtrace"
-  default 1
+  bool "mtrace"
+  default y
 
 config FTRACE
   depends on TRACE
-  string "ftrace"
-  default 1
+  bool "ftrace"
+  default y
 
 
 config DIFFTEST
