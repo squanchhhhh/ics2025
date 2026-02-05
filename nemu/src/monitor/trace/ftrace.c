@@ -8,10 +8,7 @@ static int nr_func_trace_event = 0;
  * 记录追踪事件
  */
 void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type) {
-  // 1. 如果没加载 ELF，记录也没有意义
   if (!is_elf_loaded()) return;
-
-  // 2. 检查缓冲区是否溢出
   if (nr_func_trace_event >= MAX_FUNC_TRACE) {
     static bool warned = false;
     if (!warned) {
@@ -20,15 +17,10 @@ void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type) {
     }
     return;
   }
-
-  // 3. 通过 elf 模块查询目标地址所属的函数 ID
   int fid = elf_find_func_by_addr(target_addr);
   if (fid == -1) {
-    // 找不到符号可能是跳到了非函数区域，或者符号表不全
     return; 
   }
-
-  // 4. 写入记录
   te[nr_func_trace_event].pc = caller_pc;
   te[nr_func_trace_event].func_id = fid;
   te[nr_func_trace_event].type = type;
