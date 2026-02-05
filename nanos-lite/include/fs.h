@@ -19,7 +19,7 @@ typedef struct {
 } Finfo; 
 
 extern Finfo file_table[]; 
-
+extern struct superblock sb;
 void init_fs();                                 // 初始化 file_table
 int find_or_alloc_finfo(uint32_t inum, const char *path); // 查找或分配内存 Inode
 void f_put(int f_idx);                        // 减少引用计数，必要时回收

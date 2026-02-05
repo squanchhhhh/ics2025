@@ -9,7 +9,6 @@
 #include "device.h"
 
 enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB};
-
 size_t invalid_read(void *buf, size_t offset, size_t len) {
   panic("should not reach here");
   return 0;
@@ -36,6 +35,16 @@ Finfo file_table[MAX_MEM_INODES] __attribute__((used)) = {
 };
 
 void init_fs(){
+  //  读取super_block
+  char buf[BSIZE];
+  disk_read(buf, 1);
+  struct superblock *temp_sb = (struct superblock *)buf;
+
+  if (temp_sb->magic != 0x20010124) {
+      init_fs();
+      disk_read(buf, 1); 
+  }
+  memcpy(&sb, temp_sb, sizeof(struct superblock));
   //  初始化内存 Inode 表 (file_table)
   for (int i = 0; i < MAX_MEM_INODES; i++) {
     if (i <= FD_STDERR) {
