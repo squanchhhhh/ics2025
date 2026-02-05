@@ -42,6 +42,7 @@ void init_fs(){
 
   if (temp_sb->magic != 0x20010124) {
     printf("error fs\n");
+    return ;
   }
   memcpy(&sb, temp_sb, sizeof(struct superblock));
   printf("FileSystem Info: root=%d, inode_start=%d, IPB=%d\n", 
