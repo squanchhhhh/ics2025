@@ -45,6 +45,8 @@ void init_fs(){
       disk_read(buf, 1); 
   }
   memcpy(&sb, temp_sb, sizeof(struct superblock));
+  printf("FileSystem Info: root=%d, inode_start=%d, IPB=%d\n", 
+        sb.root_inum, sb.inode_start, IPB);
   //  初始化内存 Inode 表 (file_table)
   for (int i = 0; i < MAX_MEM_INODES; i++) {
     if (i <= FD_STDERR) {

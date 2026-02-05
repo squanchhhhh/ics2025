@@ -16,7 +16,6 @@ extern size_t inode_write(struct dinode *ip, const void *src, uint32_t offset, u
 extern void inode_update(int i, struct dinode *ip);
 
 static int ramdisk_fd = -1;
-struct superblock sb;
 void disk_read(void *buf, uint32_t block_num) {
     //printf("try to read disk num %d\n",block_num);
     lseek(ramdisk_fd, block_num * BSIZE, SEEK_SET);
@@ -122,8 +121,8 @@ int main(int argc, char *argv[]) {
         free(file_buf);
         printf("Successfully added %s to filesystem at %s\n", host_path, fs_path);
     }
-    printf("\n--- File System Tree ---\n/\n");
-    fs_tree(1, 1); 
+    //printf("\n--- File System Tree ---\n/\n");
+    //fs_tree(1, 1); 
     close(ramdisk_fd);
     return 0;
 }
