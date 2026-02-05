@@ -1,0 +1,1 @@
+/home/parallels/ics2025/nanos-lite/src/fscore.c

@@ -1,206 +1,129 @@
-#include <stdbool.h>
+
+#include "fs_shared.h"
+#include <fcntl.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
+#include <stdint.h>
+#include <assert.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <unistd.h>
+extern void fs_init_sb(struct superblock *external_sb);
+extern uint32_t fs_create_path(const char *path, int16_t type);
+extern int iget(int inum, struct dinode *inode);
+extern size_t inode_write(struct dinode *ip, const void *src, uint32_t offset, uint32_t n);
+extern void inode_update(int i, struct dinode *ip);
 
-#define BSIZE 4096
-#define DISK_BLOCKS 8192
-#define MAX_INODES 1024
-#define NDIRECT 12
-#define DIRSIZ 14
-#define MAX_FILE 64
-
-enum file_type { TYPE_NONE, TYPE_FILE, TYPE_DIR };
-
-struct superblock {
-    uint32_t magic;
-    uint32_t size;        // 总块数
-    uint32_t nblocks;     // 数据块数
-    uint32_t ninodes;     // Inode总数
-    uint32_t bmap_start;
-    uint32_t inode_start;
-    uint32_t data_start;
-    uint32_t root_inum;
-};
-
-struct dinode {
-    short type;
-    short major;
-    short minor;
-    short nlink;
-    uint32_t size;
-    uint32_t addrs[NDIRECT + 1];
-};
-
-struct dirent {
-    uint16_t inum;
-    char name[DIRSIZ];
-};
-
-void bread(int fd, uint32_t block_num, void *buf) {
-    lseek(fd, block_num * BSIZE, SEEK_SET);
-    if (read(fd, buf, BSIZE) != BSIZE) {
-        perror("bread error");
-    }
+static int ramdisk_fd = -1;
+struct superblock sb;
+void disk_read(void *buf, uint32_t block_num) {
+    //printf("try to read disk num %d\n",block_num);
+    lseek(ramdisk_fd, block_num * BSIZE, SEEK_SET);
+    size_t rc = read(ramdisk_fd, buf, BSIZE);
+     (void)rc;
+    //printf("read size %ld\n",rc);
 }
 
-void bwrite(int fd, uint32_t block_num, void *buf) {
-    lseek(fd, block_num * BSIZE, SEEK_SET);
-    if (write(fd, buf, BSIZE) != BSIZE) {
-        perror("bwrite error");
-    }
+void disk_write(const void *buf, uint32_t block_num) {
+    //printf("try to write disk num %d\n",block_num);
+    lseek(ramdisk_fd, block_num * BSIZE, SEEK_SET);
+    size_t rc = write(ramdisk_fd,buf, BSIZE);
+    (void)rc;
+    //printf("write size %ld\n",rc);
 }
 
-uint32_t balloc(int img_fd, struct superblock *sb) {
-    unsigned char bitmap[BSIZE];
-    bread(img_fd, sb->bmap_start, bitmap);
-
-    for (uint32_t i = 0; i < BSIZE; i++) {
-        if (bitmap[i] == 0xFF) continue;
-        for (int j = 0; j < 8; j++) {
-            if (!(bitmap[i] & (1 << j))) {
-                uint32_t block_num = i * 8 + j;
-                bitmap[i] |= (1 << j);
-                bwrite(img_fd, sb->bmap_start, bitmap);
-                return block_num;
-            }
-        }
-    }
-    return 0;
+void read_host_file(){
+    int fd = open("./ramdisk.img",O_RDWR | O_CREAT, 0664);
+    ramdisk_fd = fd;
 }
 
-uint32_t ialloc(int img_fd, struct superblock *sb, short type) {
-    unsigned char buf[BSIZE];
-    bread(img_fd, sb->inode_start, buf);
-    struct dinode *inodes = (struct dinode *)buf;
+void init_fs(){
+    sb.magic = 0x20010124;
+    sb.bmap_start = 2;
+    sb.bmap_data_start = 1024;
+    sb.inode_start = 3;
+    sb.data_start = 19;
+    sb.ninodes = 1024;
+    sb.nblocks = 8173;
+    sb.root_inum = 1;
+    sb.size = 8192;
+    char buf[BSIZE];
+    memcpy(buf, &sb, sizeof(struct superblock));
+    disk_write(buf, 1);
 
-    // 0号保留，1号是root，所以从2开始分配给普通文件
-    for (uint32_t i = 2; i < MAX_FILE; i++) {
-        if (inodes[i].type == TYPE_NONE) {
-            inodes[i].type = type;
-            bwrite(img_fd, sb->inode_start, buf);
-            return i;
-        }
-    }
-    return 0;
-}
-
-
-void add_to_root(int img_fd, struct superblock *sb, uint16_t inum, char *filename) {
-    unsigned char inode_buf[BSIZE];
-    bread(img_fd, sb->inode_start, inode_buf);
-    struct dinode *root = &((struct dinode *)inode_buf)[sb->root_inum];
-
-    if (root->size == 0) {
-        root->addrs[0] = balloc(img_fd, sb);
-    }
-
-    unsigned char data_buf[BSIZE];
-    bread(img_fd, root->addrs[0], data_buf);
-
-    struct dirent *de = (struct dirent *)data_buf;
-    int slot = root->size / sizeof(struct dirent);
-    
-    de[slot].inum = inum;
-    strncpy(de[slot].name, filename, DIRSIZ);
-
-    root->size += sizeof(struct dirent);
-
-    bwrite(img_fd, root->addrs[0], data_buf);
-    bwrite(img_fd, sb->inode_start, inode_buf);
-}
-
-//初始化文件系统
-uint32_t create_img() {
-    int fd = open("ramdisk.img", O_RDWR | O_CREAT | O_TRUNC, 0664);
-    ftruncate(fd, DISK_BLOCKS * BSIZE);
-
-    struct superblock sp = {
-        .magic = 0x20010124,
-        .size = DISK_BLOCKS,
-        .nblocks = 8173,
-        .ninodes = 1024,
-        .bmap_start = 2,
-        .inode_start = 3,
-        .data_start = 19,
-        .root_inum = 1
-    };
-
-    unsigned char buf[BSIZE] = {0};
-    memcpy(buf, &sp, sizeof(sp));
-    bwrite(fd, 1, buf);
-
+    // 初始化位图 (Block 2)
     memset(buf, 0, BSIZE);
-    for (int i = 0; i < 19; i++) buf[i / 8] |= (1 << (i % 8));
-    bwrite(fd, sp.bmap_start, buf);
-
-    memset(buf, 0, BSIZE);
-    struct dinode *inodes = (struct dinode *)buf;
-    inodes[sp.root_inum].type = TYPE_DIR;
-    inodes[sp.root_inum].nlink = 1;
-    inodes[sp.root_inum].size = 0;
-    bwrite(fd, sp.inode_start, buf);
-
-    close(fd);
-    printf("Image created successfully.\n");
-    return 0;
-}
-
-uint32_t add_file(char *filename, char *alias) {
-    struct superblock sp;
-    int img_fd = open("./ramdisk.img", O_RDWR);
-    
-    unsigned char sb_buf[BSIZE];
-    bread(img_fd, 1, sb_buf);
-    memcpy(&sp, sb_buf, sizeof(sp));
-
-    int src_fd = open(filename, O_RDONLY);
-    struct stat st;
-    fstat(src_fd, &st);
-    
-    uint32_t nblock = (st.st_size + BSIZE - 1) / BSIZE;
-    uint32_t inum = ialloc(img_fd, &sp, TYPE_FILE);
-
-    unsigned char inode_buf[BSIZE];
-    bread(img_fd, sp.inode_start, inode_buf);
-    struct dinode *dip = &((struct dinode *)inode_buf)[inum];
-    dip->size = st.st_size;
-
-    //只考虑直接情况，间接暂时不实现
-    for (uint32_t i = 0; i < nblock; i++) {
-        uint32_t bno = balloc(img_fd, &sp);
-        dip->addrs[i] = bno;
-
-        unsigned char file_data[BSIZE] = {0};
-        read(src_fd, file_data, BSIZE);
-        bwrite(img_fd, bno, file_data);
+    // 标记 Inode 0 和 Inode 1 (根目录) 已用
+    set_bit(buf, 0); 
+    set_bit(buf, 1); 
+    // 标记前 19 个数据块已用 (从 bmap_data_start 开始)
+    for(int i = 0; i < 19; i++) {
+        set_bit(buf, sb.bmap_data_start + i);
     }
+    disk_write(buf, sb.bmap_start);
 
-    bwrite(img_fd, sp.inode_start, inode_buf);
+    // 初始化 Inode Table 并写入根目录 Inode
+    memset(buf, 0, BSIZE);
+    struct dinode *inode_table = (struct dinode *)buf;
+    struct dinode root = {0};
+    root.type = TYPE_DIR;
+    root.size = sizeof(struct dirent);
+    root.addrs[0] = sb.data_start; 
+    inode_table[sb.root_inum] = root;
+    disk_write(buf, sb.inode_start);
 
-    add_to_root(img_fd, &sp, inum, alias);
-
-    printf("Added %s as /%s (inum: %d, size: %lld)\n", filename, alias, inum, (long long)st.st_size);
-
-    close(src_fd);
-    close(img_fd);
-    return inum;
+    // 初始化目录内容
+    memset(buf, 0, BSIZE);
+    struct dirent *de = (struct dirent *)buf;
+    de->inum = sb.root_inum;
+    strcpy(de->name, ".");
+    disk_write(buf, root.addrs[0]);
+    printf("File system initialized successfully.\n");
 }
-
 int main(int argc, char *argv[]) {
-    if (argc < 2) return -1;
-
-    if (strcmp(argv[1], "-i") == 0) {
-        create_img();
-    } else if (strcmp(argv[1], "-a") == 0 && argc == 4) {
-        add_file(argv[2], argv[3]);
-    }
+    read_host_file();
     
+    // 自动加载/初始化超级块
+    char buf[BSIZE];
+    disk_read(buf, 1);
+    struct superblock *temp_sb = (struct superblock *)buf;
+
+    if (temp_sb->magic != 0x20010124) {
+        init_fs();
+        disk_read(buf, 1); // 初始化后再读一次
+    }
+    memcpy(&sb, temp_sb, sizeof(struct superblock));
+
+    // 如果运行 ./mkfs <src_path> <dst_path>
+    if (argc == 3) {
+        const char *host_path = argv[1];
+        const char *fs_path = argv[2];
+
+        // 1. 读取 host 文件
+        FILE *f = fopen(host_path, "rb");
+        fseek(f, 0, SEEK_END);
+        long fsize = ftell(f);
+        fseek(f, 0, SEEK_SET);
+        void *file_buf = malloc(fsize);
+        size_t n = fread(file_buf, 1, fsize, f);
+        (void)n;
+        fclose(f);
+
+        // 2. 在文件系统中创建文件
+        uint32_t inum = fs_create_path(fs_path, TYPE_FILE);
+        struct dinode ip;
+        iget(inum, &ip);
+
+        // 3. 写入内容并更新 Inode
+        inode_write(&ip, file_buf, 0, fsize);
+        inode_update(inum, &ip);
+
+        free(file_buf);
+        printf("Successfully added %s to filesystem at %s\n", host_path, fs_path);
+    }
+    printf("\n--- File System Tree ---\n/\n");
+    fs_tree(1, 1); 
+    close(ramdisk_fd);
     return 0;
 }
