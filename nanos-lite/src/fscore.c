@@ -215,7 +215,9 @@ int iget(int inum,struct dinode * inode){
     printf("inum = %d\n",inum);
     static struct dinode buf[IPB];
     int block_offset = inum /IPB + sb.inode_start;
+    printf("block offset %d\n",block_offset);
     int inode_offset = inum %IPB;
+    printf("inode offset %d\n",inode_offset);
     disk_read(buf, block_offset);
     memcpy(inode, &buf[inode_offset], sizeof(struct dinode));
     printf("get indeo size %d\n",inode->size);
