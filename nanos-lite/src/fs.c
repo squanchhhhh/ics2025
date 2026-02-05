@@ -3,6 +3,7 @@
 #include "fs_shared.h"
 #include "proc.h"
 #include <fs.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "device.h"
@@ -113,6 +114,7 @@ void free_system_fd(int s_idx){
 int vfs_open(const char *path, int flags) {
     printf("try to open file %s\n",path);
     uint32_t inum = namei(path);
+    printf("inum :%d\n",inum);
     if (inum == 0) return -1;
 
     int f_idx = find_or_alloc_finfo(inum, path);
