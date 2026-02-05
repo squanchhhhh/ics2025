@@ -212,12 +212,13 @@ int dir_link(struct dinode *dp, const char *name, uint32_t inum) {
 }
 
 int iget(int inum,struct dinode * inode){
+    printf("inum = %d\n",inum);
     static struct dinode buf[IPB];
     int block_offset = inum /IPB + sb.inode_start;
     int inode_offset = inum %IPB;
     disk_read(buf, block_offset);
     memcpy(inode, &buf[inode_offset], sizeof(struct dinode));
-    printf("get indeo %d\n",inode->size);
+    printf("get indeo size %d\n",inode->size);
     return 0;
 }
 const char* skipelem(const char *path, char *name) {
