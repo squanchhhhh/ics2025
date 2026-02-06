@@ -51,7 +51,7 @@ void do_syscall(Context *ctx) {
 
     case SYS_open:
       ctx->GPRx = sys_open((char *)a[1],a[2],a[3]);
-      Log("Syscall ID %d, Returning to user with a0 = %d", ctx->GPR1, ctx->GPRx);
+      //Log("Syscall ID %d, Returning to user with a0 = %d", ctx->GPR1, ctx->GPRx);
       break;
 
     case SYS_brk: 

@@ -143,7 +143,6 @@ int vfs_open(const char *path, int flags) {
     int f_idx = find_or_alloc_finfo(inum, path);
     if (f_idx < 0) return -1;
     
-    printf("open disk file %s , fd = %d\n", path, f_idx);
     return alloc_system_fd(f_idx, flags);
 }
 
@@ -152,7 +151,8 @@ int sys_open(const char *path, int flags, mode_t mode) {
     int s_idx = vfs_open(path, flags);
     if (s_idx < 0) return -1;
     int fd = map_to_proc_fd(s_idx);
-    printf("sys_open return fd %d to proc %s\n",fd,current->name);
+    Log("[Syscall] Process '%s' mapped System Index %d to local FD %d\n", 
+            current->name, s_idx, fd);
     return fd; 
 }
 
