@@ -32,10 +32,10 @@ Finfo file_table[MAX_MEM_INODES] __attribute__((used)) = {
   [FD_STDIN]  = { .name = "stdin",  .read = invalid_read, .write = invalid_write },
   [FD_STDOUT] = { .name = "stdout", .read = invalid_read, .write = serial_write },
   [FD_STDERR] = { .name = "stderr", .read = invalid_read, .write = serial_write },
-  //[FD_FB]     = { .name = "/dev/fb",.read = invalid_read, .write = fb_write},   
+  [FD_FB]     = { .name = "/dev/fb",.read = invalid_read, .write = fb_write},   
   {.name="/dev/serial",  .read = invalid_read, .write = serial_write}, 
-  //{.name="/dev/events",  .read = events_read,  .write = invalid_write}, 
-  //{.name="/proc/dispinfo",  .read = dispinfo_read, .write = invalid_write}, 
+  {.name="/dev/events",  .read = events_read,  .write = invalid_write}, 
+  {.name="/proc/dispinfo",  .read = dispinfo_read, .write = invalid_write}, 
 };
 #define STATIC_FILE 4
 

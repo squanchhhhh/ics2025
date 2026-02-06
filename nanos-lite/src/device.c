@@ -23,20 +23,28 @@ size_t serial_write(const void *buf, size_t offset, size_t len) {
 }
 
 size_t events_read(void *buf, size_t offset, size_t len) {
-  ioe_read(AM_INPUT_KEYBRD,buf);
-  return 0;
+  AM_INPUT_KEYBRD_T ev = io_read(AM_INPUT_KEYBRD);
+  if (ev.keycode == AM_KEY_NONE) return 0;
+  int ret = snprintf(buf, len, "%s %s\n", 
+                     ev.keydown ? "kd" : "ku", 
+                     keyname[ev.keycode]);
+  return ret;
 }
-
 size_t dispinfo_read(void *buf, size_t offset, size_t len) {
-  //ioe_read(AM_GPU_CONFIG,buf);
-  return 0;
-
+  AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
+  int ret = snprintf(buf, len, "WIDTH:%d\nHEIGHT:%d\n", cfg.width, cfg.height);
+  return ret;
 }
 
 size_t fb_write(const void *buf, size_t offset, size_t len) {
-  return 0;
+  AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
+  int w = cfg.width;
+  int pixel_offset = offset / 4;
+  int x = pixel_offset % w;
+  int y = pixel_offset / w;
+  io_write(AM_GPU_FBDRAW, x, y, (void *)buf, len / 4, 1, true);
+  return len;
 }
-
 void init_device() {
   Log("Initializing devices...");
   ioe_init();
