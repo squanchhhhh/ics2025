@@ -28,6 +28,7 @@ void disk_write(const void *buf, uint32_t block_num) {
 }
 
 //--
+static int first_free_idx = 0;
 Finfo file_table[MAX_MEM_INODES] __attribute__((used)) = {
   [FD_STDIN]  = { .name = "stdin",  .read = invalid_read, .write = invalid_write },
   [FD_STDOUT] = { .name = "stdout", .read = invalid_read, .write = serial_write },
@@ -36,6 +37,7 @@ Finfo file_table[MAX_MEM_INODES] __attribute__((used)) = {
   {.name="/dev/serial",  .read = invalid_read, .write = serial_write}, 
   {.name="/dev/events",  .read = events_read,  .write = invalid_write}, 
   {.name="/proc/dispinfo",  .read = dispinfo_read, .write = invalid_write}, 
+  { .name = NULL }
 };
 #define STATIC_FILE 4
 
@@ -51,17 +53,19 @@ void init_fs(){
   }
   memcpy(&sb, temp_sb, sizeof(struct superblock));
   //printf("FileSystem Info: root=%d, inode_start=%d, IPB=%d\n", 
-        //sb.root_inum, sb.inode_start, IPB);
-  //  初始化内存 Inode 表 (file_table)
-  for (int i = 0; i < MAX_MEM_INODES; i++) {
-    if (i <= STATIC_FILE) {
-      file_table[i].ref = 1;
-      file_table[i].inum = 0xFFFFFFFF; 
-    } else {
-      file_table[i].ref = 0;
-      file_table[i].inum = 0;
-      file_table[i].name = NULL;
-    }
+  //sb.root_inum, sb.inode_start, IPB);
+  //初始化内存 Inode 表 (file_table)
+  int i = 0;
+  while (file_table[i].name != NULL) {
+    file_table[i].ref = 1;
+    file_table[i].inum = 0xFFFFFFFF; 
+    i++;
+  }
+  first_free_idx = i; 
+  for (; i < MAX_MEM_INODES; i++) {
+    file_table[i].ref = 0;
+    file_table[i].inum = 0;
+    file_table[i].name = NULL;
   }
   // 初始化系统打开文件表 (system_open_table)
   for (int i = 0; i < MAX_OPEN_FILES; i++) {
@@ -71,13 +75,13 @@ void init_fs(){
   }
 }
 int find_or_alloc_finfo(uint32_t inum, const char *path) {
-  for (int i = 3; i < MAX_MEM_INODES; i++) {
+  for (int i = first_free_idx; i < MAX_MEM_INODES; i++) {
     if (file_table[i].ref > 0 && file_table[i].inum == inum) {
       file_table[i].ref++; 
       return i;
     }
   }
-  for (int i = 3; i < MAX_MEM_INODES; i++) {
+  for (int i = first_free_idx; i < MAX_MEM_INODES; i++) {
     if (file_table[i].ref == 0) {
       file_table[i].inum = inum;
       file_table[i].ref = 1;
@@ -163,13 +167,14 @@ size_t vfs_read(int s_idx, void *buf, size_t len) {
     if (s_idx < 0 || s_idx >= MAX_OPEN_FILES) return -1;
     OpenFile *of = &system_open_table[s_idx];
     Finfo *f = &file_table[of->file_idx];
-    if (of->open_offset >= f->inode.size) return 0;
-    size_t readable = f->inode.size - of->open_offset;
-    if (len > readable) len = readable;
     size_t n = 0;
+
     if (f->read) { 
         n = f->read(buf, of->open_offset, len);
     } else {      
+        if (of->open_offset >= f->inode.size) return 0;
+        size_t readable = f->inode.size - of->open_offset;
+        if (len > readable) len = readable;
         n = inode_read(&f->inode, buf, of->open_offset, len);
     }
     of->open_offset += n;
@@ -179,9 +184,9 @@ size_t fs_read(int fd, void *buf, size_t len) {
     int s_idx = current->fd_table[fd];
     return vfs_read(s_idx, buf, len);
 }
+
 size_t vfs_write(int s_idx, const void *buf, size_t len) {
     if (s_idx < 0 || s_idx >= MAX_OPEN_FILES || !system_open_table[s_idx].used) return -1;
-    
     OpenFile *of = &system_open_table[s_idx];
     Finfo *f = &file_table[of->file_idx];
     size_t n = 0;
@@ -190,14 +195,10 @@ size_t vfs_write(int s_idx, const void *buf, size_t len) {
         n = f->write(buf, of->open_offset, len);
     } else {
         size_t max_size = (NDIRECT + NINDIRECT) * BSIZE; 
-        if (of->open_offset + len > max_size) {
-            len = max_size - of->open_offset;
-        }
+        if (of->open_offset + len > max_size) len = max_size - of->open_offset;
         if (len <= 0) return 0;
         n = inode_write(&f->inode, buf, of->open_offset, len);
-        if (of->open_offset + n > f->inode.size) {
-            f->inode.size = of->open_offset + n;
-        }
+        if (of->open_offset + n > f->inode.size) f->inode.size = of->open_offset + n;
     }
     of->open_offset += n;
     return n;
