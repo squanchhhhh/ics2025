@@ -146,11 +146,12 @@ int vfs_open(const char *path, int flags) {
     printf("open disk file %s , fd = %d\n", path, f_idx);
     return alloc_system_fd(f_idx, flags);
 }
-int sys_open(const char *path, int flags) {
+
+int sys_open(const char *path, int flags, mode_t mode) {
+    (void)mode;
     int s_idx = vfs_open(path, flags);
     if (s_idx < 0) return -1;
-    return 0;
-   // return map_to_proc_fd(s_idx); 
+    return map_to_proc_fd(s_idx); 
 }
 
 size_t vfs_read(int s_idx, void *buf, size_t len) {

@@ -1,6 +1,7 @@
 #ifndef __FS_H__
 #define __FS_H__
 #include "fs_shared.h"
+#include "sys/types.h"
 #include <common.h>
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
@@ -42,7 +43,7 @@ void free_system_fd(int s_idx);               // 释放 OpenFile 槽位
 //--通用操作函数
 enum {O_APPEND};
 int vfs_open(const char *path, int flags);
-int sys_open(const char *path, int flags);
+int sys_open(const char *path, int flags,mode_t mode);
 size_t vfs_read(int s_idx, void *buf, size_t len);
 size_t fs_read(int fd, void *buf, size_t len);
 size_t vfs_write(int s_idx, const void *buf, size_t len);

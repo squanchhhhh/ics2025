@@ -1,4 +1,5 @@
 #include <proc.h>
+#include <string.h>
 
 #define MAX_NR_PROC 4
 
@@ -23,12 +24,24 @@ void init_proc() {
   switch_boot_pcb();
 
   Log("Initializing processes...");
-  
-  naive_uload(NULL, "/bin/serial");
-  // load program here
-
+  char * file_name = "/bin/serial";
+  naive_uload(NULL, file_name);
+  current->name = file_name;
+  current->nr_fd = 3;
+  //初始化stdin stdout stderr
+  current->fd_table[0] = 0; 
+  current->fd_table[1] = 1;
+  current->fd_table[2] = 2;
 }
 
 Context* schedule(Context *prev) {
   return NULL;
+}
+int map_to_proc_fd(int s_idx) {
+  if (current->nr_fd >= MAX_NR_PROC_FILE) {
+    printf("current proc %s cannot open more file\n",current->name);
+    return -1; 
+  }
+  current->fd_table[current->nr_fd] = s_idx;
+  return current->nr_fd++;
 }

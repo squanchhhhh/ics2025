@@ -12,10 +12,13 @@ typedef union {
     AddrSpace as;
     // we do not free memory, so use `max_brk' to determine when to call _map()
     uintptr_t max_brk;
+    int fd_table[MAX_NR_PROC_FILE]; 
+    int nr_fd;                    
+    const char *name;
   };
-  int fd_table[MAX_NR_PROC_FILE];
 } PCB;
 
 extern PCB *current;
 void naive_uload(PCB *pcb, const char *filename);
+int map_to_proc_fd(int s_idx);
 #endif
