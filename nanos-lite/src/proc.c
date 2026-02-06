@@ -25,7 +25,7 @@ void hello_fun(void *arg) {
 void init_proc() {
   switch_boot_pcb();
   Log("Initializing processes...");
-  char * file_name = "/bin/time";
+  char * file_name = "/bin/event-test";
   current->name = file_name;
   Log("load process name %s",current->name);
   for (int i = 0; i < 3; i++) {

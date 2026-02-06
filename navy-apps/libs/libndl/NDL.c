@@ -72,7 +72,7 @@ int NDL_Init(uint32_t flags) {
   gettimeofday(&tv, NULL);
   boot_time = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 
-  events_fd = open("/dev/events", O_RDONLY);
+  events_fd = open("/dev/events", 0);
   
   return 0;
 }
