@@ -154,6 +154,7 @@ int sys_open(const char *path, int flags, mode_t mode) {
     for (int i = 0;i<4;i++){
       printf("%s\n",file_table[i].name);
     }
+    printf("system_open_table[s_idx].file_idx = %d\n",system_open_table[s_idx].file_idx);
     Log("[Syscall] Process '%s' mapped System Index %d (%s) to local FD %d", 
             current->name, s_idx,file_table[system_open_table[s_idx].file_idx].name, fd);
     return fd; 
