@@ -40,6 +40,7 @@ void do_syscall(Context *ctx) {
       break;
 
     case SYS_exit:
+      printf("Exit called with status: %d\n", a[1]);
       Log("Process exited with code %d", a[1]);
       halt(0); 
       break;
