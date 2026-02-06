@@ -49,6 +49,7 @@ void do_syscall(Context *ctx) {
       break;
 
     case SYS_open:
+      printf("try to call sys_open path = %s\n",(char*)a[1]);
       ctx->GPRx = sys_open((char *)a[1],a[2],a[3]);
       break;
 
