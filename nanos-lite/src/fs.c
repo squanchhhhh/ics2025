@@ -142,7 +142,7 @@ int vfs_open(const char *path, int flags) {
         f_idx = find_or_alloc_finfo(inum, path);
     }
     if (f_idx < 0) return -1;
-    printf("vfs_open: path %s matched file_table idx %d, now allocating s_idx...\n", path, f_idx);
+    //printf("vfs_open: path %s matched file_table idx %d, now allocating s_idx...\n", path, f_idx);
     return alloc_system_fd(f_idx, flags);
 }
 
