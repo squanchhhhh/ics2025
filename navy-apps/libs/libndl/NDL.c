@@ -60,6 +60,7 @@ void NDL_OpenCanvas(int *w, int *h) {
   
   // 记录画布大小
   canvas_w = *w; canvas_h = *h;
+  printf("NDL: Screen size %d x %d, Canvas size %d x %d\n", screen_w, screen_h, *w, *h);
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
