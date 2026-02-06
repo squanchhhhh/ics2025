@@ -3,15 +3,6 @@
 #include "syscall.h"
 #include "fs.h"
 struct timezone;
-size_t sys_write(int fd, const void *buf, size_t count) {
-  if (fd == 1 || fd == 2) {
-    for (size_t i = 0; i < count; i++) {
-      putch(((char *)buf)[i]); 
-    }
-    return count;
-  }
-  return -1;
-}
 
 int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
   if (tv != NULL) {
@@ -46,11 +37,11 @@ void do_syscall(Context *ctx) {
 
     case SYS_write: 
       //printf("Write fd:%d, buf:%p, len:%d\n", a[1], a[2], a[3]);
-      ctx->GPRx = sys_write(a[1], (void *)a[2], a[3]);
+      ctx->GPRx = fs_write(a[1], (void *)a[2], a[3]);
       break;
 
     case SYS_open:
-      ctx->GPRx = sys_open((char *)a[1],a[2],a[3]);
+      ctx->GPRx = fs_open((char *)a[1],a[2],a[3]);
       //Log("Syscall ID %d, Returning to user with a0 = %d", ctx->GPR1, ctx->GPRx);
       break;
 
@@ -61,11 +52,14 @@ void do_syscall(Context *ctx) {
    case SYS_gettimeofday:
       ctx->GPRx = sys_gettimeofday((struct timeval *)ctx->GPR2, (struct timezone *)ctx->GPR3);
       break;
+
     case SYS_close:
     //todo 实现sys_close
-        ctx->GPRx = 0; 
-        break;
-      
+      ctx->GPRx = 0; 
+      break;
+    case SYS_read:
+      ctx->GPRx = fs_read(a[1], (void *)a[2], a[3]);
+      break;
     default: 
       panic("Unhandled syscall ID = %d", a[0]);
   }

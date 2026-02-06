@@ -150,7 +150,7 @@ int vfs_open(const char *path, int flags) {
     return alloc_system_fd(f_idx, flags);
 }
 
-int sys_open(const char *path, int flags, mode_t mode) {
+int fs_open(const char *path, int flags, mode_t mode) {
     //printf("try to open file %s\n",path);
     (void)mode;
     int s_idx = vfs_open(path, flags);
@@ -203,7 +203,17 @@ size_t vfs_write(int s_idx, const void *buf, size_t len) {
     of->open_offset += n;
     return n;
 }
+size_t fs_write(int fd, const void *buf, size_t len) {
+    if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
+        return -1;
+    }
+    int s_idx = current->fd_table[fd];
 
+    if (s_idx < 0) {
+        return -1;
+    }
+    return vfs_write(s_idx, buf, len);
+}
 size_t vfs_lseek(int s_idx, size_t offset, int whence) {
     OpenFile *of = &system_open_table[s_idx];
     Finfo *f = &file_table[of->file_idx];
