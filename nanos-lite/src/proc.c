@@ -2,7 +2,7 @@
 #include <proc.h>
 #include <stdio.h>
 #include <string.h>
-
+#include "fs.h"
 #define MAX_NR_PROC 4
 
 static PCB pcb[MAX_NR_PROC] __attribute__((used)) = {};
@@ -24,16 +24,15 @@ void hello_fun(void *arg) {
 
 void init_proc() {
   switch_boot_pcb();
-
   Log("Initializing processes...");
   char * file_name = "/bin/serial";
   current->name = file_name;
   Log("load process name %s",current->name);
+  for (int i = 0; i < 3; i++) {
+    int s_idx = alloc_system_fd(i,0); 
+    current->fd_table[i] = s_idx; 
+  }
   current->nr_fd = 3;
-  //初始化stdin stdout stderr
-  current->fd_table[0] = 0; 
-  current->fd_table[1] = 1;
-  current->fd_table[2] = 2;
   naive_uload(NULL, file_name);
 }
 
