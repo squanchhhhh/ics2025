@@ -207,6 +207,12 @@ size_t vfs_write(int s_idx, const void *buf, size_t len) {
     of->open_offset += n;
     return n;
 }
+size_t fs_lseek(int fd, size_t offset, int whence) {
+  if (fd < 0 || fd >= MAX_NR_PROC_FILE) return -1;
+  int s_idx = current->fd_table[fd];
+  if (s_idx < 0) return -1;
+  return vfs_lseek(s_idx, offset, whence);
+}
 size_t fs_write(int fd, const void *buf, size_t len) {
     if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
         return -1;

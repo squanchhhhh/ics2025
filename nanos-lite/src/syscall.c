@@ -60,6 +60,9 @@ void do_syscall(Context *ctx) {
   case SYS_read:
     ctx->GPRx = fs_read(a[1], (void *)a[2], a[3]);
     break;
+  case SYS_lseek:
+        ctx->GPRx = fs_lseek(a[1], a[2], a[3]);
+        break;
   default: 
     panic("Unhandled syscall ID = %d", a[0]);
 }
