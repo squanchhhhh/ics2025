@@ -15,7 +15,6 @@ $(NAME): $(SRCS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 install: $(NAME)
-	@echo "Populating $(IMG) with files from $(FSIMG_PATH)..."
 	@find $(FSIMG_PATH) -type f | while read host_path; do \
 		target_path=$${host_path#$(FSIMG_PATH)}; \
 		./$(NAME) $$host_path $$target_path; \

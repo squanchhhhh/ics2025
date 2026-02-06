@@ -1,5 +1,5 @@
 # Makefile for Navy Applications and Libraries
-
+ISA = riscv32
 ### *Get a more readable version of this Makefile* by `make html` (requires python-markdown)
 html:
 	cat Makefile | sed 's/^\([^#]\)/    \1/g' | markdown_py > Makefile.html
@@ -178,7 +178,7 @@ $(CLEAN_ALL):
 
 ### Build fsimg and ramdisk for Nanos-lite
 APPS =
-TESTS = dummy hello
+TESTS = dummy hello serial-test
 
 fsimg: $(addprefix apps/, $(APPS)) $(addprefix tests/, $(TESTS))
 	-for t in $^; do $(MAKE) -s -C $(NAVY_HOME)/$$t install; done
@@ -194,5 +194,8 @@ $(RAMDISK): fsimg
 	@echo "// file path, file size, offset in disk" > $(RAMDISK_H)
 	@wc -c $(FSIMG_FILES) | grep -v 'total$$' | sed -e 's+ ./fsimg+ +' | awk -v sum=0 '{print "\x7b\x22" $$2 "\x22\x2c " $$1 "\x2c " sum "\x7d\x2c";sum += $$1}' >> $(RAMDISK_H)
 endif
+
+fast-update:
+	$(MAKE) fsimg ISA=$(ISA)
 
 .PHONY: fsimg ramdisk

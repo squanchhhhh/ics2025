@@ -216,7 +216,7 @@ int dir_link(struct dinode *dp, const char *name, uint32_t inum) {
     if (inode_write(dp, &de, off, sizeof(struct dirent)) != sizeof(struct dirent)) {
         return -1;
     }
-    printf("add dirent name %s\n",name);
+    //printf("add dirent name %s\n",name);
     return 0;
 }
 
@@ -303,7 +303,7 @@ uint32_t fs_create_path(const char *path, int16_t type) {
         curr_p = next_p;
         if (*curr_p == '\0') break;
     }
-    printf("create path %s, last inode %d \n",path,curr_inum);
+    //printf("create path %s, last inode %d \n",path,curr_inum);
     return curr_inum;
 }
 

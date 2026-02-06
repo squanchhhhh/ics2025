@@ -137,7 +137,7 @@ if (argc < 2) {
         inode_update(inum, &ip);
 
         free(file_buf);
-        printf("Successfully added %s to filesystem at %s\n", host_path, fs_path);
+        printf("added \033[1;34m%s\033[0m to \033[1;32mramdisk.img\033[0m at \033[1;31m%s\033[0m\n", host_path, fs_path);
     }
 
     close(ramdisk_fd);
