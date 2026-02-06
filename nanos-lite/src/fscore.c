@@ -186,13 +186,13 @@ uint32_t dir_lookup(struct dinode *dp, const char *name) {
         int num_entries = bytes_to_read / sizeof(struct dirent);
         for (int i = 0; i < num_entries; i++) {
             if (buf[i].inum != 0 && strcmp(buf[i].name, name) == 0) {
-                printf("finded dir name %s in inum %d\n",name,buf[i].inum);
+                //printf("finded dir name %s in inum %d\n",name,buf[i].inum);
                 return buf[i].inum;
             }
         }
         offset += bytes_to_read;
     }
-    printf("cannot find dir %s\n",name);
+    //printf("cannot find dir %s\n",name);
     return 0; 
 }
 

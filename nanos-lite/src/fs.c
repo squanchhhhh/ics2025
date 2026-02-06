@@ -128,7 +128,7 @@ void free_system_fd(int s_idx){
 
 //--
 int vfs_open(const char *path, int flags) {
-    printf("try to open file %s\n", path);
+    //printf("try to open file %s\n", path);
     for (int i = 0; i < MAX_MEM_INODES; i++) {
         if (file_table[i].name != NULL && strcmp(path, file_table[i].name) == 0) {
             printf("open device %s , fd = %d\n", path, i);
