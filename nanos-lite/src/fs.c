@@ -151,7 +151,9 @@ int sys_open(const char *path, int flags, mode_t mode) {
     (void)mode;
     int s_idx = vfs_open(path, flags);
     if (s_idx < 0) return -1;
-    return map_to_proc_fd(s_idx); 
+    int fd = map_to_proc_fd(s_idx);
+    printf("sys_open return fd %d to proc %s\n",fd,current->name);
+    return fd; 
 }
 
 size_t vfs_read(int s_idx, void *buf, size_t len) {
