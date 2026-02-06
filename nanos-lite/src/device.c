@@ -1,4 +1,5 @@
 #include "device.h"
+#include "am.h"
 #if defined(MULTIPROGRAM) && !defined(TIME_SHARING)
 # define MULTIPROGRAM_YIELD() yield()
 #else
@@ -22,7 +23,7 @@ size_t serial_write(const void *buf, size_t offset, size_t len) {
 }
 
 size_t events_read(void *buf, size_t offset, size_t len) {
-  //ioe_read(AM_INPUT_KEYBRD,buf);
+  ioe_read(AM_INPUT_KEYBRD,buf);
   return 0;
 }
 
