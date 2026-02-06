@@ -29,7 +29,7 @@ void init_proc() {
   char * file_name = "/bin/serial";
   naive_uload(NULL, file_name);
   current->name = file_name;
-  //printf("load process name %s\n",current->name);
+  printf("load process name %s\n",current->name);
   current->nr_fd = 3;
   //初始化stdin stdout stderr
   current->fd_table[0] = 0; 
