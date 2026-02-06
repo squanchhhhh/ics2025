@@ -48,6 +48,9 @@ void do_syscall(Context *ctx) {
       ctx->GPRx = sys_write(a[1], (void *)a[2], a[3]);
       break;
 
+    case SYS_open:
+      ctx->GPRx = sys_open((char *)a[1],a[2],a[3]);
+
     case SYS_brk: 
       ctx->GPRx = 0; 
       break;
