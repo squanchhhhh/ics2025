@@ -20,18 +20,22 @@ install: $(NAME)
 		target_path=$${host_path#$(FSIMG_PATH)}; \
 		./$(NAME) $$host_path $$target_path; \
 	done
-	mv $(IMG) /home/parallels/ics2025/nanos-lite/build/ramdisk.img
+	cp $(IMG) /home/parallels/ics2025/nanos-lite/build/ramdisk.img
 	@echo "Installation complete."
 
-update: $(NAME)
+init: $(NAME)
 	./$(NAME) init
 	@echo "Populating $(IMG) with files from $(FSIMG_PATH)..."
 	@find $(FSIMG_PATH) -type f | while read host_path; do \
 		target_path=$${host_path#$(FSIMG_PATH)}; \
 		./$(NAME) $$host_path $$target_path; \
 	done
-	mv $(IMG) /home/parallels/ics2025/nanos-lite/build/ramdisk.img
+	cp $(IMG) /home/parallels/ics2025/nanos-lite/build/ramdisk.img
 	@echo "Installation complete."
+
+tree: $(NAME)
+	./$(NAME) tree
+
 clean:
 	rm -f $(NAME) $(IMG)
 

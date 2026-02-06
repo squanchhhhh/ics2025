@@ -82,19 +82,36 @@ void init_fs(){
     printf("File system initialized successfully.\n");
 }
 int main(int argc, char *argv[]) {
+if (argc < 2) {
+        printf("Usage: %s <command> [args]\n", argv[0]);
+        return 1;
+    }
+
     read_host_file();
     
-    // 自动加载/初始化超级块
     char buf[BSIZE];
     disk_read(buf, 1);
     struct superblock *temp_sb = (struct superblock *)buf;
+    int need_init = (temp_sb->magic != 0x20010124);
 
-    if (temp_sb->magic != 0x20010124 || strcmp(argv[1],"init")) {
-        init_fs();
-        disk_read(buf, 1); // 初始化后再读一次
+    if (argc > 1 && strcmp(argv[1], "init") == 0) {
+        need_init = 1;
     }
+
+    if (need_init) {
+        printf("Formatting filesystem...\n");
+        init_fs();
+        disk_read(buf, 1); 
+    }
+
     memcpy(&sb, temp_sb, sizeof(struct superblock));
 
+    if (argc > 1 && strcmp(argv[1], "tree") == 0) {
+        printf("\n--- File System Tree ---\n/\n");
+        fs_tree(sb.root_inum, 1); 
+        close(ramdisk_fd);
+        return 0;
+    }
     // 如果运行 ./mkfs <src_path> <dst_path>
     if (argc == 3) {
         const char *host_path = argv[1];
@@ -122,8 +139,7 @@ int main(int argc, char *argv[]) {
         free(file_buf);
         printf("Successfully added %s to filesystem at %s\n", host_path, fs_path);
     }
-    //printf("\n--- File System Tree ---\n/\n");
-    //fs_tree(1, 1); 
+
     close(ramdisk_fd);
     return 0;
 }
