@@ -50,8 +50,8 @@ void init_fs(){
     return ;
   }
   memcpy(&sb, temp_sb, sizeof(struct superblock));
-  printf("FileSystem Info: root=%d, inode_start=%d, IPB=%d\n", 
-        sb.root_inum, sb.inode_start, IPB);
+  //printf("FileSystem Info: root=%d, inode_start=%d, IPB=%d\n", 
+        //sb.root_inum, sb.inode_start, IPB);
   //  初始化内存 Inode 表 (file_table)
   for (int i = 0; i < MAX_MEM_INODES; i++) {
     if (i <= STATIC_FILE) {
@@ -84,7 +84,7 @@ int find_or_alloc_finfo(uint32_t inum, const char *path) {
       if (file_table[i].name) free(file_table[i].name);
       file_table[i].name = strdup(path); 
       iget(inum, &file_table[i].inode); 
-      printf("load file %s to system\n",path);
+      //printf("load file %s to system\n",path);
       return i;
     }
   }
@@ -131,7 +131,7 @@ int vfs_open(const char *path, int flags) {
     //printf("try to open file %s\n", path);
     for (int i = 0; i < MAX_MEM_INODES; i++) {
         if (file_table[i].name != NULL && strcmp(path, file_table[i].name) == 0) {
-            printf("open device %s , fd = %d\n", path, i);
+            //printf("open device %s , fd = %d\n", path, i);
             return i; 
         }
     }
