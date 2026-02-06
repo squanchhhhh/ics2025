@@ -52,6 +52,7 @@ void do_syscall(Context *ctx) {
     case SYS_open:
       printf("try to call sys_open path = %s\n",(char*)a[1]);
       ctx->GPRx = sys_open((char *)a[1],a[2],a[3]);
+      Log("Syscall ID %d, Returning to user with a0 = %d", ctx->GPR1, ctx->GPRx);
       break;
 
     case SYS_brk: 
