@@ -45,6 +45,7 @@ int map_to_proc_fd(int s_idx) {
     printf("current proc %s cannot open more file\n",current->name);
     return -1; 
   }
+  printf("system open_file table idx = %d, and return to proc fd = %d\n",s_idx,current->nr_fd);
   current->fd_table[current->nr_fd] = s_idx;
   return current->nr_fd++;
 }
