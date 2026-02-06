@@ -1,4 +1,6 @@
+#include "debug.h"
 #include <proc.h>
+#include <stdio.h>
 #include <string.h>
 
 #define MAX_NR_PROC 4
@@ -14,7 +16,7 @@ void switch_boot_pcb() {
 void hello_fun(void *arg) {
   int j = 1;
   while (1) {
-    Log("Hello World from Nanos-lite with arg '%p' for the %dth time!", (uintptr_t)arg, j);
+    Log("Hello World from Nanos-lite with arg '%p' for the %dth time!", (void *)(uintptr_t)arg, j);
     j ++;
     yield();
   }
@@ -27,6 +29,7 @@ void init_proc() {
   char * file_name = "/bin/serial";
   naive_uload(NULL, file_name);
   current->name = file_name;
+  //printf("load process name %s\n",current->name);
   current->nr_fd = 3;
   //初始化stdin stdout stderr
   current->fd_table[0] = 0; 
