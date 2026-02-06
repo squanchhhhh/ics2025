@@ -249,10 +249,10 @@ uint32_t namei(const char *path) {
     struct dinode curr_inode;
     if (iget(inum, &curr_inode) < 0) return 0;
     while ((path = skipelem(path, name)) != NULL) {
-        printf("path %s\n",path);
-        printf("name %s\n",name);
+        //printf("path %s\n",path);
+        //printf("name %s\n",name);
         uint32_t next_inum = dir_lookup(&curr_inode, name);
-        printf("next_inum %d\n",next_inum);
+        //printf("next_inum %d\n",next_inum);
         if (next_inum == 0) return 0; 
         inum = next_inum;
         if (iget(inum, &curr_inode) < 0) return 0;
