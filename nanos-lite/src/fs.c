@@ -142,7 +142,7 @@ int vfs_open(const char *path, int flags) {
     }
     int f_idx = find_or_alloc_finfo(inum, path);
     if (f_idx < 0) return -1;
-    printf("open device %s , file table idx = %d\n", path, f_idx);
+    printf("open file %s , file table idx = %d\n", path, f_idx);
     return alloc_system_fd(f_idx, flags);
 }
 
