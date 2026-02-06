@@ -53,14 +53,14 @@ void do_syscall(Context *ctx) {
       ctx->GPRx = sys_gettimeofday((struct timeval *)ctx->GPR2, (struct timezone *)ctx->GPR3);
       break;
 
-    case SYS_close:
-    //todo 实现sys_close
-      ctx->GPRx = 0; 
-      break;
-    case SYS_read:
-      ctx->GPRx = fs_read(a[1], (void *)a[2], a[3]);
-      break;
-    default: 
-      panic("Unhandled syscall ID = %d", a[0]);
-  }
+  case SYS_close:
+  //todo 实现sys_close
+    ctx->GPRx = 0; 
+    break;
+  case SYS_read:
+    ctx->GPRx = fs_read(a[1], (void *)a[2], a[3]);
+    break;
+  default: 
+    panic("Unhandled syscall ID = %d", a[0]);
+}
 }
