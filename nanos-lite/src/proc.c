@@ -27,7 +27,6 @@ void init_proc() {
 
   Log("Initializing processes...");
   char * file_name = "/bin/serial";
-  naive_uload(NULL, file_name);
   current->name = file_name;
   printf("load process name %s\n",current->name);
   current->nr_fd = 3;
@@ -35,6 +34,7 @@ void init_proc() {
   current->fd_table[0] = 0; 
   current->fd_table[1] = 1;
   current->fd_table[2] = 2;
+  naive_uload(NULL, file_name);
 }
 
 Context* schedule(Context *prev) {
