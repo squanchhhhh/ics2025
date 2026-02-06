@@ -32,7 +32,7 @@ void do_syscall(Context *ctx) {
   a[1] = ctx->GPR2; 
   a[2] = ctx->GPR3; 
   a[3] = ctx->GPR4;
-  //Log("Syscall: ID=%d, arg1=%p, arg2=%p", (int)a[0], (void *)a[1], (void *)a[2]);
+  Log("Syscall: ID=%d, arg1=%p, arg2=%p", (int)a[0], (void *)a[1], (void *)a[2]);
   switch (a[0]) {
     case SYS_yield:
       yield();
