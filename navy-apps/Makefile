@@ -197,5 +197,6 @@ endif
 
 fast-update:
 	$(MAKE) fsimg ISA=$(ISA)
+	$(MAKE) -C tools install
 
 .PHONY: fsimg ramdisk
