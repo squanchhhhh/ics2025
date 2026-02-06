@@ -55,8 +55,12 @@ void init_fs(){
   //printf("FileSystem Info: root=%d, inode_start=%d, IPB=%d\n", 
   //sb.root_inum, sb.inode_start, IPB);
   //初始化内存 Inode 表 (file_table)
+  AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
   int i = 0;
   while (file_table[i].name != NULL) {
+    if (strcmp(file_table[i].name, "/dev/fb") == 0) {
+      file_table[i].inode.size = cfg.width * cfg.height * 4;
+    }
     file_table[i].ref = 1;
     file_table[i].inum = 0xFFFFFFFF; 
     i++;
