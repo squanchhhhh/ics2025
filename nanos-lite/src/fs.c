@@ -151,7 +151,7 @@ int sys_open(const char *path, int flags, mode_t mode) {
     int s_idx = vfs_open(path, flags);
     if (s_idx < 0) return -1;
     int fd = map_to_proc_fd(s_idx);
-    Log("[Syscall] Process '%s' mapped System Index %d to local FD %d\n", 
+    Log("[Syscall] Process '%s' mapped System Index %d to local FD %d", 
             current->name, s_idx, fd);
     return fd; 
 }
