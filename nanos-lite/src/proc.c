@@ -28,7 +28,7 @@ void init_proc() {
   Log("Initializing processes...");
   char * file_name = "/bin/serial";
   current->name = file_name;
-  Log("load process name %s\n",current->name);
+  Log("load process name %s",current->name);
   current->nr_fd = 3;
   //初始化stdin stdout stderr
   current->fd_table[0] = 0; 
