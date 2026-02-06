@@ -1,22 +1,16 @@
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 int main() {
-  const char *msg1 = "Direct write to fd 1 (stdout) successful!\n";
-  write(1, msg1, strlen(msg1));
+  char *str1 = "Native write 1\n";
+  write(1, str1, 15); // 直接调用，不走 printf
 
-  int fd = open("/dev/serial", 0, 0);
-  if (fd > 0) {
-    const char *msg2 = "Write to /dev/serial via open() successful!\n";
-    write(fd, msg2, strlen(msg2));
-    close(fd);
-  } else {
-    printf("Optional: open /dev/serial failed (this is okay if open is not fully implemented)\n");
-  }
-  for (int i = 0; i < 5; i++) {
-    printf("Serial test loop: %d/5\n", i + 1);
-  }
+  char *str2 = "Trying open...\n";
+  write(1, str2, 15);
+
+  int fd = open("/dev/serial", 0, 0); // 看看 ID=2 会不会出现
+  
+  if (fd > 0) write(1, "Success\n", 8);
+  else write(1, "Fail\n", 5);
 
   return 0;
 }
