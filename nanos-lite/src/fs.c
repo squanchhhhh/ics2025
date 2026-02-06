@@ -114,7 +114,7 @@ int alloc_system_fd(int f_idx, int flags) {
       } else {
         system_open_table[i].open_offset = 0;
       }
-      printf("alloc sys_open_table idx %d, point to fdx %d, name in file_table is %s\n",i,f_idx,file_table[f_idx].name);
+      //printf("alloc sys_open_table idx %d, point to fdx %d, name in file_table is %s\n",i,f_idx,file_table[f_idx].name);
       file_table[f_idx].ref++; 
       return i;
     }
@@ -147,13 +147,13 @@ int vfs_open(const char *path, int flags) {
 }
 
 int sys_open(const char *path, int flags, mode_t mode) {
-    printf("try to open file %s\n",path);
+    //printf("try to open file %s\n",path);
     (void)mode;
     int s_idx = vfs_open(path, flags);
     if (s_idx < 0) return -1;
     int fd = map_to_proc_fd(s_idx);
-    printf("s_idx = %d\n",s_idx);
-    printf("system_open_table[s_idx].file_idx = %d\n",system_open_table[s_idx].file_idx);
+    //printf("s_idx = %d\n",s_idx);
+    //printf("system_open_table[s_idx].file_idx = %d\n",system_open_table[s_idx].file_idx);
     Log("[Syscall] Process '%s' mapped System Index %d (%s) to local FD %d", 
             current->name, s_idx,file_table[system_open_table[s_idx].file_idx].name, fd);
     return fd; 
