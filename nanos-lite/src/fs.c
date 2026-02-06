@@ -129,21 +129,20 @@ void free_system_fd(int s_idx){
 
 //--
 int vfs_open(const char *path, int flags) {
-    //printf("try to open file %s\n", path);
+    int f_idx = -1;
     for (int i = 0; i < MAX_MEM_INODES; i++) {
         if (file_table[i].name != NULL && strcmp(path, file_table[i].name) == 0) {
-            printf("open device %s , file table idx = %d\n", path, i);
-            return i; 
+            f_idx = i; 
+            break; 
         }
     }
-    uint32_t inum = namei(path);
-    if (inum == 0) {
-        printf("vfs_open: %s not found in disk\n", path);
-        return -1;
+    if (f_idx == -1) {
+        uint32_t inum = namei(path);
+        if (inum == 0) return -1;
+        f_idx = find_or_alloc_finfo(inum, path);
     }
-    int f_idx = find_or_alloc_finfo(inum, path);
     if (f_idx < 0) return -1;
-    printf("open file %s , file table idx = %d\n", path, f_idx);
+    printf("vfs_open: path %s matched file_table idx %d, now allocating s_idx...\n", path, f_idx);
     return alloc_system_fd(f_idx, flags);
 }
 
