@@ -17,6 +17,7 @@ static const char *keyname[256] __attribute__((used)) = {
 size_t serial_write(const void *buf, size_t offset, size_t len) {
   const char *str = (const char *)buf;
   for (size_t i = 0; i < len; i++) {
+    Log("Attempting to write char: %c to AM_UART_TX", str[i]);
     io_write(AM_UART_TX, .data=str[i]);
   }
   return len;
