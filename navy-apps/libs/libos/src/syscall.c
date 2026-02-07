@@ -187,3 +187,8 @@ int symlink(const char *target, const char *linkpath) {
 int ioctl(int fd, unsigned long request, ...) {
   return -1;
 }
+
+void* mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset) {
+  intptr_t args[6] = {(intptr_t)addr, len, prot, flags, fd, offset};
+  return (void *)_syscall_(SYS_mmap, (intptr_t)args, 0, 0); 
+}

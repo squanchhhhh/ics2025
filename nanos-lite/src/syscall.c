@@ -3,7 +3,7 @@
 #include "syscall.h"
 #include "fs.h"
 struct timezone;
-
+static int fd_fb = 5;
 int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
   if (tv != NULL) {
     uint64_t us = io_read(AM_TIMER_UPTIME).us;
@@ -77,6 +77,20 @@ void do_syscall(Context *ctx) {
     case SYS_lseek:
       ctx->GPRx = fs_lseek(a[1], a[2], a[3]);
       break;
+
+case SYS_mmap: {
+    intptr_t *args = (intptr_t *)a[1];
+    int fd = args[4]; 
+    #ifndef FB_ADDR
+    #define FB_ADDR 0x40000000
+    #endif
+    if (fd == fd_fb) { 
+        ctx->GPRx = (uintptr_t)FB_ADDR; 
+    } else {
+        ctx->GPRx = -1;
+    }
+    break;
+}
 
     default: 
       panic("Unhandled syscall ID = %d", a[0]);

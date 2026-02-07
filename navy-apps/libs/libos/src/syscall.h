@@ -20,7 +20,8 @@ enum {
   SYS_unlink,
   SYS_wait,
   SYS_times,
-  SYS_gettimeofday
+  SYS_gettimeofday,
+  SYS_mmap
 };
 
 #endif

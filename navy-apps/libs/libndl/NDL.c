@@ -5,12 +5,23 @@
 #include <sys/select.h>
 #include <unistd.h>
 #include <sys/time.h>
+
+#define PROT_READ  0x1
+#define PROT_WRITE 0x2
+#define MAP_SHARED 0x01
+
+extern void* mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
+extern int open(const char *pathname, int flags, ...);
+
+
 static int evtdev = -1;
 static int fbdev = -1;
 static int screen_w = 0, screen_h = 0;
 static uint32_t boot_time = 0;
 static int events_fd = -1;
 static int canvas_h = 0,canvas_w = 0;
+static uint32_t *fb_mem = NULL;
+static int canvas_x0 = 0,canvas_y0 = 0;
 
 uint32_t NDL_GetTicks() {
   struct timeval tv;
@@ -38,7 +49,6 @@ void NDL_OpenCanvas(int *w, int *h) {
     // let NWM resize the window and create the frame buffer
     write(fbctl, buf, len);
     while (1) {
-      // 3 = evtdev
       int nread = read(3, buf, sizeof(buf) - 1);
       if (nread <= 0) continue;
       buf[nread] = '\0';
@@ -55,37 +65,27 @@ void NDL_OpenCanvas(int *w, int *h) {
 
   if (*w == 0) *w = screen_w;
   if (*h == 0) *h = screen_h;
+  canvas_w = *w; canvas_h = *h;
+
+  canvas_x0 = (screen_w - canvas_w) / 2;
+  canvas_y0 = (screen_h - canvas_h) / 2;
 
   if (fbdev == -1) {
     fbdev = open("/dev/fb", 0, 0);
   }
-
-  canvas_w = *w; canvas_h = *h;
+  fb_mem = (uint32_t *)mmap(NULL, screen_w * screen_h * 4, PROT_WRITE, MAP_SHARED, fbdev, 0);
   printf("NDL: Screen %d x %d, Canvas %d x %d\n", screen_w, screen_h, *w, *h);
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  int fb = fbdev;
-  int canvas_x0 = (screen_w - canvas_w) / 2;
-  int canvas_y0 = (screen_h - canvas_h) / 2;
+  for (int i = 0; i < h; i++) {
+    uint32_t *dest = fb_mem + (canvas_y0 + y + i) * screen_w + (canvas_x0 + x);
+    uint32_t *src = pixels + i * w;
+    memcpy(dest, src, w * 4); 
+  }
+  write(fbdev, NULL, 0); 
+}
 
-void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-    int fb = fbdev;
-    if (w == screen_w && x == 0) {
-        uint32_t offset = (canvas_y0 + y) * screen_w * 4;
-        lseek(fb, offset, SEEK_SET);
-        write(fb, pixels, w * h * 4); 
-    } 
-    else {
-        for (int i = 0; i < h; i++) {
-            uint32_t offset = ((canvas_y0 + y + i) * screen_w + (canvas_x0 + x)) * 4;
-            lseek(fb, offset, SEEK_SET); 
-            write(fb, pixels + i * w, w * 4);
-        }
-    }
-    write(fb, NULL, 0);
-}
-}
 
 void NDL_OpenAudio(int freq, int channels, int samples) {
 }

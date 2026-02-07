@@ -42,7 +42,7 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
 static int write_count = 0;
 size_t fb_write(const void *buf, size_t offset, size_t len) {
   write_count++;
-  if (write_count % 100 == 0) printf("Write calls: %d\n", write_count);
+  //if (write_count % 100 == 0) printf("Write calls: %d\n", write_count);
   //TIME_START();
   // 规定len==0为同步信号
   if (len == 0) {

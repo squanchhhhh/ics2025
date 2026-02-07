@@ -224,6 +224,7 @@ size_t fs_write(int fd, const void *buf, size_t len) {
     }
     return vfs_write(s_idx, buf, len);
 }
+
 size_t vfs_lseek(int s_idx, size_t offset, int whence) {
     OpenFile *of = &system_open_table[s_idx];
     Finfo *f = &file_table[of->file_idx];
