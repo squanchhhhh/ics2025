@@ -57,23 +57,24 @@ void NDL_OpenCanvas(int *w, int *h) {
   // 如果传入的 *w 或 *h 为 0，则设为屏幕大小
   if (*w == 0) *w = screen_w;
   if (*h == 0) *h = screen_h;
-  
-  // 记录画布大小
+
+  if (fbdev == -1) {
+    fbdev = open("/dev/fb", 0, 0);
+  }
+
   canvas_w = *w; canvas_h = *h;
-  printf("NDL: Screen size %d x %d, Canvas size %d x %d\n", screen_w, screen_h, *w, *h);
+  printf("NDL: Screen %d x %d, Canvas %d x %d\n", screen_w, screen_h, *w, *h);
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  int fb = open("/dev/fb", 0, 0);
   int canvas_x0 = (screen_w - canvas_w) / 2;
   int canvas_y0 = (screen_h - canvas_h) / 2;
 
   for (int i = 0; i < h; i++) {
     uint32_t offset = ((canvas_y0 + y + i) * screen_w + (canvas_x0 + x)) * 4;
-    lseek(fb, offset, SEEK_SET);
-    write(fb, pixels + i * w, w * 4);
+    lseek(fbdev, offset, SEEK_SET);
+    write(fbdev, pixels + i * w, w * 4); 
   }
-  close(fb);
 }
 
 void NDL_OpenAudio(int freq, int channels, int samples) {
