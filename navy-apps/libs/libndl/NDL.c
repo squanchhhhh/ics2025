@@ -50,11 +50,9 @@ void NDL_OpenCanvas(int *w, int *h) {
   int fd = open("/proc/dispinfo", 0, 0);
   read(fd, buf, sizeof(buf));
   
-  // 解析 WIDTH 和 HEIGHT
   sscanf(buf, "WIDTH:%d\nHEIGHT:%d", &screen_w, &screen_h);
   close(fd);
 
-  // 如果传入的 *w 或 *h 为 0，则设为屏幕大小
   if (*w == 0) *w = screen_w;
   if (*h == 0) *h = screen_h;
 
@@ -71,18 +69,22 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   int canvas_x0 = (screen_w - canvas_w) / 2;
   int canvas_y0 = (screen_h - canvas_h) / 2;
 
-  uint32_t offset = ((canvas_y0 + y) * screen_w + (canvas_x0 + x)) * 4;
-    lseek(fb, offset, SEEK_SET);
-
-    for (int i = 0; i < h; i++) {
-        if (w != screen_w && i > 0) {
-            uint32_t next_line_offset = ((canvas_y0 + y + i) * screen_w + (canvas_x0 + x)) * 4;
-            lseek(fb, next_line_offset, SEEK_SET);
+void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
+    int fb = fbdev;
+    if (w == screen_w && x == 0) {
+        uint32_t offset = (canvas_y0 + y) * screen_w * 4;
+        lseek(fb, offset, SEEK_SET);
+        write(fb, pixels, w * h * 4); 
+    } 
+    else {
+        for (int i = 0; i < h; i++) {
+            uint32_t offset = ((canvas_y0 + y + i) * screen_w + (canvas_x0 + x)) * 4;
+            lseek(fb, offset, SEEK_SET); 
+            write(fb, pixels + i * w, w * 4);
         }
-        write(fb, pixels + i * w, w * 4);
     }
-    
     write(fb, NULL, 0);
+}
 }
 
 void NDL_OpenAudio(int freq, int channels, int samples) {
