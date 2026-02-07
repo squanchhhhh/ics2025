@@ -54,8 +54,7 @@ void do_syscall(Context *ctx) {
       break;
 
   case SYS_close:
-  //todo 实现sys_close
-    ctx->GPRx = 0; 
+    ctx->GPRx = fs_close(a[1]); 
     break;
   case SYS_read:
     ctx->GPRx = fs_read(a[1], (void *)a[2], a[3]);

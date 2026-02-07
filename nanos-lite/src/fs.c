@@ -242,8 +242,26 @@ size_t vfs_lseek(int s_idx, size_t offset, int whence) {
 }
 
 
-void vfs_close(int s_idx){
+int vfs_close(int s_idx){
   OpenFile * of = &system_open_table[s_idx];
   of->used = 0;
   file_table[of->file_idx].ref --;
+  return 0;
+}
+
+
+int fs_close(int fd) {
+  if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
+    return -1;
+  }
+  int s_idx = current->fd_table[fd];
+  if (s_idx < 0) {
+    return -1; 
+  }
+
+  vfs_close(s_idx);
+
+  current->fd_table[fd] = -1;
+
+  return 0;
 }
