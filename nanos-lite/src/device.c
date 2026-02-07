@@ -28,7 +28,7 @@ size_t events_read(void *buf, size_t offset, size_t len) {
 
     return 0;
   }
-  Log("Key event detected: keycode=%d, down=%d", ev.keycode, ev.keydown);
+  //Log("Key event detected: keycode=%d, down=%d", ev.keycode, ev.keydown);
   int ret = snprintf(buf, len, "%s %s\n", 
                      ev.keydown ? "kd" : "ku", 
                      keyname[ev.keycode]);
@@ -41,6 +41,7 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
 }
 
 size_t fb_write(const void *buf, size_t offset, size_t len) {
+  //TIME_START();
   // 规定len==0为同步信号
   if (len == 0) {
     io_write(AM_GPU_FBDRAW, 0, 0, NULL, 0, 0, true);
@@ -54,7 +55,7 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
   int y = p_idx / w;
 
   io_write(AM_GPU_FBDRAW, x, y, (void *)buf, len / 4, 1, false);
-
+  //TIME_END("fb_write");
   return len;
 }
 void init_device() {
