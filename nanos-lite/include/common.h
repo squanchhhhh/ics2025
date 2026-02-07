@@ -18,7 +18,9 @@ size_t ramdisk_write(const void *buf, size_t offset, size_t len);
 #define TIME_START() uint64_t _start = io_read(AM_TIMER_UPTIME).us
 #define TIME_END(name) do { \
     uint64_t _end = io_read(AM_TIMER_UPTIME).us; \
-    printf("[Timer] %s took %llu us\n", name, _end - _start); \
+    if (_end - _start > 5000) { \
+        printf("[Timer] %s took %llu us\n", name, _end - _start); \
+    } \
 } while(0)
 
 
