@@ -80,6 +80,7 @@ void do_syscall(Context *ctx) {
 
 case SYS_mmap: {
     ctx->GPRx = 0x40000000;
+    printf("Kernel mmap: return 0x%x\n", ctx->GPRx);
     break;
 }
 
