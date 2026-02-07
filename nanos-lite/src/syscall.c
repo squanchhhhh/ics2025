@@ -17,13 +17,28 @@ int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
 //GPR3 参数2
 //GPR4 参数3
 //GPRx 也映射到 a0 (返回值)
+static uint32_t sys_counts[20] = {0};
+static uint32_t total_calls = 0;
+
 void do_syscall(Context *ctx) {
   uintptr_t a[4];
   a[0] = ctx->GPR1; 
   a[1] = ctx->GPR2; 
   a[2] = ctx->GPR3; 
   a[3] = ctx->GPR4;
-  //Log("Syscall: ID=%d, arg1=%p, arg2=%p", (int)a[0], (void *)a[1], (void *)a[2]);
+  if (a[0] < 20) {
+    sys_counts[a[0]]++;
+  }
+  total_calls++;
+  if (total_calls % 1000 == 0) {
+    printf("\n--- Syscall Report (Total: %d) ---\n", total_calls);
+    printf("WRITE: %d | LSEEK: %d | READ: %d | GETTIME: %d | YIELD: %d\n", 
+            sys_counts[SYS_write], sys_counts[SYS_lseek], 
+            sys_counts[SYS_read], sys_counts[SYS_gettimeofday],
+            sys_counts[SYS_yield]);
+    printf("----------------------------------\n");
+  }
+
   switch (a[0]) {
     case SYS_yield:
       yield();
@@ -36,33 +51,34 @@ void do_syscall(Context *ctx) {
       break;
 
     case SYS_write: 
-      //printf("Write fd:%d, buf:%p, len:%d\n", a[1], a[2], a[3]);
       ctx->GPRx = fs_write(a[1], (void *)a[2], a[3]);
       break;
 
     case SYS_open:
-      ctx->GPRx = fs_open((char *)a[1],a[2],a[3]);
-      //Log("Syscall ID %d, Returning to user with a0 = %d", ctx->GPR1, ctx->GPRx);
+      ctx->GPRx = fs_open((char *)a[1], a[2], a[3]);
       break;
 
     case SYS_brk: 
       ctx->GPRx = 0; 
       break;
 
-   case SYS_gettimeofday:
+    case SYS_gettimeofday:
       ctx->GPRx = sys_gettimeofday((struct timeval *)ctx->GPR2, (struct timezone *)ctx->GPR3);
       break;
 
-  case SYS_close:
-    ctx->GPRx = fs_close(a[1]); 
-    break;
-  case SYS_read:
-    ctx->GPRx = fs_read(a[1], (void *)a[2], a[3]);
-    break;
-  case SYS_lseek:
-        ctx->GPRx = fs_lseek(a[1], a[2], a[3]);
-        break;
-  default: 
-    panic("Unhandled syscall ID = %d", a[0]);
-}
+    case SYS_close:
+      ctx->GPRx = fs_close(a[1]); 
+      break;
+
+    case SYS_read:
+      ctx->GPRx = fs_read(a[1], (void *)a[2], a[3]);
+      break;
+
+    case SYS_lseek:
+      ctx->GPRx = fs_lseek(a[1], a[2], a[3]);
+      break;
+
+    default: 
+      panic("Unhandled syscall ID = %d", a[0]);
+  }
 }
