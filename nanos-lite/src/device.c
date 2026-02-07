@@ -41,12 +41,19 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
 }
 
 size_t fb_write(const void *buf, size_t offset, size_t len) {
+  // 规定len==0为同步信号
+  if (len == 0) {
+    io_write(AM_GPU_FBDRAW, 0, 0, NULL, 0, 0, true);
+    return 0;
+  }
+
   AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
   int w = cfg.width;
   int p_idx = offset / 4; 
   int x = p_idx % w;
   int y = p_idx / w;
-  io_write(AM_GPU_FBDRAW, x, y, (void *)buf, len / 4, 1, true);
+
+  io_write(AM_GPU_FBDRAW, x, y, (void *)buf, len / 4, 1, false);
 
   return len;
 }
