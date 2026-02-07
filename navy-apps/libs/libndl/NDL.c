@@ -71,18 +71,18 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   int canvas_x0 = (screen_w - canvas_w) / 2;
   int canvas_y0 = (screen_h - canvas_h) / 2;
 
-  if (w == screen_w && x == 0) {
-    uint32_t offset = (canvas_y0 + y) * screen_w * 4;
+  uint32_t offset = ((canvas_y0 + y) * screen_w + (canvas_x0 + x)) * 4;
     lseek(fb, offset, SEEK_SET);
-    write(fb, pixels, w * h * 4);
-  } else {
+
     for (int i = 0; i < h; i++) {
-      uint32_t offset = ((canvas_y0 + y + i) * screen_w + (canvas_x0 + x)) * 4;
-      lseek(fb, offset, SEEK_SET);
-      write(fb, pixels + i * w, w * 4); 
+        if (w != screen_w && i > 0) {
+            uint32_t next_line_offset = ((canvas_y0 + y + i) * screen_w + (canvas_x0 + x)) * 4;
+            lseek(fb, next_line_offset, SEEK_SET);
+        }
+        write(fb, pixels + i * w, w * 4);
     }
-  }
-  write(fb, NULL, 0); 
+    
+    write(fb, NULL, 0);
 }
 
 void NDL_OpenAudio(int freq, int channels, int samples) {
