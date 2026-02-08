@@ -17,7 +17,7 @@
 #define __MEMORY_HOST_H__
 
 #include <common.h>
-
+/*
 static inline word_t host_read(void *addr, int len) {
   switch (len) {
     case 1: return *(uint8_t  *)addr;
@@ -35,6 +35,22 @@ static inline void host_write(void *addr, int len, word_t data) {
     case 4: *(uint32_t *)addr = data; return;
     IFDEF(CONFIG_ISA64, case 8: *(uint64_t *)addr = data; return);
     IFDEF(CONFIG_RT_CHECK, default: assert(0));
+  }
+}
+ */
+static inline word_t host_read(void *addr, int len) {
+  word_t ret = 0;
+  for (int i = 0; i < len; i++) {
+    uint8_t byte = *((uint8_t *)addr + i);
+    ret |= (word_t)byte << (i * 8);
+  }
+  return ret;
+}
+
+static inline void host_write(void *addr, int len, word_t data) {
+  for (int i = 0; i < len; i++) {
+    uint8_t byte = (data >> (i * 8)) & 0xff;
+    *((uint8_t *)addr + i) = byte;
   }
 }
 
