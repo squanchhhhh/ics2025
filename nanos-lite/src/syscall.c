@@ -79,7 +79,8 @@ void do_syscall(Context *ctx) {
       break;
 
 case SYS_mmap: {
-    ctx->GPRx = 0x40000000;
+  //todo实现真正的mmap
+    ctx->GPRx = 0xa1000000;
     printf("Kernel mmap: return 0x%x\n", ctx->GPRx);
     break;
 }
