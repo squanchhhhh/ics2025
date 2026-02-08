@@ -73,18 +73,11 @@ void NDL_OpenCanvas(int *w, int *h) {
   if (fbdev == -1) {
     fbdev = open("/dev/fb", 0, 0);
   }
-  fb_mem = (uint32_t *)mmap(NULL, screen_w * screen_h * 4, PROT_WRITE, MAP_SHARED, fbdev, 0);
-  printf("NDL: mmap returned address %p\n", fb_mem);
   printf("NDL: Screen %d x %d, Canvas %d x %d\n", screen_w, screen_h, *w, *h);
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  for (int i = 0; i < h; i++) {
-    uint32_t *dest = fb_mem + (canvas_y0 + y + i) * screen_w + (canvas_x0 + x);
-    uint32_t *src = pixels + i * w;
-    memcpy(dest, src, w * 4); 
-  }
-  write(fbdev, NULL, 0); 
+
 }
 
 
