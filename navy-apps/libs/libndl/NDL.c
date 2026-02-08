@@ -84,7 +84,8 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
     uint32_t *src = pixels + i * w;
     memcpy(dest, src, w * 4); 
   }
-  write(fbdev, NULL, 0); 
+  int area[4] = {canvas_x0 + x, canvas_y0 + y, w, h};
+  write(fbdev, area, sizeof(area));
 }
 
 
