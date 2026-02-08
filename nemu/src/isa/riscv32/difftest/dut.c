@@ -26,9 +26,9 @@ bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
     }
   }
 
-  if (ref_r->pc != pc) {
+if (ref_r->pc != cpu.pc) { 
     printf("Check failed at PC: expected 0x%08x, but got 0x%08x\n", 
-            ref_r->pc, pc);
+            ref_r->pc, cpu.pc); 
     return false;
   }
 
