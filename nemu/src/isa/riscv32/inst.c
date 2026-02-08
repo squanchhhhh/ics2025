@@ -72,6 +72,7 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
 }
 
 static int decode_exec(Decode *s) {
+  printf("try to decode %x\n",s->dnpc);
   s->dnpc = s->snpc;
 
 #define INSTPAT_INST(s) ((s)->isa.inst)
