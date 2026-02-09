@@ -76,7 +76,7 @@ void NDL_OpenCanvas(int *w, int *h) {
   fb_mem = (uint32_t *)mmap(NULL, screen_w * screen_h * 4, PROT_WRITE, MAP_SHARED, fbdev, 0);
   printf("NDL: Screen %d x %d, Canvas %d x %d\n", screen_w, screen_h, *w, *h);
 }
-
+/*
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   int fd = fbdev;
   for (int i = 0; i < h; i++) {
@@ -85,7 +85,7 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
     write(fd, pixels + i * w, w * 4);
   }
 }
-/*
+*/
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   for (int i = 0; i < h; i++) {
     uint32_t *dest = fb_mem + (canvas_y0 + y + i) * screen_w + (canvas_x0 + x);
@@ -95,7 +95,7 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   int area[4] = {canvas_x0 + x, canvas_y0 + y, w, h};
   write(fbdev, area, sizeof(area));
 }
-*/
+
 void NDL_OpenAudio(int freq, int channels, int samples) {
 }
 
