@@ -43,7 +43,7 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
 size_t fb_write(const void *buf, size_t offset, size_t len) {
   // 规定len==0为同步信号
   if (len == 0) {
-    io_write(AM_GPU_FBDRAW, 0, 0, NULL, 0, 0, true);
+    //io_write(AM_GPU_FBDRAW, 0, 0, NULL, 0, 0, true);
     return 0;
   }
 
