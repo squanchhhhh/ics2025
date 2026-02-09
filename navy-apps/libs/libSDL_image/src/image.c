@@ -25,15 +25,36 @@ SDL_Surface* IMG_Load_RW(SDL_RWops *src, int freesrc) {
 */
 SDL_Surface* IMG_Load(const char *filename) {
   int fd = open(filename, 0);
+  if (fd < 0) {
+    printf("Failed to open file: %s\n", filename); 
+    return NULL;
+  }
+
   int size = lseek(fd, 0, SEEK_END);
+  if (size <= 0) { 
+    close(fd); 
+    return NULL; 
+  }
+  
   lseek(fd, 0, SEEK_SET);
-  char * buf = malloc(size);
-  read(fd, buf, size);
-  SDL_Surface * result = STBIMG_LoadFromMemory(buf,size);
+
+  char *buf = malloc(size);
+  if (!buf) {
+    close(fd);
+    return NULL;
+  }
+
+  int n = read(fd, buf, size);
+  if (n != size) {
+    Log("Read error: expected %d, got %d", size, n);
+  }
+
+  SDL_Surface *result = STBIMG_LoadFromMemory(buf, size);
+
+  free(buf);
   close(fd);
   return result;
 }
-
 int IMG_isPNG(SDL_RWops *src) {
   return 0;
 }
