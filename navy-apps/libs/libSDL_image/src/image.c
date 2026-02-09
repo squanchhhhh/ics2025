@@ -46,7 +46,7 @@ SDL_Surface* IMG_Load(const char *filename) {
 
   int n = read(fd, buf, size);
   if (n != size) {
-    Log("Read error: expected %d, got %d", size, n);
+    printf("Read error: expected %d, got %d\n", size, n);
   }
 
   SDL_Surface *result = STBIMG_LoadFromMemory(buf, size);
