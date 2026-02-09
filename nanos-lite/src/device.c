@@ -1,5 +1,6 @@
 #include "device.h"
 #include "am.h"
+#include <stdio.h>
 #if defined(MULTIPROGRAM) && !defined(TIME_SHARING)
 # define MULTIPROGRAM_YIELD() yield()
 #else
@@ -93,6 +94,7 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
 
   // 3. 处理 NDL_DrawRect 的封装协议 (4个int组成的同步块)
   if (len == sizeof(int) * 4) {
+    printf("enter 4*int sync\n");
     int *a = (int *)buf;
     AM_GPU_FBDRAW_T rect = {
       .x = a[0], 
@@ -103,6 +105,7 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
       .sync = true
     };
     // 注意：必须传 &rect 指针，否则内核会把坐标值当地址读
+    printf("quit 4*int sync\n");
     ioe_write(AM_GPU_FBDRAW, &rect);
     return len;
   }

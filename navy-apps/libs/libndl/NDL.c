@@ -88,10 +88,6 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
 }
 */
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  if (screen_w <= 0 || screen_w > 1024) { 
-    printf("NDL Error: Invalid screen width read: %d! Resetting to 400.\n", screen_w);
-    screen_w = 400; 
-  }
   for (int i = 0; i < h; i++) {
     uint32_t *dest = fb_mem + (canvas_y0 + y + i) * screen_w + (canvas_x0 + x);
     uint32_t *src = pixels + i * w;
