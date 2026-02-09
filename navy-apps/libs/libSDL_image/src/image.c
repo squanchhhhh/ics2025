@@ -1,3 +1,8 @@
+#include <curses.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #define SDL_malloc  malloc
 #define SDL_free    free
 #define SDL_realloc realloc
@@ -10,9 +15,23 @@ SDL_Surface* IMG_Load_RW(SDL_RWops *src, int freesrc) {
   assert(freesrc == 0);
   return NULL;
 }
-
+/*
+用libc中的文件操作打开文件, 并获取文件大小size
+申请一段大小为size的内存区间buf
+将整个文件读取到buf中
+将buf和size作为参数, 调用STBIMG_LoadFromMemory(), 它会返回一个SDL_Surface结构的指针
+关闭文件, 释放申请的内存
+返回SDL_Surface结构指针
+*/
 SDL_Surface* IMG_Load(const char *filename) {
-  return NULL;
+  int fd = open(filename, 0);
+  int size = lseek(fd, 0, SEEK_END);
+  lseek(fd, 0, SEEK_SET);
+  char * buf = malloc(size);
+  read(fd, buf, size);
+  SDL_Surface * result = STBIMG_LoadFromMemory(buf,size);
+  close(fd);
+  return result;
 }
 
 int IMG_isPNG(SDL_RWops *src) {
