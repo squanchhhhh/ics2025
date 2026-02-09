@@ -94,7 +94,7 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
     memcpy(dest, src, w * 4); 
   }
   int area[4] = {canvas_x0 + x, canvas_y0 + y, w, h};
-  write(fbdev, area, sizeof(area));
+  //write(fbdev, area, sizeof(area));
 }
 
 void NDL_OpenAudio(int freq, int channels, int samples) {
