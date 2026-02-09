@@ -155,10 +155,11 @@ int vfs_open(const char *path, int flags) {
 }
 
 int fs_open(const char *path, int flags, mode_t mode) {
-    printf("try to open file %s\n",path);
+    //printf("try to open file %s\n",path);
     (void)mode;
     int s_idx = vfs_open(path, flags);
     if (s_idx < 0) return -1;
+    system_open_table[s_idx].open_offset = 0;
     int fd = map_to_proc_fd(s_idx);
     //printf("s_idx = %d\n",s_idx);
     //printf("system_open_table[s_idx].file_idx = %d\n",system_open_table[s_idx].file_idx);
