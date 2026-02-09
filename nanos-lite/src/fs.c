@@ -186,6 +186,7 @@ size_t vfs_read(int s_idx, void *buf, size_t len) {
 }
 size_t fs_read(int fd, void *buf, size_t len) {
     int s_idx = current->fd_table[fd];
+    Log("Reading fd = %d, file = %s, len = %d", fd, file_table[fd].name, len);
     return vfs_read(s_idx, buf, len);
 }
 
