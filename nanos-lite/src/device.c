@@ -74,6 +74,7 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
   return len;
 }*/
 size_t fb_write(const void *buf, size_t offset, size_t len) {
+  printf("enter fb_write\n");
   AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
   int screen_w = cfg.width;
 
@@ -123,7 +124,7 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
 
   // 调用 AM 接口绘制一行
   ioe_write(AM_GPU_FBDRAW, &rect);
-
+printf("quit fb_write\n");
   return len;
 }
 void init_device() {
