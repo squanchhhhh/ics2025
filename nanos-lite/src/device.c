@@ -40,6 +40,9 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
   return ret;
 }
 size_t fb_write(const void *buf, size_t offset, size_t len) {
+  if (buf == NULL && len > 0) {
+    printf("Bug Found: fb_write received NULL pixels from userland!\n");
+} 
   // 规定len==0为同步信号
   if (len == 0) {
     io_write(AM_GPU_FBDRAW, 0, 0, NULL, 0, 0, true);
