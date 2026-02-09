@@ -91,7 +91,7 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   for (int i = 0; i < h; i++) {
     uint32_t *dest = fb_mem + (canvas_y0 + y + i) * screen_w + (canvas_x0 + x);
     uint32_t *src = pixels + i * w;
-    printf("copy mem from src %p to dst %p, len = %d\n",src,dest,4*w);
+    //printf("copy mem from src %p to dst %p, len = %d\n",src,dest,4*w);
     memcpy(dest, src, w * 4); 
   }
   int area[4] = {canvas_x0 + x, canvas_y0 + y, w, h};
