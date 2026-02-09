@@ -39,11 +39,8 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
   int ret = snprintf(buf, len, "WIDTH:%d\nHEIGHT:%d\n", cfg.width, cfg.height);
   return ret;
 }
-/*
+
 size_t fb_write(const void *buf, size_t offset, size_t len) {
-  if (buf == NULL && len > 0) {
-    printf("Bug Found: fb_write received NULL pixels from userland!\n");
-} 
   // 规定len==0为同步信号
   if (len == 0) {
     io_write(AM_GPU_FBDRAW, 0, 0, NULL, 0, 0, true);
@@ -73,63 +70,8 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
   
   io_write(AM_GPU_FBDRAW, x, y, (void *)buf, len / 4, 1, false);
   return len;
-}*/
-size_t fb_write(const void *buf, size_t offset, size_t len) {
-  printf("enter fb_write\n");
-  AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
-  int screen_w = cfg.width;
-
-  // 2. 处理同步信号 (NDL 中 len == 0 通常代表显存同步请求)
-  if (len == 0) {
-    printf("enter sync\n");
-    AM_GPU_FBDRAW_T rect = {
-      .x = 0, .y = 0, .w = 0, .h = 0, 
-      .pixels = NULL, 
-      .sync = true
-    };
-    ioe_write(AM_GPU_FBDRAW, &rect);
-    printf("quit sync\n");
-    return 0;
-  }
-
-  // 3. 处理 NDL_DrawRect 的封装协议 (4个int组成的同步块)
-  if (len == sizeof(int) * 4) {
-    printf("enter 4*int sync\n");
-    int *a = (int *)buf;
-    AM_GPU_FBDRAW_T rect = {
-      .x = a[0], 
-      .y = a[1], 
-      .w = a[2], 
-      .h = a[3], 
-      .pixels = NULL, 
-      .sync = true
-    };
-    // 注意：必须传 &rect 指针，否则内核会把坐标值当地址读
-    printf("quit 4*int sync\n");
-    ioe_write(AM_GPU_FBDRAW, &rect);
-    return len;
-  }
-
-  // 4. 普通像素写入模式 (基于 offset 解析坐标)
-  int p_idx = offset / 4; 
-  int x = p_idx % screen_w;
-  int y = p_idx / screen_w;
-
-  // 构造绘图结构体
-  AM_GPU_FBDRAW_T rect = {
-    .x = x,
-    .y = y,
-    .w = len / 4, // 像素个数
-    .h = 1,       // 这种模式下通常按行写入
-    .pixels = (void *)buf,
-    .sync = false
-  };
-
-  // 调用 AM 接口绘制一行
-  ioe_write(AM_GPU_FBDRAW, &rect);
-printf("quit fb_write\n");
-  return len;
 }
+
 void init_device() {
   Log("Initializing devices...");
   ioe_init();
