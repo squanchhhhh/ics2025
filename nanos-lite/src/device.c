@@ -75,45 +75,54 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
   return len;
 }*/
 size_t fb_write(const void *buf, size_t offset, size_t len) {
-  // 1. 严格检查 buf，如果地址太低（比如小于 0x1000），极有可能是无效指针
-  if (buf == NULL && len > 0) {
-    printf("[fb_write] ERROR: pixels buffer is NULL!\n");
-    return 0;
-  }
-
-  // 2. 获取屏幕宽度用于解析 offset
+  // 1. 获取屏幕配置（确保计算坐标时 w 是准确的）
   AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
-  int w = cfg.width;
+  int screen_w = cfg.width;
 
-  // 3. 处理同步信号 (len == 0)
+  // 2. 处理同步信号 (NDL 中 len == 0 通常代表显存同步请求)
   if (len == 0) {
-    // 根据你的环境，这里可能需要传结构体，也可能是多参数
-    // 我们先按你之前能跑通的多参数格式写
-    io_write(AM_GPU_FBDRAW, 0, 0, NULL, 0, 0, true);
+    AM_GPU_FBDRAW_T rect = {
+      .x = 0, .y = 0, .w = 0, .h = 0, 
+      .pixels = NULL, 
+      .sync = true
+    };
+    ioe_write(AM_GPU_FBDRAW, &rect);
     return 0;
   }
 
-  // 4. 处理 NDL_DrawRect 的同步请求 (4个int)
-  if (len == sizeof(int) * 4) { 
+  // 3. 处理 NDL_DrawRect 的封装协议 (4个int组成的同步块)
+  if (len == sizeof(int) * 4) {
     int *a = (int *)buf;
-    printf("[fb_sync] x = %d, y = %d, w = %d, h = %d, buf_ptr = %p\n", a[0], a[1], a[2], a[3], buf);
-    io_write(AM_GPU_FBDRAW, a[0], a[1], NULL, a[2], a[3], true);
+    AM_GPU_FBDRAW_T rect = {
+      .x = a[0], 
+      .y = a[1], 
+      .w = a[2], 
+      .h = a[3], 
+      .pixels = NULL, 
+      .sync = true
+    };
+    // 注意：必须传 &rect 指针，否则内核会把坐标值当地址读
+    ioe_write(AM_GPU_FBDRAW, &rect);
     return len;
   }
 
-  // 5. 传统的直接写入模式：解析坐标
+  // 4. 普通像素写入模式 (基于 offset 解析坐标)
   int p_idx = offset / 4; 
-  int x = p_idx % w;
-  int y = p_idx / w;
+  int x = p_idx % screen_w;
+  int y = p_idx / screen_w;
 
-  // --- 关键 Log：对比 mtrace ---
-  // 如果这里打印的 buf 是 0x83xxxxxx，但后面崩溃报 0x0，
-  // 证明 io_write 内部传参发生了偏移。
-  printf("[fb_write] x=%d, y=%d, buf=%p, len=%d\n", x, y, buf, (int)len);
+  // 构造绘图结构体
+  AM_GPU_FBDRAW_T rect = {
+    .x = x,
+    .y = y,
+    .w = len / 4, // 像素个数
+    .h = 1,       // 这种模式下通常按行写入
+    .pixels = (void *)buf,
+    .sync = false
+  };
 
-  // 6. 绘图调用
-  // 请注意：如果你的 io_write 定义是多参数的，确保参数顺序完全一致
-  io_write(AM_GPU_FBDRAW, x, y, (void *)buf, len / 4, 1, false);
+  // 调用 AM 接口绘制一行
+  ioe_write(AM_GPU_FBDRAW, &rect);
 
   return len;
 }
