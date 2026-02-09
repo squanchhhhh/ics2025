@@ -28,7 +28,7 @@ size_t events_read(void *buf, size_t offset, size_t len) {
 
     return 0;
   }
-  Log("Key event detected: keycode=%d, down=%d", ev.keycode, ev.keydown);
+  //Log("Key event detected: keycode=%d, down=%d", ev.keycode, ev.keydown);
   int ret = snprintf(buf, len, "%s %s\n", 
                      ev.keydown ? "kd" : "ku", 
                      keyname[ev.keycode]);
