@@ -87,16 +87,8 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
 }
 */
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  if(pixels == NULL){
-    printf("pixels is NULL\n");
-    return ;
-  }
   for (int i = 0; i < h; i++) {
     uint32_t *dest = fb_mem + (canvas_y0 + y + i) * screen_w + (canvas_x0 + x);
-    if (dest < fb_mem || dest >= fb_mem + screen_w * screen_h) {
-      printf("fbmem out of memory\n");
-    return; 
-}
     uint32_t *src = pixels + i * w;
     memcpy(dest, src, w * 4); 
   }
