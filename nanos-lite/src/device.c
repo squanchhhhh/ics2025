@@ -74,18 +74,19 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
   return len;
 }*/
 size_t fb_write(const void *buf, size_t offset, size_t len) {
-  // 1. 获取屏幕配置（确保计算坐标时 w 是准确的）
   AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
   int screen_w = cfg.width;
 
   // 2. 处理同步信号 (NDL 中 len == 0 通常代表显存同步请求)
   if (len == 0) {
+    printf("enter sync\n");
     AM_GPU_FBDRAW_T rect = {
       .x = 0, .y = 0, .w = 0, .h = 0, 
       .pixels = NULL, 
       .sync = true
     };
     ioe_write(AM_GPU_FBDRAW, &rect);
+    printf("quit sync\n");
     return 0;
   }
 
