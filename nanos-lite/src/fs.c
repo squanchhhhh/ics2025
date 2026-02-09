@@ -183,6 +183,7 @@ size_t vfs_read(int s_idx, void *buf, size_t len) {
         n = inode_read(&f->inode, buf, of->open_offset, len);
     }
     of->open_offset += n;
+    printf("read done\n");
     return n;
 }
 size_t fs_read(int fd, void *buf, size_t len) {
