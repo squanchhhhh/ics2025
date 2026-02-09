@@ -87,12 +87,14 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
 }
 */
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  static int first_time = 1;
-  if (first_time) {
-    printf("DEBUG: screen(%d,%d), canvas(%d,%d), offset(%d,%d)\n", 
-           screen_w, screen_h, canvas_w, canvas_h, canvas_x0, canvas_y0);
-    first_time = 0;
-  }
+  if (pixels == NULL) {
+        static int warned = 0;
+        if (!warned) {
+            printf("CRITICAL: NDL_DrawRect received NULL pixels pointer!\n");
+            warned = 1;
+        }
+        return; 
+    }
   for (int i = 0; i < h; i++) {
     uint32_t *dest = fb_mem + (canvas_y0 + y + i) * screen_w + (canvas_x0 + x);
     uint32_t *src = pixels + i * w;
