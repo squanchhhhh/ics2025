@@ -22,6 +22,7 @@ uintptr_t loader(PCB *pcb, const char *filename) {
 
   for (int i = 0; i < ehdr.e_phnum; i++) {
     Elf32_Phdr ph;
+    printf("Loading PHDR: vaddr 0x%x, memsz 0x%x\n", ph.p_vaddr, ph.p_memsz);
     vfs_lseek(fd, ehdr.e_phoff + i * ehdr.e_phentsize, SEEK_SET);
     vfs_read(fd, &ph, sizeof(Elf32_Phdr));
 
@@ -35,12 +36,6 @@ uintptr_t loader(PCB *pcb, const char *filename) {
   }
   fs_close(fd); 
   return ehdr.e_entry;
-}
-
-static inline void* get_sp() {
-  void *sp = NULL;
-  asm volatile("mv %0, sp" : "=r"(sp));
-  return sp;
 }
 
 void naive_uload(PCB *pcb, const char *filename) {
