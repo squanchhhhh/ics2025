@@ -69,7 +69,7 @@ static struct {
 void mount_devtmpfs() {
   int n = sizeof(dev_configs) / sizeof(dev_configs[0]);
   for (int i = 0; i < n; i++) {
-    strcpy(file_table[i].name, dev_configs[i].name);
+    file_table[i].name = strdup(dev_configs[i].name);
     file_table[i].read  = dev_configs[i].read;
     file_table[i].write = dev_configs[i].write;
     file_table[i].ref   = 1;          
