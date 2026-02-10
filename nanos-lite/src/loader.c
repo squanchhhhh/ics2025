@@ -35,7 +35,9 @@ uintptr_t loader(PCB *pcb, const char *filename) {
 
     vfs_lseek(fd, ehdr.e_phoff + i * ehdr.e_phentsize, SEEK_SET);
     vfs_read(fd, &ph, sizeof(Elf32_Phdr));
-
+    if (system_open_table[0].used == 0) {
+    printf("!!! CRITICAL: system_open_table[0] was zeroed after loading PHDR at vaddr 0x%x\n", ph.p_vaddr);
+}
     if (ph.p_type == PT_LOAD) {
       printf("Loading PHDR: vaddr 0x%x, memsz 0x%x\n", ph.p_vaddr, ph.p_memsz);
       vfs_lseek(fd, ph.p_offset, SEEK_SET);
