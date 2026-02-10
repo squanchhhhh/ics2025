@@ -154,6 +154,7 @@ void f_put(int f_idx) {
 //--
 OpenFile system_open_table[MAX_OPEN_FILES];
 int alloc_system_fd(int f_idx, int flags) {
+  printf("System table addr: %p\n", system_open_table);
   for (int i = 0; i < MAX_OPEN_FILES; i++) {
     if (!system_open_table[i].used) {
       system_open_table[i].used = 1;
