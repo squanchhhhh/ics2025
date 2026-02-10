@@ -197,6 +197,7 @@ int vfs_open(const char *path, int flags) {
 }
 
 int fs_open(const char *path, int flags, mode_t mode) {
+  printf("DEBUG: Before alloc, system_open_table[0].used = %d\n", system_open_table[0].used);
     //printf("try to open file %s\n",path);
     (void)mode;
     int s_idx = vfs_open(path, flags);
