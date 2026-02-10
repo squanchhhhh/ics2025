@@ -46,12 +46,21 @@ void naive_uload(PCB *pcb, const char *filename) {
   void *stack_top = heap.end; 
 
   Log("Jump to entry = %p, SP set to %p", (void *)entry, stack_top);
+  printf("\n=== [DEBUG] Pre-Jump System Table Check ===\n");
+  extern OpenFile system_open_table[]; // 确保能访问到它
+  for (int i = 0; i < 8; i++) {
+    printf("sys_idx [%d]: used=%d, fidx=%d, name=%s\n", 
+           i, 
+           system_open_table[i].used, 
+           system_open_table[i].file_idx,
+           system_open_table[i].used ? file_table[system_open_table[i].file_idx].name : "NONE");
+  }
+  printf("============================================\n\n");
   asm volatile (
     "mv sp, %0; jr %1" 
     : 
     : "r"(stack_top), "r"(entry) 
     : "memory"
   );
-
   panic("Should not reach here!");
 }
