@@ -39,13 +39,14 @@ Context* schedule(Context *prev) {
   return NULL;
 }
 int map_to_proc_fd(int s_idx) {
-  if (current->nr_fd >= MAX_NR_PROC_FILE) {
-    printf("current proc %s cannot open more file\n",current->name);
-    return -1; 
+  for (int i = 3; i < MAX_NR_PROC_FILE; i++) {
+    if (current->fd_table[i] == -1) { 
+      current->fd_table[i] = s_idx;
+      return i;
+    }
   }
-  //printf("system open_file table idx = %d, and return to proc fd = %d\n",s_idx,current->nr_fd);
-  current->fd_table[current->nr_fd] = s_idx;
-  return current->nr_fd++;
+  printf("Process %s: No available FD slots!\n", current->name);
+  return -1;
 }
 
 void do_execve(const char *filename) {
