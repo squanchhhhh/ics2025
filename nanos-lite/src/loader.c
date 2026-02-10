@@ -37,9 +37,16 @@ uintptr_t loader(PCB *pcb, const char *filename) {
   return ehdr.e_entry;
 }
 
+static inline void* get_sp() {
+  void *sp = NULL;
+  asm volatile("mv %0, sp" : "=r"(sp));
+  return sp;
+}
+
 void naive_uload(PCB *pcb, const char *filename) {
   uintptr_t entry = loader(pcb, filename);
   Log("load process name %s",filename);
+  printf("DEBUG: Current SP before jump = %p\n", get_sp());
   Log("Jump to entry = %p", (void *)entry);
   ((void(*)())entry) ();
 }
