@@ -30,7 +30,7 @@ void f_put(int f_idx);                        // 减少引用计数，必要时�
 typedef struct {
   int file_idx;       // 指向静态 file_table 的下标
   size_t open_offset; // 为每次open使用独立的偏移量
-  bool used;          // 槽位是否被占用
+  int used;          // 槽位是否被占用
   int flags;
 } OpenFile;
 
