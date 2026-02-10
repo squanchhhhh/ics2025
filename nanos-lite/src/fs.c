@@ -310,14 +310,11 @@ int fs_close(int fd) {
   }
   printf("fd = %d\n",fd);
   int s_idx = current->fd_table[fd];
-  printf("the s_idx of current->fd_table[%d] is %d\n",s_idx,fd);
+  printf("the s_idx of current->fd_table[%d] is %d\n",fd,s_idx);
   if (s_idx < 0) {
     return -1; 
   }
-
   vfs_close(s_idx);
-
   current->fd_table[fd] = -1;
-
   return 0;
 }
