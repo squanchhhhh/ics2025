@@ -107,9 +107,11 @@ void init_fs(){
     system_open_table[i].used = false;
   }
   // 为内核打开stdin stdout stderr
-  vfs_open("/dev/serial", 0); 
-  vfs_open("/dev/serial", 0);
-  vfs_open("/dev/serial", 0);
+  int fd0 = vfs_open("/dev/serial", 0); // stdin
+  int fd1 = vfs_open("/dev/serial", 0); // stdout
+  int fd2 = vfs_open("/dev/serial", 0); // stderr
+  
+  Log("Kernel standard I/O initialized: fd[%d, %d, %d]", fd0, fd1, fd2);
 }
 
 int find_or_alloc_finfo(uint32_t inum, const char *path) {
