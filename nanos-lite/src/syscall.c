@@ -18,8 +18,6 @@ int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
 //GPR3 参数2
 //GPR4 参数3
 //GPRx 也映射到 a0 (返回值)
-static uint32_t sys_counts[20] = {0};
-static uint32_t total_calls = 0;
 
 void do_syscall(Context *ctx) {
   uintptr_t a[4];
@@ -27,18 +25,6 @@ void do_syscall(Context *ctx) {
   a[1] = ctx->GPR2; 
   a[2] = ctx->GPR3; 
   a[3] = ctx->GPR4;
-  if (a[0] < 20) {
-    sys_counts[a[0]]++;
-  }
-  total_calls++;
-  if (total_calls % 1000 == 0) {
-    printf("\n--- Syscall Report (Total: %d) ---\n", total_calls);
-    printf("WRITE: %d | LSEEK: %d | READ: %d | GETTIME: %d | YIELD: %d\n", 
-            sys_counts[SYS_write], sys_counts[SYS_lseek], 
-            sys_counts[SYS_read], sys_counts[SYS_gettimeofday],
-            sys_counts[SYS_yield]);
-    printf("----------------------------------\n");
-  }
 
   switch (a[0]) {
     case SYS_yield:
@@ -83,7 +69,7 @@ void do_syscall(Context *ctx) {
     case SYS_mmap: {
       //todo实现真正的mmap
         ctx->GPRx = 0xa1000000;
-        printf("Kernel mmap: return 0x%x\n", ctx->GPRx);
+       // printf("Kernel mmap: return 0x%x\n", ctx->GPRx);
         break;
     }
     case SYS_execve:{
