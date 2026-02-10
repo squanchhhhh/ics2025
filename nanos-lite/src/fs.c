@@ -302,11 +302,14 @@ void vfs_close(int s_idx) {
 }
 
 
+
 int fs_close(int fd) {
+  printf("try to close fd = %d\n",fd);
   if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
     return -1;
   }
   int s_idx = current->fd_table[fd];
+  printf("the s_idx of current->fd_table[%d] is %d\n",s_idx,fd);
   if (s_idx < 0) {
     return -1; 
   }
