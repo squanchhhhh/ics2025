@@ -45,9 +45,17 @@ static inline void* get_sp() {
 
 void naive_uload(PCB *pcb, const char *filename) {
   uintptr_t entry = loader(pcb, filename);
-  Log("load process name %s",filename);
-  printf("DEBUG: Current SP before jump = %p\n", get_sp());
-  Log("Jump to entry = %p", (void *)entry);
-  ((void(*)())entry) ();
-}
 
+  extern Area heap;
+  void *stack_top = heap.end; 
+
+  Log("Jump to entry = %p, SP set to %p", (void *)entry, stack_top);
+  asm volatile (
+    "mv sp, %0; jr %1" 
+    : 
+    : "r"(stack_top), "r"(entry) 
+    : "memory"
+  );
+
+  panic("Should not reach here!");
+}
