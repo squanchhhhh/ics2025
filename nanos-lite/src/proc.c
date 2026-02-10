@@ -27,11 +27,13 @@ void init_proc() {
   Log("Initializing processes...");
   char * file_name = "/bin/nterm";
   current->name = file_name;
-  for (int i = 0; i < 3; i++) {
-    int s_idx = alloc_system_fd(i,0); 
-    current->fd_table[i] = s_idx; 
-  }
-  current->nr_fd = 3;
+  for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
+      if (i < 3) {
+        current->fd_table[i] = alloc_system_fd(i, 0); 
+      } else {
+        current->fd_table[i] = -1;
+      }
+    }
   naive_uload(NULL, file_name);
 }
 

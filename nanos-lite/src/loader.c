@@ -13,17 +13,13 @@
 #endif
 
 uintptr_t loader(PCB *pcb, const char *filename) {
-
   Elf32_Ehdr ehdr;
   int fd = vfs_open(filename, 0);
   if (fd < 0) panic("Open %s failed", filename);
-
   vfs_read(fd, &ehdr, sizeof(Elf32_Ehdr));
   assert(*(uint32_t *)ehdr.e_ident == 0x464c457f);
-
   for (int i = 0; i < ehdr.e_phnum; i++) {
     Elf32_Phdr ph;
-
     vfs_lseek(fd, ehdr.e_phoff + i * ehdr.e_phentsize, SEEK_SET);
     vfs_read(fd, &ph, sizeof(Elf32_Phdr));
     if (ph.p_type == PT_LOAD) {
