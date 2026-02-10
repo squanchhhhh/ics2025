@@ -101,7 +101,7 @@ enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB};
 void init_fs(){
   mount_root_fs();
   mount_devtmpfs();
-
+  memset(system_open_table, 0, sizeof(OpenFile) * MAX_OPEN_FILES);
   // 初始化系统打开文件表
   for (int i = 0; i < MAX_OPEN_FILES; i++) {
     system_open_table[i].used = false;
