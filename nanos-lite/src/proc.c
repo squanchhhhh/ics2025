@@ -48,3 +48,7 @@ int map_to_proc_fd(int s_idx) {
   current->fd_table[current->nr_fd] = s_idx;
   return current->nr_fd++;
 }
+
+void do_execve(const char *filename) {
+    naive_uload(NULL, filename);
+}

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "syscall.h"
 #include "fs.h"
+#include "proc.h"
 struct timezone;
 
 int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
@@ -46,8 +47,9 @@ void do_syscall(Context *ctx) {
       break;
 
     case SYS_exit:
-      Log("Process exited with code %d", a[1]);
-      halt(0); 
+      //Log("Process exited with code %d", a[1]);
+      //halt(0); 
+      do_execve("/bin/nterm");
       break;
 
     case SYS_write: 
@@ -78,12 +80,16 @@ void do_syscall(Context *ctx) {
       ctx->GPRx = fs_lseek(a[1], a[2], a[3]);
       break;
 
-case SYS_mmap: {
-  //todo实现真正的mmap
-    ctx->GPRx = 0xa1000000;
-    printf("Kernel mmap: return 0x%x\n", ctx->GPRx);
-    break;
-}
+    case SYS_mmap: {
+      //todo实现真正的mmap
+        ctx->GPRx = 0xa1000000;
+        printf("Kernel mmap: return 0x%x\n", ctx->GPRx);
+        break;
+    }
+    case SYS_execve:{
+        do_execve((const char *)a[1]);
+        break;
+    }
 
     default: 
       panic("Unhandled syscall ID = %d", a[0]);

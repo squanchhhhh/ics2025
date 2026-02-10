@@ -3,6 +3,7 @@
 
 #include <common.h>
 #include <memory.h>
+void do_execve(const char *filename);
 #define STACK_SIZE (8 * PGSIZE)
 #define MAX_NR_PROC_FILE 32
 typedef union {

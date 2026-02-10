@@ -23,6 +23,13 @@ static void sh_prompt() {
 }
 
 static void sh_handle_cmd(const char *cmd) {
+  static char buf[128];
+  strncpy(buf, cmd, sizeof(buf) - 1);
+  char *ptr = strchr(buf, '\n');
+  if (ptr) *ptr = '\0';
+  if (strlen(buf) == 0) return;
+  execve(buf, NULL, NULL);
+  printf("Command not found: %s\n", buf);
 }
 
 void builtin_sh_run() {
