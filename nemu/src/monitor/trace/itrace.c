@@ -20,21 +20,23 @@ void print_recent_insts() {
 
   for (int i = 0; i < cnt; i++) {
     get_pc_source(iringbuf.pc[i], filename, &line_num);
-
     if (i == iringbuf.error_idx) {
       printf("--> ");
     } else {
       printf("    ");
     }
+
     if (line_num != -1) {
-      printf("%-50s | %s:%d\n", iringbuf.buf[i], filename, line_num);
+      char *short_filename = strrchr(filename, '/');
+      short_filename = (short_filename) ? short_filename + 1 : filename;
+
+      printf("%-50s | %s:%d\n", iringbuf.buf[i], short_filename, line_num);
     } else {
-      printf("%-50s | unknown\n", iringbuf.buf[i]);
+      printf("%-50s | [unknown]\n", iringbuf.buf[i]);
     }
   }
   printf("------------------------------------------------\n");
 }
-
 void init_iring(){
   iringbuf.tail = 0;
   iringbuf.num = 0;
