@@ -13,6 +13,16 @@
 #endif
 
 uintptr_t loader(PCB *pcb, const char *filename) {
+    printf("\n=== [DEBUG] Pre-Jump System Table Check ===\n");
+  extern OpenFile system_open_table[]; // 确保能访问到它
+  for (int i = 0; i < 8; i++) {
+    printf("sys_idx [%d]: used=%d, fidx=%d, name=%s\n", 
+           i, 
+           system_open_table[i].used, 
+           system_open_table[i].file_idx,
+           system_open_table[i].used ? file_table[system_open_table[i].file_idx].name : "NONE");
+  }
+  printf("============================================\n\n");
   Elf32_Ehdr ehdr;
   int fd = vfs_open(filename, 0);
   if (fd < 0) panic("Open %s failed", filename);
