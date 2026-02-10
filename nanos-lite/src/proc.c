@@ -27,7 +27,6 @@ void init_proc() {
   Log("Initializing processes...");
   char * file_name = "/bin/nterm";
   current->name = file_name;
-  Log("load process name %s",current->name);
   for (int i = 0; i < 3; i++) {
     int s_idx = alloc_system_fd(i,0); 
     current->fd_table[i] = s_idx; 
