@@ -107,9 +107,9 @@ void init_fs(){
     system_open_table[i].used = false;
   }
   // 为内核打开stdin stdout stderr
-  fs_open("/dev/serial", 0, 0); 
-  fs_open("/dev/serial", 0, 0);
-  fs_open("/dev/serial", 0, 0);
+  vfs_open("/dev/serial", 0); 
+  vfs_open("/dev/serial", 0);
+  vfs_open("/dev/serial", 0);
 }
 
 int find_or_alloc_finfo(uint32_t inum, const char *path) {
