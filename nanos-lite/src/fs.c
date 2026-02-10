@@ -8,17 +8,20 @@
 #include <string.h>
 #include "device.h"
 
-enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB};
-size_t invalid_read(void *buf, size_t offset, size_t len) {
-  panic("should not reach here");
-  return 0;
-}
+Finfo file_table[MAX_MEM_INODES] __attribute__((used)) = {
+  /*
+  [FD_STDIN]  = { .name = "stdin",  .read = invalid_read, .write = invalid_write },
+  [FD_STDOUT] = { .name = "stdout", .read = invalid_read, .write = serial_write },
+  [FD_STDERR] = { .name = "stderr", .read = invalid_read, .write = serial_write },
+  {.name="/dev/serial",  .read = invalid_read, .write = serial_write}, 
+  {.name="/dev/fb",.read = invalid_read, .write = fb_write},   
+  {.name="/dev/events",  .read = events_read,  .write = invalid_write}, 
+  {.name="/proc/dispinfo",  .read = dispinfo_read, .write = invalid_write}, 
+  { .name = NULL }
+   */
+};
 
-size_t invalid_write(const void *buf, size_t offset, size_t len) {
-  panic("should not reach here");
-  return 0;
-}
-
+// -- fs-disk
 void disk_read(void *buf, uint32_t block_num) {
     ramdisk_read(buf, block_num * BSIZE, BSIZE);
 }
@@ -27,65 +30,96 @@ void disk_write(const void *buf, uint32_t block_num) {
     ramdisk_write(buf, block_num * BSIZE, BSIZE);
 }
 
-//--
-static int first_free_idx = 0;
-Finfo file_table[MAX_MEM_INODES] __attribute__((used)) = {
-  [FD_STDIN]  = { .name = "stdin",  .read = invalid_read, .write = invalid_write },
-  [FD_STDOUT] = { .name = "stdout", .read = invalid_read, .write = serial_write },
-  [FD_STDERR] = { .name = "stderr", .read = invalid_read, .write = serial_write },
-  [FD_FB]     = { .name = "/dev/fb",.read = invalid_read, .write = fb_write},   
-  {.name="/dev/serial",  .read = invalid_read, .write = serial_write}, 
-  {.name="/dev/events",  .read = events_read,  .write = invalid_write}, 
-  {.name="/proc/dispinfo",  .read = dispinfo_read, .write = invalid_write}, 
-  { .name = NULL }
-};
-#define STATIC_FILE 4
-
-void init_fs(){
-  //  读取super_block
+int mount_root_fs(){
   char buf[BSIZE];
   disk_read(buf, 1);
   struct superblock *temp_sb = (struct superblock *)buf;
-
   if (temp_sb->magic != 0x20010124) {
-    printf("error fs\n");
-    return ;
+    Log("Failed to mount: Unknown file system magic 0x%x", temp_sb->magic);
+    return -1;
   }
   memcpy(&sb, temp_sb, sizeof(struct superblock));
   //printf("FileSystem Info: root=%d, inode_start=%d, IPB=%d\n", 
   //sb.root_inum, sb.inode_start, IPB);
-  //初始化内存 Inode 表 (file_table)
-  AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
-  int i = 0;
-  while (file_table[i].name != NULL) {
+  Log("FileSystem mounted successfully.");
+  return 0;
+}
+// -- fs-device
+size_t invalid_read(void *buf, size_t offset, size_t len) {
+  panic("should not reach here");
+  return 0;
+}
+size_t invalid_write(const void *buf, size_t offset, size_t len) {
+  panic("should not reach here");
+  return 0;
+}
+static int nr_device = 0;
+
+static struct {
+  const char *name;
+  size_t (*read)(void *, size_t, size_t);
+  size_t (*write)(const void *, size_t, size_t);
+} dev_configs[] = {
+  {"/dev/serial",  invalid_read, serial_write},
+  {"/dev/fb",      invalid_read, fb_write},
+  {"/dev/events",  events_read,  invalid_write},
+  {"/proc/dispinfo", dispinfo_read, invalid_write},
+};
+
+void mount_devtmpfs() {
+  int n = sizeof(dev_configs) / sizeof(dev_configs[0]);
+  for (int i = 0; i < n; i++) {
+    strcpy(file_table[i].name, dev_configs[i].name);
+    file_table[i].read  = dev_configs[i].read;
+    file_table[i].write = dev_configs[i].write;
+    file_table[i].ref   = 1;          
+    file_table[i].inum  = 0xFFFFFFFF; 
     if (strcmp(file_table[i].name, "/dev/fb") == 0) {
-      file_table[i].inode.size = cfg.width * cfg.height * 4;
+       AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
+       file_table[i].inode.size = cfg.width * cfg.height * 4;
     }
-    file_table[i].ref = 1;
-    file_table[i].inum = 0xFFFFFFFF; 
-    i++;
   }
-  first_free_idx = i; 
-  for (; i < MAX_MEM_INODES; i++) {
-    file_table[i].ref = 0;
-    file_table[i].inum = 0;
-    file_table[i].name = NULL;
-  }
-  // 初始化系统打开文件表 (system_open_table)
+  nr_device = n; 
+  Log("VFS: %d devices registered in devtmpfs.", nr_device);
+}
+//增加设备
+int vfs_register_device(const char *name, void *read_fn, void *write_fn) {
+  if (nr_device >= MAX_MEM_INODES) return -1;
+  int idx = nr_device++;
+  file_table[idx].name = strdup(name);
+  file_table[idx].read = read_fn;
+  file_table[idx].write = write_fn;
+  file_table[idx].ref = 1;
+  file_table[idx].inum = 0xFFFFFFFF;
+  return 0;
+}
+
+// -- fs-vfs
+enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB};
+
+void init_fs(){
+  mount_root_fs();
+  mount_devtmpfs();
+  // 初始化系统打开文件表
   for (int i = 0; i < MAX_OPEN_FILES; i++) {
     system_open_table[i].used = false;
-    system_open_table[i].file_idx = -1;
-    system_open_table[i].open_offset = 0;
   }
+  // 为内核打开stdin stdout stderr
+  int fd_in  = fs_open("/dev/serial", 0, 0); 
+  int fd_out = fs_open("/dev/serial", 0, 0);
+  int fd_err = fs_open("/dev/serial", 0, 0);
+
+  Log("VFS: OS standard streams initialized (Global IDs: %d, %d, %d)", fd_in, fd_out, fd_err);
 }
+
 int find_or_alloc_finfo(uint32_t inum, const char *path) {
-  for (int i = first_free_idx; i < MAX_MEM_INODES; i++) {
+  for (int i = nr_device; i < MAX_MEM_INODES; i++) {
     if (file_table[i].ref > 0 && file_table[i].inum == inum) {
       file_table[i].ref++; 
       return i;
     }
   }
-  for (int i = first_free_idx; i < MAX_MEM_INODES; i++) {
+  for (int i = nr_device; i < MAX_MEM_INODES; i++) {
     if (file_table[i].ref == 0) {
       file_table[i].inum = inum;
       file_table[i].ref = 1;
@@ -99,15 +133,21 @@ int find_or_alloc_finfo(uint32_t inum, const char *path) {
   return -1; 
 }
 void f_put(int f_idx) {
-  if (f_idx < 3) return; 
-  Finfo *temp = &file_table[f_idx];
-  if (temp->ref > 0) {
-    temp->ref--;
-    if (temp->ref == 0) {
-      printf("VFS: Releasing memory inode for %s\n", temp->name);
-      temp->inum = 0;
+    if (f_idx < 0 || f_idx >= MAX_MEM_INODES) return;
+    Finfo *f = &file_table[f_idx];
+    //跳过设备文件
+    if (f->inum == 0xFFFFFFFF) {
+        return; 
     }
-  }
+    if (f->ref > 0) {
+        f->ref--;
+        if (f->ref == 0) {
+            Log("VFS: Releasing memory inode for %s (inum: %d)", f->name, f->inum);
+            f->name = NULL;  
+            f->inum = 0;
+            memset(&f->inode, 0, sizeof(struct dinode));
+        }
+    }
 }
 //--
 OpenFile system_open_table[MAX_OPEN_FILES];
