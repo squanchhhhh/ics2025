@@ -1,6 +1,5 @@
 #include <trace/ftrace.h>
 #include <trace/elf.h>
-#include <trace/tui.h>
 
 static FTraceEntry te[MAX_FUNC_TRACE];
 static int nr_func_trace_event = 0;
@@ -35,20 +34,15 @@ void ftrace_print() {
   printf("------- [ FTrace Log ] -------\n");
   int indentation = 0;
 
-  char filename[256];
-  int line_num;
-
   for (int i = 0; i < nr_func_trace_event; i++) {
     Func *f = elf_get_func_by_id(te[i].func_id);
     if (!f) continue;
 
-    // 1. 获取当前 PC 对应的源码位置
-    get_pc_source(te[i].pc, filename, &line_num);
-
-    // 2. 打印 PC 地址和源码信息（用括号标注）
-    printf("0x%08x [%s:%d]: ", te[i].pc, filename, line_num);
+    // 打印当前的 PC 地址
+    printf("0x%08x: ", te[i].pc);
 
     if (te[i].type == FUNC_CALL) {
+      // 处理缩进
       for (int j = 0; j < indentation; j++) printf("  ");
       printf("call [%s@0x%08x]\n", f->name, f->begin);
       indentation++;
