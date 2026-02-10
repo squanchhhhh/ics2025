@@ -154,7 +154,7 @@ void f_put(int f_idx) {
 //--
 OpenFile system_open_table[MAX_OPEN_FILES];
 int alloc_system_fd(int f_idx, int flags) {
-  printf("System table addr: %p\n", system_open_table);
+  //printf("System table addr: %p\n", system_open_table);
   for (int i = 0; i < MAX_OPEN_FILES; i++) {
     if (!system_open_table[i].used) {
       system_open_table[i].used = 1;
@@ -308,6 +308,7 @@ int fs_close(int fd) {
   if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
     return -1;
   }
+  printf("fd = %d\n",fd);
   int s_idx = current->fd_table[fd];
   printf("the s_idx of current->fd_table[%d] is %d\n",s_idx,fd);
   if (s_idx < 0) {
