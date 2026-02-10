@@ -15,7 +15,7 @@
 
 #include "sdb.h"
 #include <stdio.h>
-
+#include <isa.h>
 #define NR_WP 32
 
 typedef struct watchpoint {
@@ -76,7 +76,7 @@ bool check_wp(WP *wp) {
   word_t new_val = expr(wp->expr,&success);
   assert(success);
   if (new_val != wp->last_val) {
-    printf("Watchpoint %d triggered:\n", wp->NO);
+    printf("Watchpoint %d triggered at pc = 0x%x\n", wp->NO, cpu.pc);
     printf("  expr = %s\n", wp->expr);
     printf("  old value = 0x%x\n", wp->last_val);
     printf("  new value = 0x%x\n", new_val);
