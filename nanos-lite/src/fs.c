@@ -164,7 +164,7 @@ int alloc_system_fd(int f_idx, int flags) {
       } else {
         system_open_table[i].open_offset = 0;
       }
-      //printf("alloc sys_open_table idx %d, point to fdx %d, name in file_table is %s\n",i,f_idx,file_table[f_idx].name);
+      printf("alloc sys_open_table idx %d, point to fdx %d, name in file_table is %s\n",i,f_idx,file_table[f_idx].name);
       file_table[f_idx].ref++; 
       return i;
     }
