@@ -82,6 +82,7 @@ void mount_devtmpfs() {
   nr_device = n; 
   Log("VFS: %d devices registered in devtmpfs.", nr_device);
 }
+
 //增加设备
 int vfs_register_device(const char *name, void *read_fn, void *write_fn) {
   if (nr_device >= MAX_MEM_INODES) return -1;
@@ -100,16 +101,15 @@ enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB};
 void init_fs(){
   mount_root_fs();
   mount_devtmpfs();
+
   // 初始化系统打开文件表
   for (int i = 0; i < MAX_OPEN_FILES; i++) {
     system_open_table[i].used = false;
   }
   // 为内核打开stdin stdout stderr
-  int fd_in  = fs_open("/dev/serial", 0, 0); 
-  int fd_out = fs_open("/dev/serial", 0, 0);
-  int fd_err = fs_open("/dev/serial", 0, 0);
-
-  Log("VFS: OS standard streams initialized (Global IDs: %d, %d, %d)", fd_in, fd_out, fd_err);
+  fs_open("/dev/serial", 0, 0); 
+  fs_open("/dev/serial", 0, 0);
+  fs_open("/dev/serial", 0, 0);
 }
 
 int find_or_alloc_finfo(uint32_t inum, const char *path) {

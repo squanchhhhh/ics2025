@@ -2,7 +2,7 @@
 #include <common.h>
 #include <isa.h>
 #include "sdb.h"
-#include "tui.h"
+#include "trace/tui.h"
 #include <memory/vaddr.h>
 #include "trace/elf.h"
 #include <ncurses.h>
@@ -46,7 +46,6 @@ static char current_src_file[256] = ""; // 当前缓存的源码文件名
 static char *src_lines[4096];           // 源码行缓存数组
 static int line_count = 0;              // 当前文件的总行数
 
-/* --- 函数具体实现 (后略) --- */
 // --- 工具函数：获取源码位置 ---
 void get_pc_source(uint32_t pc, char *filename, int *line) {
     char cmd[512];
@@ -69,7 +68,6 @@ void get_pc_source(uint32_t pc, char *filename, int *line) {
         pclose(fp);
     }
 }
-
 // --- 工具函数：加载源码到内存 ---
 void load_source_file(const char *filename) {
     if (strcmp(current_src_file, filename) == 0) return;

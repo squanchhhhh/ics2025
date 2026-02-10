@@ -23,7 +23,7 @@
 #include "trace/ftrace.h"
 #include "trace/itrace.h"
 #include "trace/mtrace.h"
-#include "tui.h"
+#include "trace/tui.h"
 
 /* --- 函数原型声明 (Function Prototypes) --- */
 
