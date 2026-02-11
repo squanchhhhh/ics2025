@@ -64,6 +64,7 @@ static char* stack_push_str(uintptr_t *cur_sp, const char *str) {
 }
 
 static uintptr_t setup_stack(uintptr_t sp_top, char *const argv[], char *const envp[]) {
+  memset((void *)(sp_top - 1024), 0, 1024);
   uintptr_t cur_sp = sp_top;
   int argc = 0, envc = 0;
 
