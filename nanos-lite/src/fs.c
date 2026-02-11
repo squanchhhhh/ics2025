@@ -175,6 +175,23 @@ void f_put(int f_idx) {
 }
 //--
 OpenFile system_open_table[MAX_OPEN_FILES];
+void dump_vfs_table() {
+    printf("\n--- VFS System Open Table Snapshot ---\n");
+    printf("ID  | USED | FILE_IDX | REF | OFFSET | NAME\n");
+    for (int i = 0; i < MAX_OPEN_FILES; i++) {
+        if (system_open_table[i].used) {
+            int f_idx = system_open_table[i].file_idx;
+            printf("%-3d | %-4d | %-8d | %-3d | %-6d | %s\n", 
+                   i, 
+                   system_open_table[i].used, 
+                   f_idx, 
+                   file_table[f_idx].ref, 
+                   system_open_table[i].open_offset,
+                   file_table[f_idx].name);
+        }
+    }
+    printf("--------------------------------------\n\n");
+}
 /*
 功能：在系统打开文件表(system_open_table)中分配槽位并绑定物理文件
 1. 遍历系统打开文件表，寻找 used 为 false 的空闲项
@@ -197,6 +214,8 @@ int alloc_system_fd(int f_idx, int flags) {
       file_table[f_idx].ref++; 
       printf("VFS: Allocated sys_open_table[%d] -> file_table[%d] (%s), ref=%d\n",
               i, f_idx, file_table[f_idx].name, file_table[f_idx].ref);
+
+      dump_vfs_table();
       return i;
     }
   }
