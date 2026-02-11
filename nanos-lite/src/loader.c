@@ -70,56 +70,80 @@ static char* stack_push_str(uintptr_t *cur_sp, const char *str) {
 5. 准备内核栈上的上下文
 */
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
+  // 1. 加载 ELF 得到入口地址
   uintptr_t entry = loader(pcb, filename);
   Log("ELF entry at %p", (void*)entry);
+
+  // 2. 分配用户栈 (32KB)
   void *ustack_bottom = new_page(8); 
   uintptr_t ustack_top = (uintptr_t)ustack_bottom + 8 * 4096;
-  Log("New page allocated at %p, ustack_top set to %p", ustack_bottom, (void*)ustack_top);
   uintptr_t cur_sp = ustack_top;
 
-
+  // 3. 计算 argc 和 envc
   int argc = 0;
   if (argv) { while (argv[argc]) argc++; }
   int envc = 0;
   if (envp) { while (envp[envc]) envc++; }
 
- 
+  // 4. 第一步：将所有字符串内容压入栈顶（从高地址往低地址）
+  // 压入 envp 字符串内容
   char *envp_ptr[envc];
-  for (int i = 0; i < envc; i++) {
+  for (int i = envc - 1; i >= 0; i--) {
     envp_ptr[i] = stack_push_str(&cur_sp, envp[i]);
-    Log("Pushing argv[%d]: %s, cur_sp before push: %p", i, argv[i], (void*)cur_sp);
   }
 
+  // 压入 argv 字符串内容
   char *argv_ptr[argc];
-  for (int i = 0; i < argc; i++) {
+  for (int i = argc - 1; i >= 0; i--) {
     argv_ptr[i] = stack_push_str(&cur_sp, argv[i]);
   }
 
-  cur_sp &= ~0xf;
-
+  // 5. 第二步：在字符串区域下方，预留并填充指针数组
   uintptr_t *sp = (uintptr_t *)cur_sp;
-  
-  *(--sp) = 0; 
+
+  // 压入 envp 指针数组（以 NULL 结尾）
+  sp--; *sp = 0; 
   for (int i = envc - 1; i >= 0; i--) {
-    *(--sp) = (uintptr_t)envp_ptr[i];
+    sp--; *sp = (uintptr_t)envp_ptr[i];
   }
 
-  *(--sp) = 0;
+  // 压入 argv 指针数组（以 NULL 结尾）
+  sp--; *sp = 0; 
   for (int i = argc - 1; i >= 0; i--) {
-    *(--sp) = (uintptr_t)argv_ptr[i];
+    sp--; *sp = (uintptr_t)argv_ptr[i];
   }
 
-  *(--sp) = argc;
-  Log("Final user sp (to be set in GPRx): %p", (void*)cur_sp);
+  // 压入 argc
+  sp--; *sp = (uintptr_t)argc;
+
+  // 6. 第三步：强制 16 字节对齐
+  // RISC-V 调用规范要求 sp 在进入入口点时必须对齐
+  uintptr_t final_sp = (uintptr_t)sp & ~0xf;
+
+  // 调试信息：确认 BusyBox 能看到什么
+  Log("---- User Stack Layout Check for %s ----", filename);
+  Log("Final SP set to: %p", (void*)final_sp);
+  Log("argc = %d at %p", *(int *)final_sp, (void*)final_sp);
+  char **check_argv = (char **)((uintptr_t)final_sp + sizeof(uintptr_t));
+  Log("argv[0] = %p (\"%s\")", check_argv[0], check_argv[0]);
+
+  // 7. 初始化 PCB 状态
   Area kstack = { .start = pcb->stack, .end = pcb->stack + sizeof(pcb->stack) };
+  
+  // 初始化文件描述符表，防止垃圾值
   for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
     pcb->fd_table[i] = -1; 
   }
-  pcb->fd_table[0] = 0; 
-  pcb->fd_table[1] = 1; 
-  pcb->fd_table[2] = 2;
+  pcb->fd_table[0] = 0; // stdin
+  pcb->fd_table[1] = 1; // stdout
+  pcb->fd_table[2] = 2; // stderr
+
+  // 创建用户上下文
   pcb->cp = ucontext(NULL, kstack, (void *)entry);
-  pcb->cp->GPRx = (uintptr_t)sp; 
   
+  // 关键：将 a0 (GPRx) 设置为对齐后的栈指针
+  pcb->cp->GPRx = final_sp; 
+
+  // 设置进程名
   strcpy(pcb->name, filename);
 }
