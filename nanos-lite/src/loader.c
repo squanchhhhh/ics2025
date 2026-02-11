@@ -64,49 +64,46 @@ static char* stack_push_str(uintptr_t *cur_sp, const char *str) {
 }
 
 static uintptr_t setup_stack(uintptr_t sp_top, char *const argv[], char *const envp[]) {
-  memset((void *)(sp_top - 1024), 0, 1024);
   uintptr_t cur_sp = sp_top;
   int argc = 0, envc = 0;
 
   if (argv) { while (argv[argc]) argc++; }
   if (envp) { while (envp[envc]) envc++; }
 
-  // 1. 临时存储字符串在用户栈中的虚拟地址
+  // 1. 先把字符串内容压入栈顶（从高地址往低地址）
   char *argv_va[argc];
   char *envp_va[envc];
-
-  // 2. 第一步：压入字符串内容（高地址）
   for (int i = envc - 1; i >= 0; i--) envp_va[i] = stack_push_str(&cur_sp, envp[i]);
   for (int i = argc - 1; i >= 0; i--) argv_va[i] = stack_push_str(&cur_sp, argv[i]);
 
-  // 3. 第二步：压入指针数组和 argc（低地址）
-  // 必须先转换类型，方便以 4 字节为单位操作
-  uintptr_t *ptr_sp = (uintptr_t *)cur_sp;
-
-  ptr_sp--; *ptr_sp = 0; // envp[envc] = NULL
-  for (int i = envc - 1; i >= 0; i--) {
-    ptr_sp--; *ptr_sp = (uintptr_t)envp_va[i];
+  // 2. 预留指针数组的空间
+  // 布局: [argc] [argv[0...n]] [NULL] [envp[0...n]] [NULL]
+  // 总共需要的 4 字节(uintptr_t) 单元数量:
+  int total_slots = 1 + argc + 1 + envc + 1;
+  uintptr_t array_start = cur_sp - (total_slots * sizeof(uintptr_t));
+  
+  // 3. 16 字节对齐
+  uintptr_t final_sp = array_start & ~0xf;
+  
+  // 4. 使用数组下标填充，绝对不会错位
+  uintptr_t *ptr_stack = (uintptr_t *)final_sp;
+  int k = 0;
+  
+  ptr_stack[k++] = (uintptr_t)argc;  // sp[0] = argc
+  for (int i = 0; i < argc; i++) {
+    ptr_stack[k++] = (uintptr_t)argv_va[i];
   }
-
-  ptr_sp--; *ptr_sp = 0; // argv[argc] = NULL
-  for (int i = argc - 1; i >= 0; i--) {
-    ptr_sp--; *ptr_sp = (uintptr_t)argv_va[i];
+  ptr_stack[k++] = 0;                // argv[argc] = NULL
+  
+  for (int i = 0; i < envc; i++) {
+    ptr_stack[k++] = (uintptr_t)envp_va[i];
   }
+  ptr_stack[k++] = 0;                // envp[envc] = NULL
 
-  ptr_sp--; *ptr_sp = (uintptr_t)argc;
+  // 5. 最后的验证 Log
+  Log("Stack verification: sp=%p, argc=%d, argv[0] at %p is %s", 
+      (void*)final_sp, (int)ptr_stack[0], (void*)ptr_stack[1], (char*)ptr_stack[1]);
 
-  // 4. 最终 16 字节对齐
-  uintptr_t final_sp = (uintptr_t)ptr_sp & ~0xf;
-
-  // --- 关键 Debug Log ---
-  Log("Stack Setup: sp_top=%p, final_sp=%p, argc=%d", (void*)sp_top, (void*)final_sp, argc);
-  if (argc > 0) {
-    // 检查第一个参数是否被正确读出，如果这里打印不对，说明压栈逻辑内部就错了
-    char **check_argv = (char **)(final_sp + sizeof(uintptr_t));
-    Log("Verify argv[0]: addr=%p, content=\"%s\"", check_argv[0], check_argv[0]);
-  }
-  uintptr_t *debug_ptr = (uintptr_t *)final_sp;
-Log("DEBUG BEFORE RETURN: sp=%p, argc=%d, argv[0]=%p", debug_ptr, debug_ptr[0], (void *)debug_ptr[1]);
   return final_sp;
 }
 
