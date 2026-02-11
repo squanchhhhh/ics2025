@@ -73,6 +73,6 @@ Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
   Context *c = (Context *)((uintptr_t)kstack.end - sizeof(Context));
   c->mepc = (uintptr_t)entry;
   c->mstatus = 0x1800; 
-  c->pdir = as->ptr;
+  c->pdir = (as != NULL ? as->ptr : NULL);
   return c;
 }
