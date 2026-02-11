@@ -57,7 +57,7 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 
 static char* stack_push_str(uintptr_t *cur_sp, const char *str) {
   size_t len = strlen(str) + 1;
-  *cur_sp -= len;
+  *cur_sp -= len; 
   strcpy((char *)*cur_sp, str);
   return (char *)*cur_sp;
 }
