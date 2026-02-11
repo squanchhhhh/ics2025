@@ -1,9 +1,11 @@
 #include <common.h>
 #include "syscall.h"
+#include "proc.h"
 void do_syscall(Context *ctx);
 static Context* do_event(Event e, Context* c) {
   switch (e.event) {
     case EVENT_YIELD:
+      return schedule(c);
       //printf("Yield event recognized!\n");
       break;
     case EVENT_SYSCALL:

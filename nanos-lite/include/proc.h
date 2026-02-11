@@ -21,4 +21,5 @@ typedef union {
 extern PCB *current;
 void naive_uload(PCB *pcb, const char *filename);
 int map_to_proc_fd(int s_idx);
+Context* schedule(Context *prev);
 #endif
