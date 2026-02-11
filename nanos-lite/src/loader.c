@@ -112,8 +112,7 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   uintptr_t entry = loader(pcb, filename);
   
   // 2. 准备用户栈
-  void *ustack_bottom = new_page(8); 
-  uintptr_t ustack_top = (uintptr_t)ustack_bottom + 8 * 4096;
+  uintptr_t ustack_top = 0x87ffffff;
 
   // 3. 调用拆分后的压栈函数
   uintptr_t final_sp = setup_stack(ustack_top, argv, envp);
