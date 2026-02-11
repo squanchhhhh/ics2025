@@ -317,9 +317,6 @@ size_t fs_read(int fd, void *buf, size_t len) {
 4. 写入完成后更新 inode.size（若文件增长）并同步更新 open_offset
 */
 size_t vfs_write(int s_idx, const void *buf, size_t len) {
-    if (s_idx == 1) {
-      printf("KERNEL_DEBUG: Writing to stdout: %s\n", (char *)buf);
-    }
     if (s_idx < 0 || s_idx >= MAX_OPEN_FILES || !system_open_table[s_idx].used) return -1;
     OpenFile *of = &system_open_table[s_idx];
     Finfo *f = &file_table[of->file_idx];
