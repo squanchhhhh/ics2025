@@ -212,10 +212,10 @@ int alloc_system_fd(int f_idx, int flags) {
         system_open_table[i].open_offset = 0;
       }
       file_table[f_idx].ref++; 
-      printf("VFS: Allocated sys_open_table[%d] -> file_table[%d] (%s), ref=%d\n",
-              i, f_idx, file_table[f_idx].name, file_table[f_idx].ref);
+      //printf("VFS: Allocated sys_open_table[%d] -> file_table[%d] (%s), ref=%d\n",
+              //i, f_idx, file_table[f_idx].name, file_table[f_idx].ref);
 
-      dump_vfs_table();
+      //dump_vfs_table();
       return i;
     }
   }
@@ -284,8 +284,8 @@ int fs_open(const char *path, int flags, mode_t mode) {
         vfs_close(s_idx); 
         return -1;
     }
-    Log("[Syscall] Process '%s' mapped System Index %d (%s) and file idx %d to local FD %d", 
-            current->name, s_idx, file_table[system_open_table[s_idx].file_idx].name,system_open_table[s_idx].file_idx,fd);
+    //Log("[Syscall] Process '%s' mapped System Index %d (%s) and file idx %d to local FD %d", 
+            //current->name, s_idx, file_table[system_open_table[s_idx].file_idx].name,system_open_table[s_idx].file_idx,fd);
     return fd; 
 }
 /*

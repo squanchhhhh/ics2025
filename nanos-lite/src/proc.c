@@ -21,7 +21,7 @@ void hello_fun(void *arg) {
     yield();
   }
 }
-
+/*
 void init_proc() {
   switch_boot_pcb();
   Log("Initializing processes...");
@@ -35,12 +35,25 @@ void init_proc() {
       }
     }
   naive_uload(NULL, file_name);
+}*/
+void init_proc() {
+  Area stack0 = { .start = pcb[0].stack, .end = pcb[0].stack + sizeof(pcb[0].stack) };
+  pcb[0].cp = kcontext(stack0, hello_fun, (void *)1);
+
+  Area stack1 = { .start = pcb[1].stack, .end = pcb[1].stack + sizeof(pcb[1].stack) };
+  pcb[1].cp = kcontext(stack1, hello_fun, (void *)2);
+
+  current = &pcb[0];
+
+  Log("Initializing processes... Two kernel threads created.");
+
 }
 
 Context* schedule(Context *prev) {
-  return NULL;
+  current->cp = prev;
+  current = (current == &pcb[0] ? &pcb[1] : &pcb[0]);
+  return current->cp;
 }
-
 /*
 功能：在当前进程的文件描述符中，添加一个系统打开文件表的对应
 1.寻找一个空的文件描述符表项
