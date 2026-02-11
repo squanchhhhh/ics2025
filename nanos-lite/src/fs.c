@@ -425,6 +425,7 @@ void vfs_close(int s_idx) {
 4. 将进程 fd_table 对应项重置为 -1，使该 FD 可被后续 open 复用
 */
 int fs_close(int fd) {
+  if (fd >= 0 && fd <= 2) return 0; //禁止关闭stdio
   printf("fs_close fd = %d\n",fd);
   if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
     return -1;
