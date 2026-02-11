@@ -412,6 +412,7 @@ void vfs_close(int s_idx) {
       f_put(f_idx);
     }
   }
+  printf("set s_idx %d used == 0\n",s_idx);
   of->used = 0; 
   of->file_idx = -1;
   of->open_offset = 0; 
