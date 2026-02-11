@@ -71,9 +71,10 @@ static char* stack_push_str(uintptr_t *cur_sp, const char *str) {
 */
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   uintptr_t entry = loader(pcb, filename);
-
+  Log("ELF entry at %p", (void*)entry);
   void *ustack_bottom = new_page(8); 
   uintptr_t ustack_top = (uintptr_t)ustack_bottom + 8 * 4096;
+  Log("New page allocated at %p, ustack_top set to %p", ustack_bottom, (void*)ustack_top);
   uintptr_t cur_sp = ustack_top;
 
 
@@ -86,6 +87,7 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   char *envp_ptr[envc];
   for (int i = 0; i < envc; i++) {
     envp_ptr[i] = stack_push_str(&cur_sp, envp[i]);
+    Log("Pushing argv[%d]: %s, cur_sp before push: %p", i, argv[i], (void*)cur_sp);
   }
 
   char *argv_ptr[argc];
@@ -108,7 +110,7 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   }
 
   *(--sp) = argc;
-
+Log("Final user sp (to be set in GPRx): %p", (void*)cur_sp);
   Area kstack = { .start = pcb->stack, .end = pcb->stack + sizeof(pcb->stack) };
   pcb->cp = ucontext(NULL, kstack, (void *)entry);
   pcb->cp->GPRx = (uintptr_t)sp; 
