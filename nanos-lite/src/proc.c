@@ -50,9 +50,12 @@ void init_proc() {
 }
 
 Context* schedule(Context *prev) {
-  current->cp = prev;
-  current = (current == &pcb[0] ? &pcb[1] : &pcb[0]);
-  return current->cp;
+    printf("prev_cp (main's): %p\n", prev);
+    printf("pcb[0].cp: %p, pcb[1].cp: %p\n", pcb[0].cp, pcb[1].cp);
+    current->cp = prev;
+    current = (current == &pcb[0] ? &pcb[1] : &pcb[0]);
+    printf("Returning next_cp: %p\n", current->cp); 
+    return current->cp;
 }
 /*
 功能：在当前进程的文件描述符中，添加一个系统打开文件表的对应
