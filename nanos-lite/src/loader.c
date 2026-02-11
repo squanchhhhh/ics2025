@@ -36,17 +36,17 @@ uintptr_t loader(PCB *pcb, const char *filename) {
 }
 
 void naive_uload(PCB *pcb, const char *filename) {
-  uintptr_t entry = loader(pcb, filename);
-
-  extern Area heap;
-  void *stack_top = heap.end; 
-
-  Log("Jump to entry = %p, SP set to %p", (void *)entry, stack_top);
-  asm volatile (
-    "mv sp, %0; jr %1" 
-    : 
-    : "r"(stack_top), "r"(entry) 
-    : "memory"
-  );
-  panic("Should not reach here!");
+    uintptr_t entry = loader(pcb, filename);
+    uintptr_t stack_top = (uintptr_t)heap.end & ~0xf; 
+    
+    // 在栈上压入 3 个 0 (argc, argv, envp) 以满足 C 库初始化
+    uintptr_t *sp = (uintptr_t *)stack_top;
+    sp -= 4;
+    sp[0] = 0; 
+    
+    Log("Jump to entry = %p, SP = %p", (void *)entry, sp);
+    asm volatile (
+        "mv sp, %0; jr %1" 
+        : : "r"(sp), "r"(entry) : "memory"
+    );
 }

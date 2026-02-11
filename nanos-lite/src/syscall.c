@@ -39,6 +39,9 @@ void do_syscall(Context *ctx) {
       break;
 
     case SYS_write: 
+    if (a[1] == 1 || a[1] == 2) {
+        printf("[Kernel Syscall] Write to stdout: %d bytes\n", a[3]);
+    }
       ctx->GPRx = fs_write(a[1], (void *)a[2], a[3]);
       break;
 
