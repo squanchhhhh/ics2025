@@ -43,19 +43,24 @@ void init_proc() {
   Area stack1 = { .start = pcb[1].stack, .end = pcb[1].stack + sizeof(pcb[1].stack) };
   pcb[1].cp = kcontext(stack1, hello_fun, (void *)2);
 
-  current = &pcb[0];
+  current = &pcb_boot;
 
   Log("Initializing processes... Two kernel threads created.");
 
 }
 
 Context* schedule(Context *prev) {
-    printf("prev_cp (main's): %p\n", prev);
-    printf("pcb[0].cp: %p, pcb[1].cp: %p\n", pcb[0].cp, pcb[1].cp);
+  if (current != NULL) {
     current->cp = prev;
-    current = (current == &pcb[0] ? &pcb[1] : &pcb[0]);
-    printf("Returning next_cp: %p\n", current->cp); 
-    return current->cp;
+  }
+
+  if (current == &pcb[0]) {
+    current = &pcb[1];
+  } else {
+    current = &pcb[0];
+  }
+
+  return current->cp;
 }
 /*
 功能：在当前进程的文件描述符中，添加一个系统打开文件表的对应
