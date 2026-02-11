@@ -104,7 +104,8 @@ static uintptr_t setup_stack(uintptr_t sp_top, char *const argv[], char *const e
     char **check_argv = (char **)(final_sp + sizeof(uintptr_t));
     Log("Verify argv[0]: addr=%p, content=\"%s\"", check_argv[0], check_argv[0]);
   }
-
+  uintptr_t *debug_ptr = (uintptr_t *)final_sp;
+Log("DEBUG BEFORE RETURN: sp=%p, argc=%d, argv[0]=%p", debug_ptr, debug_ptr[0], (void *)debug_ptr[1]);
   return final_sp;
 }
 
