@@ -81,7 +81,7 @@ void do_syscall(Context *ctx) {
        // printf("Kernel mmap: return 0x%x\n", ctx->GPRx);
         break;
     }
-case SYS_execve: {
+  case SYS_execve: {
       const char *fname = (const char *)a[1];
       char *const *argv = (char *const *)a[2];
       char *const *envp = (char *const *)a[3];

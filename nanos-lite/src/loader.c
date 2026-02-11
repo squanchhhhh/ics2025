@@ -13,6 +13,8 @@
 #endif
 
 uintptr_t loader(PCB *pcb, const char *filename) {
+  Log("Trace[2]: Loader finished reading ELF");
+  Log("  filename check: %s", filename);
   Elf32_Ehdr ehdr;
   int fd = vfs_open(filename, 0);
   if (fd < 0) panic("Open %s failed", filename);
@@ -125,6 +127,10 @@ static uintptr_t setup_stack(uintptr_t sp_top, char *const argv[], char *const e
 }
 
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
+  Log("Trace[3]: About to setup_stack for %s", filename);
+  if (argv && argv[0]) {
+      Log("  Final check before push: argv[0] at %p is '%s'", argv[0], argv[0]);
+  };
   // 1. 加载 ELF
   uintptr_t entry = loader(pcb, filename);
   
