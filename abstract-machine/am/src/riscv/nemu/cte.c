@@ -20,6 +20,10 @@ Context* __am_irq_handle(Context *c) {
     }
 
     c = user_handler(ev, c);
+    if (ev.event == EVENT_YIELD) {
+    printf("Switching to mepc: %p, mstatus: %p, sp: %p\n", 
+            (void *)c->mepc, (void *)c->mstatus, (void *)c);
+    }
     assert(c != NULL);
   }
 
