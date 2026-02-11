@@ -25,7 +25,7 @@ void hello_fun(void *arg) {
 void init_proc() {
   switch_boot_pcb();
   Log("Initializing processes...");
-  char * file_name = "/bin/nterm";
+  char * file_name = "/bin/hello";
   current->name = file_name;
   for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
       if (i < 3) {
