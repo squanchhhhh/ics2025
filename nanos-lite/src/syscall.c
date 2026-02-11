@@ -33,8 +33,9 @@ void do_syscall(Context *ctx) {
       break;
 
     case SYS_exit:
-      //Log("Process exited with code %d", a[1]);
-      //halt(0); 
+      Log("Process exited with code %d", a[1]);
+      halt(0); 
+      /*
       printf("proc %s quit\n",current->name);
       for (int i = 3; i < MAX_NR_PROC_FILE; i++) {
           if (current->fd_table[i] != -1) {
@@ -43,6 +44,7 @@ void do_syscall(Context *ctx) {
           }
       }
       do_execve("/bin/nterm");
+      */
       break;
 
     case SYS_write: 
