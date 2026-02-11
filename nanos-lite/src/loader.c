@@ -30,7 +30,7 @@ uintptr_t loader(PCB *pcb, const char *filename) {
       }
     }
   }
-  printf("current fd = %d\n",fd);
+  //printf("current fd = %d\n",fd);
   fs_close(fd); 
   return ehdr.e_entry;
 }
@@ -39,7 +39,7 @@ void naive_uload(PCB *pcb, const char *filename) {
     uintptr_t entry = loader(pcb, filename);
     uintptr_t stack_top = (uintptr_t)heap.end & ~0xf; 
     
-    // 在栈上压入 3 个 0 (argc, argv, envp) 以满足 C 库初始化
+    // 在栈上压入 3 个 0 (argc, argv, envp)
     uintptr_t *sp = (uintptr_t *)stack_top;
     sp -= 4;
     sp[0] = 0; 

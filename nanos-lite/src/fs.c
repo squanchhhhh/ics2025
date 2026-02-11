@@ -324,7 +324,7 @@ size_t vfs_write(int s_idx, const void *buf, size_t len) {
         of->open_offset = f->inode.size;
     }
     size_t n = 0;
-    printf("call f.write = %p f.name = %s\n",f->write,f->name);
+    //printf("call f.write = %p f.name = %s\n",f->write,f->name);
     if (f->write != NULL) {
         n = f->write(buf, of->open_offset, len);
     } else {
@@ -424,7 +424,7 @@ void vfs_close(int s_idx) {
 4. 将进程 fd_table 对应项重置为 -1，使该 FD 可被后续 open 复用
 */
 int fs_close(int fd) {
-  printf("fs_close fd = %d\n",fd);
+  //printf("fs_close fd = %d\n",fd);
   if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
     return -1;
   }
