@@ -70,38 +70,55 @@ static uintptr_t setup_stack(uintptr_t sp_top, char *const argv[], char *const e
   if (argv) { while (argv[argc]) argc++; }
   if (envp) { while (envp[envc]) envc++; }
 
-  // 1. 先把字符串内容压入栈顶（从高地址往低地址）
+  Log("SetupStack: sp_top=%p, argc=%d, envc=%d", (void*)sp_top, argc, envc);
+
+  // 1. 推入字符串内容
   char *argv_va[argc];
   char *envp_va[envc];
-  for (int i = envc - 1; i >= 0; i--) envp_va[i] = stack_push_str(&cur_sp, envp[i]);
-  for (int i = argc - 1; i >= 0; i--) argv_va[i] = stack_push_str(&cur_sp, argv[i]);
 
-  // 2. 预留指针数组的空间
-  // 布局: [argc] [argv[0...n]] [NULL] [envp[0...n]] [NULL]
-  // 总共需要的 4 字节(uintptr_t) 单元数量:
+  // 增加对环境变量的监控，有些程序（如 BusyBox）对 envp 的格式非常敏感
+  for (int i = envc - 1; i >= 0; i--) {
+    envp_va[i] = stack_push_str(&cur_sp, envp[i]);
+  }
+  
+  for (int i = argc - 1; i >= 0; i--) {
+    argv_va[i] = stack_push_str(&cur_sp, argv[i]);
+    Log("  Pushing argv[%d]: '%s' at %p", i, argv_va[i], (void*)argv_va[i]);
+  }
+
+  // 2. 计算指针表空间并对齐
   int total_slots = 1 + argc + 1 + envc + 1;
   uintptr_t array_start = cur_sp - (total_slots * sizeof(uintptr_t));
+  uintptr_t final_sp = array_start & ~0xf; // 16字节对齐
   
-  // 3. 16 字节对齐
-  uintptr_t final_sp = array_start & ~0xf;
-  
-  // 4. 使用数组下标填充，绝对不会错位
+  // 打印对齐前后的差异，确认没有“吃掉”重要数据
+  Log("  Pointer area: start=%p, final_sp=%p (padding: %d bytes)", 
+      (void*)array_start, (void*)final_sp, (int)(array_start - final_sp));
+
+  // 3. 填充指针表
   uintptr_t *ptr_stack = (uintptr_t *)final_sp;
   int k = 0;
   
-  ptr_stack[k++] = (uintptr_t)argc;  // sp[0] = argc
+  ptr_stack[k++] = (uintptr_t)argc;
   for (int i = 0; i < argc; i++) {
     ptr_stack[k++] = (uintptr_t)argv_va[i];
   }
-  ptr_stack[k++] = 0;                // argv[argc] = NULL
+  ptr_stack[k++] = 0; // argv[argc] = NULL
   
   for (int i = 0; i < envc; i++) {
     ptr_stack[k++] = (uintptr_t)envp_va[i];
   }
-  ptr_stack[k++] = 0;                // envp[envc] = NULL
+  ptr_stack[k++] = 0; // envp[envc] = NULL
+
+  // 4. 深度内存检查：打印 final_sp 处的原始数据（以 4 字节为单位）
+  // 这能帮你确认 argc 是否真的在栈底
+  Log("  Stack Raw Data Dump (at final_sp):");
+  for (int i = 0; i < total_slots; i++) {
+     Log("    sp[%d] (%p): 0x%08x", i, &ptr_stack[i], ptr_stack[i]);
+  }
 
   // 5. 最后的验证 Log
-  Log("Stack verification: sp=%p, argc=%d, argv[0] at %p is %s", 
+  Log("Stack verification: sp=%p, argc=%d, argv[0] at %p is '%s'", 
       (void*)final_sp, (int)ptr_stack[0], (void*)ptr_stack[1], (char*)ptr_stack[1]);
 
   return final_sp;
