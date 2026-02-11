@@ -81,17 +81,33 @@ void do_syscall(Context *ctx) {
        // printf("Kernel mmap: return 0x%x\n", ctx->GPRx);
         break;
     }
-    case SYS_execve: {
+case SYS_execve: {
       const char *fname = (const char *)a[1];
       char *const *argv = (char *const *)a[2];
       char *const *envp = (char *const *)a[3];
 
+      // 1. 打印尝试执行的文件名
+      Log("Syscall SYS_execve: fname = %s", fname);
+
+      // 2. 打印传入的 argv，确认 Shell 到底想干嘛
+      if (argv) {
+        for (int i = 0; argv[i] != NULL; i++) {
+          Log("  argv[%d] = %s", i, argv[i]);
+        }
+      } else {
+        Log("  argv = NULL");
+      }
+
       int fd = fs_open(fname, 0, 0);
       if (fd < 0) {
+        // 3. 重点：如果找不到文件，打印提示
+        Log("  Execve failed: file '%s' not found. Returning -2 (ENOENT).", fname);
         ctx->GPRx = -2; 
       } else {
         fs_close(fd);
+        Log("  Execve success: loading '%s'...", fname);
         do_execve(fname, argv, envp); 
+        // 注意：如果 do_execve 正常工作，它会替换上下文，代码通常不会执行到这里
       }
       break;
     }
