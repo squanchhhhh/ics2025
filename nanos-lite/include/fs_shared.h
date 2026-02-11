@@ -20,7 +20,20 @@ struct dirent {
   uint16_t inum;       
   char name[DIRSIZ];   
 };
-
+/*
+struct superblock {
+  uint32_t magic;        // 0x20010124
+  uint32_t size;         // 总块数：32MB/4KB = 8192
+  uint32_t nblocks;      // 数据块数量：8173
+  uint32_t ninodes;      // Inode 总数：1024
+  
+  // 起始地址
+  uint32_t bmap_start;   // 位图起始块号：2 前128字节作为inode位图，后面为data位图
+  uint32_t inode_start;  // Inode Table 起始块号：3
+  uint32_t data_start;   // 数据区起始块号：19
+  
+  uint32_t root_inum;    // 根目录的 Inode 号
+}; total 9 * 4B = 36B*/
 struct superblock {
     uint32_t magic;
     uint32_t size;
