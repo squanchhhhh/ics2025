@@ -55,17 +55,63 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
   pcb->cp = kcontext(kstack, entry, arg);
 }
 
-void context_uload(PCB *pcb, const char *filename) {
+static char* stack_push_str(uintptr_t *cur_sp, const char *str) {
+  size_t len = strlen(str) + 1;
+  *cur_sp -= len;
+  strcpy((char *)*cur_sp, str);
+  return (char *)*cur_sp;
+}
+
+/*功能：加载用户程序
+1. 加载 ELF 得到入口地址
+2. 分配用户栈
+3. 计算 argc, envp
+4. 压栈
+5. 准备内核栈上的上下文
+*/
+void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   uintptr_t entry = loader(pcb, filename);
-  
+
   void *ustack_bottom = new_page(8); 
-  void *ustack_top = ustack_bottom + 8 * 4096;
+  uintptr_t ustack_top = (uintptr_t)ustack_bottom + 8 * 4096;
+  uintptr_t cur_sp = ustack_top;
+
+
+  int argc = 0;
+  if (argv) { while (argv[argc]) argc++; }
+  int envc = 0;
+  if (envp) { while (envp[envc]) envc++; }
+
+ 
+  char *envp_ptr[envc];
+  for (int i = 0; i < envc; i++) {
+    envp_ptr[i] = stack_push_str(&cur_sp, envp[i]);
+  }
+
+  char *argv_ptr[argc];
+  for (int i = 0; i < argc; i++) {
+    argv_ptr[i] = stack_push_str(&cur_sp, argv[i]);
+  }
+
+  cur_sp &= ~0xf;
+
+  uintptr_t *sp = (uintptr_t *)cur_sp;
+  
+  *(--sp) = 0; 
+  for (int i = envc - 1; i >= 0; i--) {
+    *(--sp) = (uintptr_t)envp_ptr[i];
+  }
+
+  *(--sp) = 0;
+  for (int i = argc - 1; i >= 0; i--) {
+    *(--sp) = (uintptr_t)argv_ptr[i];
+  }
+
+  *(--sp) = argc;
 
   Area kstack = { .start = pcb->stack, .end = pcb->stack + sizeof(pcb->stack) };
-
-  printf("kstack.start = %p, kstack.end = %p\n",kstack.start,kstack.end);
-
   pcb->cp = ucontext(NULL, kstack, (void *)entry);
-
-  pcb->cp->GPRx = (uintptr_t)ustack_top; 
+  pcb->cp->GPRx = (uintptr_t)sp; 
+  
+  strcpy(pcb->name, filename);
 }

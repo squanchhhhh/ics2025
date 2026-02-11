@@ -81,15 +81,19 @@ void do_syscall(Context *ctx) {
        // printf("Kernel mmap: return 0x%x\n", ctx->GPRx);
         break;
     }
-    case SYS_execve:{
-            for (int i = 3; i < MAX_NR_PROC_FILE; i++) {
-          if (current->fd_table[i] != -1) {
-              fs_close(i); 
-              current->fd_table[i] = -1;
-          }
+    case SYS_execve: {
+      const char *fname = (const char *)a[1];
+      char *const *argv = (char *const *)a[2];
+      char *const *envp = (char *const *)a[3];
+
+      int fd = fs_open(fname, 0, 0);
+      if (fd < 0) {
+        ctx->GPRx = -2; 
+      } else {
+        fs_close(fd);
+        do_execve(fname, argv, envp); 
       }
-        do_execve((const char *)a[1]);
-        break;
+      break;
     }
 
     default: 

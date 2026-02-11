@@ -16,7 +16,9 @@ void switch_boot_pcb() {
 void hello_fun(void *arg) {
   int j = 1;
   while (1) {
-    Log("Hello World from Nanos-lite with arg '%p' for the %dth time!", (void *)(uintptr_t)arg, j);
+    if (j % 100 == 0){
+          Log("Hello World from Nanos-lite with arg '%p' for the %dth time!", (void *)(uintptr_t)arg, j);
+    }
     j ++;
     yield();
   }
@@ -37,11 +39,11 @@ void init_proc() {
   naive_uload(NULL, file_name);
 }*/
 void init_proc() {
-  // PCB[0] 跑内核线程
   context_kload(&pcb[0], hello_fun, (void *)1);
 
-  // PCB[1] 跑用户程序
-  context_uload(&pcb[1], "/bin/hello");
+  char *argv[] = {"/bin/nterm", NULL};
+  char *envp[] = {"PATH=/bin:/usr/bin", NULL};
+  context_uload(&pcb[1], "/bin/nterm", argv, envp);
 
   switch_boot_pcb();
 }
@@ -80,6 +82,7 @@ int map_to_proc_fd(int s_idx) {
   return -1;
 }
 
-void do_execve(const char *filename) {
-    context_uload(NULL, filename);
+void do_execve(const char *filename, char *const argv[], char *const envp[]) {
+  context_uload(current, filename, argv, envp);
+  yield(); 
 }
