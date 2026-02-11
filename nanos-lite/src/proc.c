@@ -44,7 +44,7 @@ void init_proc() {
   char *argv[] = {"hello", "world", NULL};
   char *envp[] = {"PATH=/bin:/usr/bin", NULL};
   
-  context_uload(&pcb[1], "/bin/hello", argv, envp);
+  context_uload(&pcb[1], "/bin/nterm", argv, envp);
 
   switch_boot_pcb();
 }
