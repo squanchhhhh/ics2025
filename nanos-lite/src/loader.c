@@ -110,8 +110,14 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   }
 
   *(--sp) = argc;
-Log("Final user sp (to be set in GPRx): %p", (void*)cur_sp);
+  Log("Final user sp (to be set in GPRx): %p", (void*)cur_sp);
   Area kstack = { .start = pcb->stack, .end = pcb->stack + sizeof(pcb->stack) };
+  for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
+    pcb->fd_table[i] = -1; 
+  }
+  pcb->fd_table[0] = 0; 
+  pcb->fd_table[1] = 1; 
+  pcb->fd_table[2] = 2;
   pcb->cp = ucontext(NULL, kstack, (void *)entry);
   pcb->cp->GPRx = (uintptr_t)sp; 
   
