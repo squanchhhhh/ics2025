@@ -34,7 +34,7 @@ uintptr_t loader(PCB *pcb, const char *filename) {
   vfs_close(fd); 
   return ehdr.e_entry;
 }
-
+/*
 void naive_uload(PCB *pcb, const char *filename) {
     uintptr_t entry = loader(pcb, filename);
     uintptr_t stack_top = (uintptr_t)heap.end & ~0xf; 
@@ -49,4 +49,21 @@ void naive_uload(PCB *pcb, const char *filename) {
         "mv sp, %0; jr %1" 
         : : "r"(sp), "r"(entry) : "memory"
     );
+}*/
+void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
+  Area kstack = { .start = pcb->stack, .end = pcb->stack + sizeof(pcb->stack) };
+  pcb->cp = kcontext(kstack, entry, arg);
+}
+
+void context_uload(PCB *pcb, const char *filename) {
+  uintptr_t entry = loader(pcb, filename);
+  
+  void *ustack_bottom = new_page(8); 
+  void *ustack_top = ustack_bottom + 8 * 4096;
+
+  Area kstack = { .start = pcb->stack, .end = pcb->stack + sizeof(pcb->stack) };
+
+  pcb->cp = ucontext(NULL, kstack, (void *)entry);
+
+  pcb->cp->GPRx = (uintptr_t)ustack_top; 
 }

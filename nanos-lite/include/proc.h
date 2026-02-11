@@ -22,4 +22,6 @@ extern PCB *current;
 void naive_uload(PCB *pcb, const char *filename);
 int map_to_proc_fd(int s_idx);
 Context* schedule(Context *prev);
+void context_uload(PCB *pcb, const char *filename) ;
+void context_kload(PCB *pcb, void (*entry)(void *), void *arg);
 #endif

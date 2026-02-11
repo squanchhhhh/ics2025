@@ -37,16 +37,13 @@ void init_proc() {
   naive_uload(NULL, file_name);
 }*/
 void init_proc() {
-  Area stack0 = { .start = pcb[0].stack, .end = pcb[0].stack + sizeof(pcb[0].stack) };
-  pcb[0].cp = kcontext(stack0, hello_fun, (void *)1);
+  // PCB[0] 跑内核线程
+  context_kload(&pcb[0], hello_fun, (void *)1);
 
-  Area stack1 = { .start = pcb[1].stack, .end = pcb[1].stack + sizeof(pcb[1].stack) };
-  pcb[1].cp = kcontext(stack1, hello_fun, (void *)2);
+  // PCB[1] 跑用户程序（比如仙剑）
+  context_uload(&pcb[1], "/bin/hello");
 
-  current = &pcb_boot;
-
-  Log("Initializing processes... Two kernel threads created.");
-
+  switch_boot_pcb();
 }
 
 Context* schedule(Context *prev) {
@@ -84,5 +81,5 @@ int map_to_proc_fd(int s_idx) {
 }
 
 void do_execve(const char *filename) {
-    naive_uload(NULL, filename);
+    context_uload(NULL, filename);
 }
