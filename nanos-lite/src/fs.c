@@ -327,6 +327,7 @@ size_t vfs_write(int s_idx, const void *buf, size_t len) {
         of->open_offset = f->inode.size;
     }
     size_t n = 0;
+    printf("call f.write = %p f.name = %s\n",f->write,f->name);
     if (f->write != NULL) {
         n = f->write(buf, of->open_offset, len);
     } else {
