@@ -181,7 +181,7 @@ void dump_vfs_table() {
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
         if (system_open_table[i].used) {
             int f_idx = system_open_table[i].file_idx;
-            printf("%-3d | %-4d | %-8d | %-3d | %-6d | %s\n", 
+            printf("%d | %d | %d | %d | %d | %s\n", 
                    i, 
                    system_open_table[i].used, 
                    f_idx, 
