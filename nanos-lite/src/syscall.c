@@ -36,11 +36,12 @@ void do_syscall(Context *ctx) {
       //Log("Process exited with code %d", a[1]);
       //halt(0); 
       printf("proc %s quit\n",current->name);
-      for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
-        if (current->fd_table[i] != -1) {
-            fs_close(i); 
-        }
-    }
+      for (int i = 3; i < MAX_NR_PROC_FILE; i++) {
+          if (current->fd_table[i] != -1) {
+              fs_close(i); 
+              current->fd_table[i] = -1;
+          }
+      }
       do_execve("/bin/nterm");
       break;
 
@@ -79,6 +80,12 @@ void do_syscall(Context *ctx) {
         break;
     }
     case SYS_execve:{
+            for (int i = 3; i < MAX_NR_PROC_FILE; i++) {
+          if (current->fd_table[i] != -1) {
+              fs_close(i); 
+              current->fd_table[i] = -1;
+          }
+      }
         do_execve((const char *)a[1]);
         break;
     }
