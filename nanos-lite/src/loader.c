@@ -31,7 +31,7 @@ uintptr_t loader(PCB *pcb, const char *filename) {
     }
   }
   //printf("current fd = %d\n",fd);
-  fs_close(fd); 
+  vfs_close(fd); 
   return ehdr.e_entry;
 }
 
