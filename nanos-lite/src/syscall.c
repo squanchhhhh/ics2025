@@ -35,13 +35,15 @@ void do_syscall(Context *ctx) {
     case SYS_exit:
       //Log("Process exited with code %d", a[1]);
       //halt(0); 
+      for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
+        if (current->fd_table[i] != -1) {
+            fs_close(i); 
+        }
+    }
       do_execve("/bin/nterm");
       break;
 
     case SYS_write: 
-    if (a[1] == 1 || a[1] == 2) {
-        printf("[Kernel Syscall] Write to stdout: %d bytes\n", a[3]);
-    }
       ctx->GPRx = fs_write(a[1], (void *)a[2], a[3]);
       break;
 
