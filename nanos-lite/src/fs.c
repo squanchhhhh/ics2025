@@ -212,8 +212,8 @@ int alloc_system_fd(int f_idx, int flags) {
         system_open_table[i].open_offset = 0;
       }
       file_table[f_idx].ref++; 
-      //printf("VFS: Allocated sys_open_table[%d] -> file_table[%d] (%s), ref=%d\n",
-              //i, f_idx, file_table[f_idx].name, file_table[f_idx].ref);
+      printf("VFS: Allocated sys_open_table[%d] -> file_table[%d] (%s), ref=%d\n",
+              i, f_idx, file_table[f_idx].name, file_table[f_idx].ref);
 
       //dump_vfs_table();
       return i;
