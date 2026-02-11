@@ -131,4 +131,5 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   pcb->cp->GPRx = final_sp; // RISC-V: a0 = sp
 
   strcpy(pcb->name, filename);
+  Log("DEBUG BEFORE RETURN: sp=%p, argc=%d, argv[0]=%s", (void*)final_sp, *(int*)final_sp, ((char**)final_sp)[1]);
 }
