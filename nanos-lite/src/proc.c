@@ -29,7 +29,7 @@ void init_proc() {
   current->name = file_name;
   for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
       if (i < 3) {
-        current->fd_table[i] = alloc_system_fd(0, 0); 
+        current->fd_table[i] = i;
       } else {
         current->fd_table[i] = -1;
       }
