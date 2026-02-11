@@ -265,8 +265,8 @@ int fs_open(const char *path, int flags, mode_t mode) {
         vfs_close(s_idx); 
         return -1;
     }
-    Log("[Syscall] Process '%s' mapped System Index %d (%s) to local FD %d", 
-            current->name, s_idx, file_table[system_open_table[s_idx].file_idx].name, fd);
+    Log("[Syscall] Process '%s' mapped System Index %d (%s) and file idx %d to local FD %d", 
+            current->name, s_idx, file_table[system_open_table[s_idx].file_idx].name,system_open_table[s_idx].file_idx,fd);
     return fd; 
 }
 /*
@@ -423,6 +423,7 @@ void vfs_close(int s_idx) {
 4. 将进程 fd_table 对应项重置为 -1，使该 FD 可被后续 open 复用
 */
 int fs_close(int fd) {
+  printf("fs_close fd = %d\n",fd);
   if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
     return -1;
   }
