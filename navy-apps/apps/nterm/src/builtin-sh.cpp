@@ -25,13 +25,30 @@ static void sh_prompt() {
 static void sh_handle_cmd(const char *cmd) {
   static char buf[128];
   strncpy(buf, cmd, sizeof(buf) - 1);
+  
+  // 1. 去掉换行符
   char *ptr = strchr(buf, '\n');
   if (ptr) *ptr = '\0';
   if (strlen(buf) == 0) return;
-  execve(buf, NULL, NULL);
-  printf("Command not found: %s\n", buf);
-}
 
+  // 2. 切分字符串 (使用 strtok)
+  char *argv[16]; // 最多支持 16 个参数
+  int argc = 0;
+  
+  char *token = strtok(buf, " ");
+  while (token != NULL && argc < 15) {
+    argv[argc++] = token;
+    token = strtok(NULL, " ");
+  }
+  argv[argc] = NULL; // 按照要求，argv 必须以 NULL 结尾
+
+  // 3. 执行
+  // 第一个参数 argv[0] 应该是命令路径本身
+  execve(argv[0], argv, NULL);
+
+  // 4. 如果 execve 返回了，说明执行失败
+  printf("Command not found: %s\n", argv[0]);
+}
 void builtin_sh_run() {
   sh_banner();
   sh_prompt();
