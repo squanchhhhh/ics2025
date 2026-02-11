@@ -408,6 +408,7 @@ void vfs_close(int s_idx) {
   if (f_idx >= 0 && f_idx < MAX_MEM_INODES) {
     file_table[f_idx].ref--;
     if (file_table[f_idx].ref == 0) {
+      printf("file_table idx %d (%s) delete due to ref == 0\n",f_idx,file_table[f_idx].name);
       f_put(f_idx);
     }
   }
@@ -424,7 +425,7 @@ void vfs_close(int s_idx) {
 4. 将进程 fd_table 对应项重置为 -1，使该 FD 可被后续 open 复用
 */
 int fs_close(int fd) {
-  //printf("fs_close fd = %d\n",fd);
+  printf("fs_close fd = %d\n",fd);
   if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
     return -1;
   }
