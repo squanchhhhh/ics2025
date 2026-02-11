@@ -41,9 +41,9 @@ void init_proc() {
 void init_proc() {
   context_kload(&pcb[0], hello_fun, (void *)1);
 
-  char *argv[] = {"/bin/nterm", NULL};
+  char *argv[] = {"/bin/busybox", NULL};
   char *envp[] = {"PATH=/bin:/usr/bin", NULL};
-  context_uload(&pcb[1], "/bin/nterm", argv, envp);
+  context_uload(&pcb[1], "/bin/busybox", argv, envp);
 
   switch_boot_pcb();
 }
