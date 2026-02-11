@@ -41,8 +41,9 @@ void init_proc() {
 void init_proc() {
   context_kload(&pcb[0], hello_fun, (void *)1);
 
-  char *argv[] = {"/bin/busybox", NULL};
+  char *argv[] = {"sh", NULL}; 
   char *envp[] = {"PATH=/bin:/usr/bin", NULL};
+  
   context_uload(&pcb[1], "/bin/busybox", argv, envp);
 
   switch_boot_pcb();
