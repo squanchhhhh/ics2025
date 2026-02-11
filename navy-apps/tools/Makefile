@@ -19,6 +19,7 @@ install: $(NAME)
 		target_path=$${host_path#$(FSIMG_PATH)}; \
 		./$(NAME) $$host_path $$target_path; \
 	done
+	mkdir -p /home/parallels/ics2025/nanos-lite/build/
 	cp $(IMG) /home/parallels/ics2025/nanos-lite/build/ramdisk.img
 	@echo "Installation complete."
 
