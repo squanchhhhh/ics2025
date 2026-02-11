@@ -63,6 +63,8 @@ void context_uload(PCB *pcb, const char *filename) {
 
   Area kstack = { .start = pcb->stack, .end = pcb->stack + sizeof(pcb->stack) };
 
+  printf("kstack.start = %p, kstack.end = %p\n",kstack.start,kstack.end);
+
   pcb->cp = ucontext(NULL, kstack, (void *)entry);
 
   pcb->cp->GPRx = (uintptr_t)ustack_top; 

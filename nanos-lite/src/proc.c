@@ -40,7 +40,7 @@ void init_proc() {
   // PCB[0] 跑内核线程
   context_kload(&pcb[0], hello_fun, (void *)1);
 
-  // PCB[1] 跑用户程序（比如仙剑）
+  // PCB[1] 跑用户程序
   context_uload(&pcb[1], "/bin/hello");
 
   switch_boot_pcb();
