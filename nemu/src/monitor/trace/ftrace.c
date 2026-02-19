@@ -34,56 +34,65 @@ void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type) {
 void ftrace_print() {
   printf("------- [ FTrace Log ] -------\n");
   int indentation = 0;
-  int repeat_count = 0;
 
   for (int i = 0; i < nr_func_trace_event; i++) {
-    // 检查是否与下一条记录重复 (类型、函数ID均一致)
-    bool is_repeated = false;
-    if (i + 1 < nr_func_trace_event) {
-      if (te[i].type == te[i+1].type && te[i].func_id == te[i+1].func_id) {
-        is_repeated = true;
+    // 1. 寻找当前函数块的结束位置 (对应的 RET)
+    int block_end = -1;
+    if (te[i].type == FUNC_CALL) {
+      int depth = 0;
+      for (int j = i; j < nr_func_trace_event; j++) {
+        if (te[j].type == FUNC_CALL && te[j].func_id == te[i].func_id) depth++;
+        if (te[j].type == FUNC_RET && te[j].func_id == te[i].func_id) {
+          depth--;
+          if (depth == 0) { block_end = j; break; }
+        }
       }
     }
 
-    if (is_repeated) {
-      repeat_count++;
-      // 如果是 CALL，依然要维护缩进，但不打印
-      if (te[i].type == FUNC_CALL) indentation++;
-      else if (te[i].type == FUNC_RET) { indentation--; if(indentation<0) indentation=0; }
-      continue; // 跳过本次循环，进入累加
+    // 2. 检查后续是否有完全相同的块
+    int repeat_count = 0;
+    if (block_end != -1) {
+      int block_size = block_end - i + 1;
+      while (block_end + block_size < nr_func_trace_event) {
+        bool match = true;
+        for (int k = 0; k < block_size; k++) {
+          if (te[i + k].func_id != te[block_end + 1 + k].func_id ||
+              te[i + k].type != te[block_end + 1 + k].type) {
+            match = false;
+            break;
+          }
+        }
+        if (match) {
+          repeat_count++;
+          block_end += block_size; // 移动到下一个重复块的末尾
+        } else {
+          break;
+        }
+      }
     }
 
-    // --- 开始打印 ---
+    // 3. 打印当前项
     Func *f = elf_get_func_by_id(te[i].func_id);
     if (!f) continue;
 
     printf("0x%08x: ", te[i].pc);
-
     if (te[i].type == FUNC_CALL) {
       for (int j = 0; j < indentation; j++) printf("  ");
-      
       if (repeat_count > 0) {
-        printf("call [%s@0x%08x] * %d\n", f->name, f->begin, repeat_count + 1);
+        printf("call [%s@0x%08x] (folded %d times)\n", f->name, f->begin, repeat_count + 1);
+        // 如果折叠了，直接跳过整个块的所有后续记录（包括里面的子调用）
+        i = block_end; 
+        // 注意：因为我们跳过了整个块，不需要维护缩进，因为逻辑上我们还在当前层
       } else {
         printf("call [%s@0x%08x]\n", f->name, f->begin);
+        indentation++;
       }
-      
-      indentation++;
-    } 
-    else if (te[i].type == FUNC_RET) {
+    } else {
       indentation--;
       if (indentation < 0) indentation = 0;
       for (int j = 0; j < indentation; j++) printf("  ");
-
-      if (repeat_count > 0) {
-        printf("ret  [%s] * %d\n", f->name, repeat_count + 1);
-      } else {
-        printf("ret  [%s]\n", f->name);
-      }
+      printf("ret  [%s]\n", f->name);
     }
-
-    // 打印完后重置计数器
-    repeat_count = 0;
   }
   printf("------------------------------\n");
 }
