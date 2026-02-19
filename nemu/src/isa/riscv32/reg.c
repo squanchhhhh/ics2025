@@ -40,7 +40,7 @@ void isa_reg_display() {
     printf("-------------------------------------------------\n");
     printf("\033[1;35mmstatus\033[0m : 0x%08x  | \033[1;35mmtvec \033[0m : 0x%08x\n", cpu.csr.mstatus, cpu.csr.mtvec);
     printf("\033[1;35mmepc   \033[0m : 0x%08x  | \033[1;35mmcause\033[0m : 0x%08x\n", cpu.csr.mepc, cpu.csr.mcause);
-    printf("\033[1;35satp    \033[0m : 0x%08x  | \033[1;35\033[0m\n", cpu.csr.satp);
+    printf("\033[1;35msatp    \033[0m : 0x%08x  | \033[1;35\033[0m\n", cpu.csr.satp);
     printf("=================================================\n");
 }
 
