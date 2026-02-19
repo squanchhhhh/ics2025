@@ -6,13 +6,6 @@ MTraceEntry me[MAX_MTRACE];
 static uint64_t nr_m = 0; 
 
 void push_m(vaddr_t pc, paddr_t addr, uint64_t data, int len, MemAccessType type) {
-    if (type == MEM_WRITE && (addr >= 0x7ffffd00 && addr <= 0x7fffffff)) {
-        printf("\n[MTrace Intercept] Detected Write to Protected Area!\n");
-        printf("  PC: 0x%08x | Addr: 0x%08x | Data: 0x%016lx | Len: %d\n", pc, addr, data, len);
-        
-        // 如果你想让它直接停下来方便查看 GDB 堆栈
-        // assert(0); 
-    }
     if (addr == pc && type == MEM_READ) {
         return;
     }
