@@ -26,6 +26,7 @@ static inline uintptr_t get_satp() {
 }
 
 bool vme_init(void* (*pgalloc_f)(int), void (*pgfree_f)(void*)) {
+  printf("C-Context size: %d, pdir offset: %d\n", sizeof(Context), (int)((uintptr_t)&((Context*)0)->pdir));
   pgalloc_usr = pgalloc_f;
   pgfree_usr = pgfree_f;
 
