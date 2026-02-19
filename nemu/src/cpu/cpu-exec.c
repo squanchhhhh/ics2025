@@ -59,9 +59,6 @@ static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
   isa_exec_once(s);
-  #ifdef CONFIG_ITRACE
-  push_inst(s->pc, s->logbuf, &s->reg_res);
-  #endif
   cpu.pc = s->dnpc;
 #ifdef CONFIG_ITRACE
   char *p = s->logbuf;
@@ -87,6 +84,9 @@ static void exec_once(Decode *s, vaddr_t pc) {
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
 #endif
+  #ifdef CONFIG_ITRACE
+  push_inst(s->pc, s->logbuf, &s->reg_res);
+  #endif
 }
 
 static void execute(uint64_t n) {
