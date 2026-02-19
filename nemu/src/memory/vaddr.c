@@ -29,18 +29,6 @@ word_t vaddr_read(vaddr_t addr, int len) {
 }
 
 void vaddr_write(vaddr_t addr, int len, word_t data) {
-  // --- 拦截开始 ---
-  // 监控虚拟地址 0x7ffff38 附近（即你报错的 Context 地址）
-  if (addr >= 0x7ffff000 && addr <= 0x7fffffff) {
-      // 这里的 addr 是虚拟地址，我们可以直接判断
-      printf("\n[VAddr Write Hit!] VA: 0x%08x | Data: 0x%08x | PC: 0x%08x\n", 
-              addr, data, cpu.pc);
-      
-      // 如果你想在写的一瞬间就停下来用 GDB 调试：
-      // if (data == 0x17171717) assert(0); 
-  }
-  // --- 拦截结束 ---
-
   paddr_t paddr = isa_mmu_translate(addr, len, MEM_TYPE_WRITE);
   if (paddr == MEM_RET_OK) {
       paddr_write(addr, len, data);
