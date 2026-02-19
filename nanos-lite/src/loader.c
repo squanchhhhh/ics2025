@@ -119,7 +119,7 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
 
   // 4. 加载 ELF
   uintptr_t entry = loader(pcb, filename);
-
+  printf("entry = %x\n",entry);
   // 5. 创建上下文
   Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
   pcb->cp = ucontext(&pcb->as, kstack, (void *)entry);
