@@ -29,94 +29,51 @@ void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type) {
 }
 
 /**
- * 从 start 位置开始，寻找当前函数调用对应的返回位置
- * 返回结束位置在 te 数组中的索引
+ * 格式化打印追踪记录
  */
-static int find_block_end(int start) {
-  if (te[start].type != FUNC_CALL) return -1;
-
-  int depth = 1;
-  for (int i = start + 1; i < nr_func_trace_event; i++) {
-    if (te[i].type == FUNC_CALL) depth++;
-    else if (te[i].type == FUNC_RET) depth--;
-
-    if (depth == 0) return i;
-  }
-  return -1;
-}
-/**
- * 比较两个区间 [s1, e1] 和 [s2, e2] 的内容是否完全一致
- */
-static bool is_block_equal(int s1, int e1, int s2, int e2) {
-  if ((e1 - s1) != (e2 - s2)) return false;
-  for (int i = 0; i <= (e1 - s1); i++) {
-    FTraceEntry *a = &te[s1 + i];
-    FTraceEntry *b = &te[s2 + i];
-    if (a->func_id != b->func_id ||
-        a->type    != b->type    ||
-        a->pc      != b->pc)
-      return false;
-  }
-  return true;
-}
-static void print_single_trace(FTraceEntry entry, int *indent) {
-  Func *f = elf_get_func_by_id(entry.func_id);
-  if (!f) return;
-
-  printf("0x%08x: ", entry.pc);
-  if (entry.type == FUNC_CALL) {
-    for (int j = 0; j < *indent; j++) printf("  ");
-    printf("call [%s@0x%08x]\n", f->name, f->begin);
-    (*indent)++;
-  } else {
-    (*indent)--;
-    if (*indent < 0) *indent = 0;
-    for (int j = 0; j < *indent; j++) printf("  ");
-    printf("ret  [%s]\n", f->name);
-  }
-}
 void ftrace_print() {
   printf("------- [ FTrace Log ] -------\n");
   int indentation = 0;
 
-  for (int i = 0; i < nr_func_trace_event; ) {
-    int block_end = find_block_end(i);
-    
-    // 如果是 CALL 且找到了闭合的 RET
-    if (te[i].type == FUNC_CALL && block_end != -1) {
-      int block_size = block_end - i + 1;
-      int repeat_count = 0;
+  for (int i = 0; i < nr_func_trace_event; i++) {
+    Func *f = elf_get_func_by_id(te[i].func_id);
+    if (!f) continue;
 
-      // 统计后面连续出现了多少个相同的块
-      int next_s = block_end + 1;
-      while (next_s + block_size <= nr_func_trace_event) {
-        if (is_block_equal(i, block_end, next_s, next_s + block_size - 1)) {
-          repeat_count++;
-          next_s += block_size;
-        } else break;
-      }
+    // 打印当前的 PC 地址
+    printf("0x%08x: ", te[i].pc);
 
-      // --- 核心修改：完整输出第一个块 ---
-      // 我们正常遍历第一个块内部的所有指令并打印
-      int first_block_limit = block_end; 
-      for (int k = i; k <= first_block_limit; k++) {
-        print_single_trace(te[k], &indentation);
-      }
-
-      // 如果有重复，在第一个块结束后打印统计信息
-      if (repeat_count > 0) {
-        // 使用特殊格式标记折叠
-        printf("      ... [folded %d identical sessions] ...\n", repeat_count);
-      }
-
-      // 直接跳过所有已打印和已折叠的记录
-      i = next_s; 
+    if (te[i].type == FUNC_CALL) {
+      // 处理缩进
+      for (int j = 0; j < indentation; j++) printf("  ");
+      printf("call [%s@0x%08x]\n", f->name, f->begin);
+      indentation++;
     } 
-    else {
-      // 处理非嵌套或异常情况
-      print_single_trace(te[i], &indentation);
-      i++;
+    else if (te[i].type == FUNC_RET) {
+      indentation--;
+      if (indentation < 0) indentation = 0;
+      for (int j = 0; j < indentation; j++) printf("  ");
+      printf("ret  [%s]\n", f->name);
     }
   }
   printf("------------------------------\n");
+}
+
+/**
+ * 根据 PC 返回函数名和偏移量，例如 "main+12"
+ * 用于 ErrorLog 的横向整合输出
+ */
+char* get_f_name(vaddr_t pc) {
+    static char func_info[128];
+    int fid = elf_find_func_by_addr(pc);
+    if (fid != -1) {
+        Func *f = elf_get_func_by_id(fid);
+        uint32_t offset = pc - f->begin;
+        if (offset == 0) {
+            snprintf(func_info, sizeof(func_info), "<%s+0x%x>", f->name, offset);
+        } else {
+            snprintf(func_info, sizeof(func_info), "<%s+0x%x>", f->name, offset);
+        }
+        return func_info;
+    }
+    return NULL; 
 }
