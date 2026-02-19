@@ -25,11 +25,13 @@ void hello_fun(void *arg) {
 }
 
 void init_proc() {
+  printf("enter init_proc\n");
+  printf("call kload\n");
   context_kload(&pcb[0], hello_fun, (void *)1);
 
   char *argv[] = {"hello", "world", NULL};
   char *envp[] = {"PATH=/bin:/usr/bin", NULL};
-  
+  printf("call uload\n");
   context_uload(&pcb[1], "/bin/dummy", argv, envp);
 
   switch_boot_pcb();
