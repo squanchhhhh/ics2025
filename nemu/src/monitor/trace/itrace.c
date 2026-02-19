@@ -36,7 +36,7 @@ void print_recent_insts() {
         // %-40s   : 汇编（现在没有 Tab 了，对齐会很准）
         // | %s:%-3d : 文件和行号
         // | %s      : 源码
-        printf("%s %-40s | %s:%-3d | %s\n", 
+        printf("%s %-40s | %s:%-3d | %s", 
                (i == nr_i - 1 ? "-->" : "   "), 
                clean_asmb, 
                short_name, line, 
