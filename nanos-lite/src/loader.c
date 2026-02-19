@@ -58,6 +58,7 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 }
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   // 1. 创建地址空间 (初始化 as->ptr)
+  printf("ptr after protect: %p\n", pcb->as.ptr);
   protect(&pcb->as);
   printf("ptr after protect: %p\n", pcb->as.ptr);
 
