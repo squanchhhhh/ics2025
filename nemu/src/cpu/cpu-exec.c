@@ -110,8 +110,6 @@ static void statistic() {
 }
 
 void assert_fail_msg() {
-  Log("Recent instructions:");
-  iringbuf.error_idx = (iringbuf.tail + RING_SIZE - 1) % RING_SIZE;
   print_recent_insts();
   #ifdef CONFIG_MTRACE
   dump_mtrace();

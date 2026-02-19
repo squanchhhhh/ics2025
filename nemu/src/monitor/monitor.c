@@ -164,9 +164,6 @@ void init_monitor(int argc, char *argv[]) {
 
   /* Initialize the simple debugger. */
   init_sdb();
- 
-  /*初始化指令缓冲区*/
-  init_iring();
 
   IFDEF(CONFIG_ITRACE, init_disasm());
 

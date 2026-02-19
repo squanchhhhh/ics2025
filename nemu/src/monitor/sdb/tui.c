@@ -89,7 +89,16 @@ void load_source_file(const char *filename) {
     fclose(fp);
     strcpy(current_src_file, filename);
 }
-
+char* get_src(const char *filename, int line) {
+    if (filename == NULL || line <= 0) return "Unknown Source";
+    if (strcmp(current_src_file, filename) != 0) {
+        load_source_file(filename);
+    }
+    if (line > line_count || src_lines[line - 1] == NULL) {
+        return "Line not found in source";
+    }
+    return src_lines[line - 1];
+}
 // --- 窗口刷新：汇编 ---
 void refresh_code_window() {
     if (!is_tui_mode || code_win == NULL) return;

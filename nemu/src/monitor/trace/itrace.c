@@ -1,83 +1,45 @@
 #include "trace/itrace.h"
 #include "trace/tui.h"
-IRing iringbuf;
+#include <string.h>
+
+#define MAX_I_RING_SIZE 16
+static ITraceEntry i_ring[MAX_I_RING_SIZE];
+static uint64_t nr_i = 0; 
 
 void push_inst(vaddr_t pc, const char *s) {
-  iringbuf.pc[iringbuf.tail] = pc; 
-  strncpy(iringbuf.buf[iringbuf.tail], s, LOG_BUF_LEN - 1);
-  iringbuf.buf[iringbuf.tail][LOG_BUF_LEN - 1] = '\0';
-
-  iringbuf.tail = (iringbuf.tail + 1) % RING_SIZE;
-  if (iringbuf.num < RING_SIZE) iringbuf.num++;
+    ITraceEntry *e = &i_ring[nr_i % MAX_I_RING_SIZE];
+    e->pc = pc;
+    strncpy(e->asmb, s, sizeof(e->asmb) - 1);
+    e->asmb[sizeof(e->asmb) - 1] = '\0';
+    e->has_src = 0;
+    nr_i++;
 }
-
-// 传入文件名和行号，返回这一行的代码内容
-char* get_source_line_content(const char* filename, int line) {
-    static char line_buf[256];
-    FILE *fp = fopen(filename, "r");
-    if (!fp) return "Source not found";
-
-    int cur = 0;
-    while (fgets(line_buf, sizeof(line_buf), fp)) {
-        cur++;
-        if (cur == line) {
-            fclose(fp);
-            line_buf[strcspn(line_buf, "\r\n")] = 0;
-            return line_buf;
-        }
-    }
-    fclose(fp);
-    return "Line not found";
-}
-typedef struct {
-    vaddr_t pc;
-    char filename[256];
-    int line;
-} SourceInfo;
-
 void print_recent_insts() {
-    int cnt = iringbuf.num;
-    SourceInfo src_list[RING_SIZE];
-
     printf("------- [ Recent Instructions (itrace) ] -------\n");
 
-    printf("asm:\n");
-    for (int i = 0; i < cnt; i++) {
-        src_list[i].pc = iringbuf.pc[i];
-        get_pc_source(src_list[i].pc, src_list[i].filename, &src_list[i].line);
+    uint64_t start = (nr_i > MAX_I_RING_SIZE) ? (nr_i - MAX_I_RING_SIZE) : 0;
+    uint64_t end = nr_i;
 
-        const char *prefix = (i == iringbuf.error_idx) ? "-->" : "   ";
-        printf("%s %-50s (PC: 0x%08x)\n", prefix, iringbuf.buf[i], iringbuf.pc[i]);
-    }
+    for (uint64_t i = start; i < end; i++) {
+        ITraceEntry *e = &i_ring[i % MAX_I_RING_SIZE];
+        
+        const char *prefix = (i == nr_i - 1) ? "-->" : "   ";
+        printf("%s 0x%08x: %-40s", prefix, e->pc, e->asmb);
 
-    printf("\nsrc:\n");
+        char filename[256];
+        int line_num = -1;
+        get_pc_source(e->pc, filename, &line_num);
 
-    for (int i = 0; i < cnt - 1; i++) {
-        for (int j = 0; j < cnt - i - 1; j++) {
-            if (src_list[j].pc > src_list[j + 1].pc) {
-                SourceInfo temp = src_list[j];
-                src_list[j] = src_list[j + 1];
-                src_list[j + 1] = temp;
-            }
-        }
-    }
-    for (int i = 0; i < cnt; i++) {
-        if (src_list[i].line != -1) {
-            char *content = get_source_line_content(src_list[i].filename, src_list[i].line);
-            
-            char *short_name = strrchr(src_list[i].filename, '/');
-            short_name = (short_name) ? short_name + 1 : src_list[i].filename;
+        if (line_num != -1) {
+            char *content = get_src(filename, line_num);
+            char *short_name = strrchr(filename, '/');
+            short_name = (short_name) ? short_name + 1 : filename;
 
-            printf("    [0x%08x] %s:%d | %s\n", 
-                   src_list[i].pc, short_name, src_list[i].line, content);
+            printf(" | %s:%d | %s", short_name, line_num, content);
         } else {
-            printf("    [0x%08x] unknown source\n", src_list[i].pc);
+            printf(" | [unknown source]");
         }
+        printf("\n");
     }
     printf("------------------------------------------------\n");
-}
-void init_iring(){
-  iringbuf.tail = 0;
-  iringbuf.num = 0;
-  iringbuf.error_idx = -1;
 }

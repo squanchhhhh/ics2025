@@ -7,4 +7,5 @@ void init_tui();
 void deinit_tui();
 void refresh_code_window();
 void get_pc_source(uint32_t pc, char *filename, int *line);
+char* get_src(const char *filename, int line) ;
 #endif // __LAYOUT_H__
