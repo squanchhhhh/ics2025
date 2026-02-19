@@ -63,12 +63,11 @@ void __am_get_cur_as(Context *c) {
 }
 
 void __am_switch(Context *c) {
-  uintptr_t pdir_val = (uintptr_t)c->pdir;
-  if (vme_enable && pdir_val >= 0x80000000 && pdir_val < 0x88000000) {
+  if (vme_enable && c->pdir != NULL) {
+    printf("switch to c->ptr %x\n",c->pdir);
     set_satp(c->pdir);
   } else {
-    uint32_t *kernel_pt = (uint32_t *)0x80ac9000;
-    printf("DEBUG: Kernel PDIR[0x200] = 0x%08x\n", kernel_pt[0x200]);
+    printf("switch to kas.ptr %x\n",kas.ptr);
     set_satp(kas.ptr);
   }
 }
