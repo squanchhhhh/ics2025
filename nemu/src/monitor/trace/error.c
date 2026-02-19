@@ -1,5 +1,6 @@
 #include "trace/error.h"
 #include <isa.h>
+#include "trace/tui.h"
 #define MAX_ERROR_LOG 16
 ErrorEntry ee[MAX_ERROR_LOG];
 
@@ -30,38 +31,34 @@ void dump_unified_error() {
 
     printf("\n\033[1;33m======= [ Unified Execution Context (Last %d Steps) ] =======\033[0m\n", MAX_ERROR_LOG);
     
-    // 表头定义
-    printf("%-11s | %-15s | %-20s | %s\n", 
-           "PC", "Instruction", "Function Scope", "Side Effects (Memory/Reg)");
-    printf("------------|-----------------|----------------------|------------------------------------\n");
+    // 重新定义表头，移除独立 PC 列
+    // 宽度分配：Instruction(35), Function(25), Side Effects(剩余)
+    printf("%-35s | %-25s | %s\n", 
+           "Instruction (with PC)", "Function Scope", "Side Effects (Memory/Reg)");
+    printf("------------------------------------|---------------------------|------------------------------------\n");
 
-    // 倒序打印：从 ee[MAX_ERROR_LOG-1] 到 ee[0]
-    // 这样最后一行就是程序崩溃/停止的那一条指令
     for (int i = MAX_ERROR_LOG - 1; i >= 0; i--) {
         ErrorEntry *e = &ee[i];
-        if (e->ie.pc == 0) continue; // 跳过空记录
+        if (e->ie.pc == 0) continue; 
 
-        // 1. 打印 PC 和 汇编
-        // 如果是最后一条指令（i=0），用红色箭头标出
-        if (i == 0) printf("\033[1;31m->\033[0m 0x%08x | ", e->ie.pc);
-        else printf("   0x%08x | ", e->ie.pc);
+        // 1. 打印带箭头的指令列
+        if (i == 0) printf("\033[1;31m->\033[0m ");
+        else printf("   ");
 
-        printf("%-15s | ", e->ie.asmb);
+        // 直接打印 ie.asmb，它通常已经包含了 "0x8000...: inst" 格式
+        printf("%-32s | ", e->ie.asmb);
 
-        // 2. 打印函数作用域 (由 get_error_ftrace 填充的 e->fe)
-        printf("%-20s | ", e->fe);
+        // 2. 打印函数作用域
+        printf("%-25s | ", e->fe);
 
-        // 3. 打印副作用 (寄存器变化 和 内存访问)
+        // 3. 打印副作用
         bool has_effect = false;
-
-        // 寄存器副作用
         if (e->ie.reg.reg_num > 0 && e->ie.reg.old_val != e->ie.reg.new_val) {
             printf("\033[1;32m%s\033[0m:0x%x->0x%x ", 
                    isa_reg_name(e->ie.reg.reg_num), e->ie.reg.old_val, e->ie.reg.new_val);
             has_effect = true;
         }
 
-        // 内存副作用 (由 get_error_mtrace 填充)
         if (e->me.pc != 0) {
             if (has_effect) printf("| ");
             printf("\033[1;36m[MEM]\033[0m %s 0x%08x=0x%lx ", 
@@ -70,8 +67,22 @@ void dump_unified_error() {
         }
 
         if (!has_effect) printf("-");
-
         printf("\n");
+
+        // --- 附加功能：打印对应的源代码行 ---
+        // 只有在 line 有效时打印，使用灰色显示以示区分
+        char filename[128]; int line;
+        get_pc_source(e->ie.pc, filename, &line);
+        if (line != -1) {
+            char *src = get_src(filename, line);
+            if (src && src[0] != '\0') {
+                // 去掉源码开头的空白符，稍微缩进一下
+                while (*src == ' ' || *src == '\t') src++;
+                printf("      \033[1;90m[src] %s:%d: %s\033[0m\n", 
+                       (strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename), 
+                       line, src);
+            }
+        }
     }
 
     printf("====================================================================================\n\n");
