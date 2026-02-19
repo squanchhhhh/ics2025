@@ -212,8 +212,8 @@ int alloc_system_fd(int f_idx, int flags) {
         system_open_table[i].open_offset = 0;
       }
       file_table[f_idx].ref++; 
-      printf("VFS: Allocated sys_open_table[%d] -> file_table[%d] (%s), ref=%d\n",
-              i, f_idx, file_table[f_idx].name, file_table[f_idx].ref);
+      //printf("VFS: Allocated sys_open_table[%d] -> file_table[%d] (%s), ref=%d\n",
+              //i, f_idx, file_table[f_idx].name, file_table[f_idx].ref);
 
       //dump_vfs_table();
       return i;
@@ -427,11 +427,11 @@ void vfs_close(int s_idx) {
   if (f_idx >= 0 && f_idx < MAX_MEM_INODES) {
     file_table[f_idx].ref--;
     if (file_table[f_idx].ref == 0) {
-      printf("file_table idx %d (%s) delete due to ref == 0\n",f_idx,file_table[f_idx].name);
+      //printf("file_table idx %d (%s) delete due to ref == 0\n",f_idx,file_table[f_idx].name);
       f_put(f_idx);
     }
   }
-  printf("set s_idx %d used == 0\n",s_idx);
+  //printf("set s_idx %d used == 0\n",s_idx);
   of->used = 0; 
   of->file_idx = -1;
   of->open_offset = 0; 

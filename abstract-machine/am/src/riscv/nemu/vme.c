@@ -7,9 +7,9 @@ static void* (*pgalloc_usr)(int) = NULL;
 static void (*pgfree_usr)(void*) = NULL;
 static int vme_enable = 0;
 
-static Area segments[] = {      // Kernel memory mappings
-  NEMU_PADDR_SPACE
-};
+//static Area segments[] = {      // Kernel memory mappings
+  //NEMU_PADDR_SPACE
+//};
 
 #define USER_SPACE RANGE(0x40000000, 0x80000000)
 
@@ -24,20 +24,22 @@ static inline uintptr_t get_satp() {
   asm volatile("csrr %0, satp" : "=r"(satp));
   return satp << 12;
 }
-
+#define PTE_V 0x01
+#define PTE_R 0x02
+#define PTE_W 0x04
+#define PTE_X 0x08
 bool vme_init(void* (*pgalloc_f)(int), void (*pgfree_f)(void*)) {
-  printf("C-Context size: %d, pdir offset: %d\n", sizeof(Context), (int)((uintptr_t)&((Context*)0)->pdir));
+  //printf("C-Context size: %d, pdir offset: %d\n", sizeof(Context), (int)((uintptr_t)&((Context*)0)->pdir));
   pgalloc_usr = pgalloc_f;
   pgfree_usr = pgfree_f;
 
   kas.ptr = pgalloc_f(PGSIZE);
 
-  int i;
-  for (i = 0; i < LENGTH(segments); i ++) {
-    void *va = segments[i].start;
-    for (; va < segments[i].end; va += PGSIZE) {
-      map(&kas, va, va, 0);
-    }
+  void *va = (void *)0x80000000;
+  int prot = PTE_R | PTE_W | PTE_X; 
+
+  for (; va < heap.end; va += PGSIZE) {
+    map(&kas, va, va, prot);
   }
 
   set_satp(kas.ptr);

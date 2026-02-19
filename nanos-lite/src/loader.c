@@ -58,9 +58,9 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 }
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   // 1. 创建地址空间 (初始化 as->ptr)
-  printf("ptr after protect: %p\n", pcb->as.ptr);
+  //printf("ptr after protect: %p\n", pcb->as.ptr);
   protect(&pcb->as);
-  printf("ptr after protect: %p\n", pcb->as.ptr);
+  //printf("ptr after protect: %p\n", pcb->as.ptr);
 
   // 2. 分配 32KB 用户栈并映射
   uintptr_t v_top = (uintptr_t)pcb->as.area.end;
