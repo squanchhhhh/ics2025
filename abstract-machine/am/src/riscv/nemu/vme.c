@@ -64,7 +64,7 @@ void __am_get_cur_as(Context *c) {
 
 void __am_switch(Context *c) {
   if (vme_enable && c->pdir != NULL) {
-    printf("switch to c->ptr %x\n",c->pdir);
+    printf("DEBUG: Switching! Context at %p, pdir value inside is %p\n", c, c->pdir);
     set_satp(c->pdir);
   } else {
     printf("switch to kas.ptr %x\n",kas.ptr);
