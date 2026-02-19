@@ -26,5 +26,7 @@ void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type);
 // 打印所有追踪记录
 void ftrace_print();
 
+void ftrace_print_stack() ;
+
 char* get_f_name(vaddr_t pc);
 #endif // __FTRACE_H__

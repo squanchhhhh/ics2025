@@ -72,6 +72,7 @@ static int cmd_f(char *args);
 // 打印最近执行过的指令列表（itrace），方便定位死循环或崩溃位置
 static int cmd_i(char *args);
 
+static int cmd_bt(char *args);
 // 封装后的 printf，支持在 TUI 模式下将输出重定向到专用窗口
 int nemu_printf(const char *fmt, ...);
 
@@ -102,7 +103,8 @@ static struct {
   { "f", "Show function call tree (ftrace)", cmd_f },
   { "m", "Show memory access trace (mtrace)", cmd_m },
   { "i", "Print recently executed instructions", cmd_i },
-  { "layout", "Switch TUI layout (asm, src, split)", cmd_layout }
+  { "layout", "Switch TUI layout (asm, src, split)", cmd_layout },
+  {"bt","print func frame",cmd_bt}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -242,7 +244,10 @@ int nemu_printf(const char *fmt, ...) {
     va_end(ap);
     return n;
 }
-
+static int cmd_bt(char *args){
+  ftrace_print_stack(); 
+  return 0;
+}
 void sdb_set_batch_mode() {
   is_batch_mode = true;
 }

@@ -58,6 +58,30 @@ void ftrace_print() {
   printf("------------------------------\n");
 }
 
+void ftrace_print_stack() {
+  printf("------- [ FTrace Stack ] -------\n");
+
+  int call_stack[MAX_FUNC_TRACE];
+  int sp = 0;
+
+  for (int i = 0; i < nr_func_trace_event; i++) {
+    if (te[i].type == FUNC_CALL) {
+      call_stack[sp++] = te[i].func_id;
+    } else if (te[i].type == FUNC_RET) {
+      if (sp > 0) sp--;
+    }
+  }
+
+  // 按 GDB 风格输出：#0 是当前函数
+  for (int i = sp - 1, frame = 0; i >= 0; i--, frame++) {
+    Func *f = elf_get_func_by_id(call_stack[i]);
+    if (!f) continue;
+    printf("#%d %s\n", frame, f->name);
+  }
+
+  printf("-------------------------------\n");
+}
+
 /**
  * 根据 PC 返回函数名和偏移量，例如 "main+12"
  * 用于 ErrorLog 的横向整合输出
