@@ -179,6 +179,7 @@ Context* kcontext(Area kstack, void (*entry)(void *), void *arg) {
 
   c->GPR1 = (uintptr_t)arg;
   c->GPR2 = (uintptr_t)entry;
+  c->pdir = NULL;
   return c;
 }
 
