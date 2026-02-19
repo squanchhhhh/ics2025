@@ -50,7 +50,7 @@ void dump_insts() {
         char *short_name = strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename;
 
         printf("%s %-45s | %-28s | %s:%-3d | %s", 
-               (i == nr_i - 1 ? "-->" : "   "), 
+               (i == nr_i - 1 ? "->" : "   "), 
                clean_asmb, 
                reg_info,
                (line != -1 ? short_name : "none"), line, 
