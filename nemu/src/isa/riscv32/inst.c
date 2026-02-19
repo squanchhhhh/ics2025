@@ -191,6 +191,7 @@ static int decode_exec(Decode *s) {
     s->dnpc = cpu.csr.mepc;
   });
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
+  INSTPAT("0001001 00000 00000 000 00000 1110011", sfence_vma, N, { });
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv, N, {
     printf("Match Failed! PC = 0x%x, Inst = 0x%08x\n", s->pc, s->isa.inst);
     INV(s->pc);
