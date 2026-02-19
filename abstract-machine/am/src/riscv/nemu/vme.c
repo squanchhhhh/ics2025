@@ -63,11 +63,12 @@ void __am_get_cur_as(Context *c) {
 }
 
 void __am_switch(Context *c) {
-  if (vme_enable && c->pdir != NULL) {
-    printf("Switching to pdir: %p\n", c->pdir);
+  uintptr_t pdir_val = (uintptr_t)c->pdir;
+  if (vme_enable && pdir_val >= 0x80000000 && pdir_val < 0x88000000) {
+    printf("Switching to user pdir: %p\n", c->pdir);
     set_satp(c->pdir);
   } else {
-    printf("switch to kernel pdir\n");
+    printf("Stay in/Switch to kernel pdir (kas.ptr: %p)\n", kas.ptr);
     set_satp(kas.ptr);
   }
 }
