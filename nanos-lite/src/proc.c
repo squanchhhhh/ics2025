@@ -27,6 +27,7 @@ void hello_fun(void *arg) {
 void init_proc() {
   printf("enter init_proc\n");
   printf("call kload\n");
+  pcb[0].as.ptr = NULL;
   context_kload(&pcb[0], hello_fun, (void *)1);
 
   char *argv[] = {"hello", "world", NULL};
