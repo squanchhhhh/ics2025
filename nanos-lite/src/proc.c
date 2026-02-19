@@ -35,7 +35,7 @@ void init_proc() {
 
   switch_boot_pcb();
 }
-/*
+
 Context* schedule(Context *prev) {
   if (current != NULL) {
     current->cp = prev;
@@ -48,12 +48,8 @@ Context* schedule(Context *prev) {
   }
 
   return current->cp;
-}*/
-Context* schedule(Context *prev) {
-  current->cp = prev;
-  current = &pcb[1]; // 暂时只跑用户进程
-  return current->cp;
 }
+
 /*
 功能：在当前进程的文件描述符中，添加一个系统打开文件表的对应
 1.寻找一个空的文件描述符表项
