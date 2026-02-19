@@ -23,13 +23,25 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
-void isa_reg_display() {
-  for (int i = 0; i < 32; i++) {
-    printf("gpr[%d](%s) = 0x%x\n", i, regs[i], gpr(i));
-  }
-  printf("mstatus: 0x%08x  mtvec:   0x%08x\n", cpu.csr.mstatus, cpu.csr.mtvec);
-  printf("mepc:    0x%08x  mcause:  0x%08x\n", cpu.csr.mepc, cpu.csr.mcause);
+const char* isa_reg_name(int idx){
+  return regs[idx];
 }
+void isa_reg_display() {
+    printf("\033[1;33m======= [ CPU General Purpose Registers ] =======\033[0m\n");
+    for (int i = 0; i < 32; i++) {
+        printf("\033[1;32m%-7s\033[0m: 0x%08x  ", 
+               isa_reg_name(i),  
+               cpu.gpr[i]);         
+
+        if ((i + 1) % 4 == 0) printf("\n");
+    }
+
+    printf("-------------------------------------------------\n");
+    printf("\033[1;35mmstatus\033[0m : 0x%08x  | \033[1;35mmtvec \033[0m : 0x%08x\n", cpu.csr.mstatus, cpu.csr.mtvec);
+    printf("\033[1;35mmepc   \033[0m : 0x%08x  | \033[1;35mmcause\033[0m : 0x%08x\n", cpu.csr.mepc, cpu.csr.mcause);
+    printf("=================================================\n");
+}
+
 
 word_t isa_reg_str2val(const char *s, bool *success) {
   for(int i = 0; i < 32; i++){
@@ -44,12 +56,6 @@ word_t isa_reg_str2val(const char *s, bool *success) {
   if (strcmp(s, "mcause") == 0)  return cpu.csr.mcause;
   *success = false;
   return 0;
-}
-const char* isa_reg_name(int idx) {
-  if (idx >= 0 && idx < 32) {
-    return regs[idx];
-  }
-  return "unknown";
 }
 
 word_t csr_read(uint32_t addr) {
