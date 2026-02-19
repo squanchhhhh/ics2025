@@ -32,11 +32,10 @@ void print_recent_insts() {
 
         // 3. 重新设计格式化字符串
         // %-3s    : 箭头
-        // %08x    : PC
         // %-40s   : 汇编（现在没有 Tab 了，对齐会很准）
         // | %s:%-3d : 文件和行号
         // | %s      : 源码
-        printf("%s %-40s | %s:%-3d | %s", 
+        printf("%s %-50s | %s:%-3d | %s", 
                (i == nr_i - 1 ? "-->" : "   "), 
                clean_asmb, 
                short_name, line, 
