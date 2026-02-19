@@ -206,7 +206,7 @@ static int cmd_f(char*args){
 }
 
 static int cmd_i(char*args){
-  print_recent_insts();
+  dump_insts();
   return 0;
 }
 

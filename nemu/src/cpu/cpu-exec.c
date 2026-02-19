@@ -43,9 +43,6 @@ void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
-  #ifdef CONFIG_ITRACE_ERROR_LOG
-  push_inst(_this->pc, _this->logbuf);
-  #endif
 #endif
 #ifndef CONFIG_TARGET_AM
 #ifdef CONFIG_WATCHPOINT
@@ -62,6 +59,9 @@ static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
   isa_exec_once(s);
+  #ifdef CONFIG_ITRACE
+  push_inst(s->pc, s->logbuf, &s->reg_res);
+  #endif
   cpu.pc = s->dnpc;
 #ifdef CONFIG_ITRACE
   char *p = s->logbuf;
@@ -110,7 +110,7 @@ static void statistic() {
 }
 
 void assert_fail_msg() {
-  print_recent_insts();
+  dump_insts();
   #ifdef CONFIG_MTRACE
   dump_mtrace();
   #endif

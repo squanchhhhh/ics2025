@@ -45,6 +45,12 @@ word_t isa_reg_str2val(const char *s, bool *success) {
   *success = false;
   return 0;
 }
+const char* isa_reg_name(int idx) {
+  if (idx >= 0 && idx < 32) {
+    return regs[idx];
+  }
+  return "unknown";
+}
 
 word_t csr_read(uint32_t addr) {
   switch (addr) {

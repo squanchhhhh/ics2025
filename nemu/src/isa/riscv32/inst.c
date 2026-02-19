@@ -54,11 +54,17 @@ enum {
   ); \
   *imm = SEXT(*imm, 13); \
 } while (0)
+
 static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_t *imm, int type) {
   uint32_t i = s->isa.inst;
   int rs1 = BITS(i, 19, 15);
   int rs2 = BITS(i, 24, 20);
-  *rd     = BITS(i, 11, 7);
+  //为了适配后面的寄存器记录，修改一部分内容
+  if (type == TYPE_S || type == TYPE_B || type == TYPE_N) {
+    *rd = 0; 
+  } else {
+    *rd = BITS(i, 11, 7);
+  }
   switch (type) {
     case TYPE_I: src1R();          immI(); break;
     case TYPE_U:                   immU(); break;
@@ -81,7 +87,20 @@ static int decode_exec(Decode *s) {
   int rd = 0; \
   word_t src1 = 0, src2 = 0, imm = 0; \
   decode_operand(s, &rd, &src1, &src2, &imm, concat(TYPE_, type)); \
+  \
+  /* 记录旧值 */ \
+  if (rd != 0) { \
+    s->reg_res.reg_num = rd; \
+    s->reg_res.old_val = gpr(rd); \
+  } else { \
+    s->reg_res.reg_num = -1; \
+  } \
+  \
   __VA_ARGS__ ; \
+  /* 记录新值 */ \
+  if (s->reg_res.reg_num != -1) { \
+    s->reg_res.new_val = gpr(rd); \
+  } \
 }
 
   INSTPAT_START();

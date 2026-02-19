@@ -4,14 +4,19 @@
 #include "common.h"
 
 typedef struct {
+    int reg_num;  
+    word_t old_val;
+    word_t new_val;
+} RegEntry;
+
+typedef struct {
     vaddr_t pc;
-    char asmb[64];        // 汇编文本
-    char filename[128];   // 文件名
-    int line;             // 行号
-    bool has_src;         // 是否成功获取了源码信息
+    char asmb[64]; 
+    RegEntry reg; 
 } ITraceEntry;
 
-void push_inst(vaddr_t pc, const char *s);
-void print_recent_insts();
+
+void push_inst(vaddr_t pc, const char *s, RegEntry *reg);
+void dump_insts();
 
 #endif

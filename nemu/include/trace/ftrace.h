@@ -16,7 +16,7 @@ typedef struct {
   FTraceType type;  // 事件类型：call 或 ret
 } FTraceEntry;
 
-#define MAX_FUNC_TRACE 8192
+
 
 // 记录一次函数调用或返回
 // target_addr: call 指令的目标地址（用于查询函数名）
@@ -26,4 +26,5 @@ void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type);
 // 打印所有追踪记录
 void ftrace_print();
 
+char* get_f_name(vaddr_t pc);
 #endif // __FTRACE_H__

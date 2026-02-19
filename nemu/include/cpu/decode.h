@@ -17,6 +17,7 @@
 #define __CPU_DECODE_H__
 
 #include <isa.h>
+#include "trace/itrace.h"
 
 typedef struct Decode {
   vaddr_t pc;
@@ -24,6 +25,7 @@ typedef struct Decode {
   vaddr_t dnpc; // dynamic next pc
   ISADecodeInfo isa;
   const char *inst_name;
+  RegEntry reg_res;
   IFDEF(CONFIG_ITRACE, char logbuf[128]);
 } Decode;
 

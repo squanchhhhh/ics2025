@@ -32,7 +32,8 @@ void init_isa();
 extern CPU_state cpu;
 void isa_reg_display();
 word_t isa_reg_str2val(const char *name, bool *success);
-
+// 为itrace增加一个函数
+const char* isa_reg_name(int idx);
 // exec
 struct Decode;
 int isa_exec_once(struct Decode *s);

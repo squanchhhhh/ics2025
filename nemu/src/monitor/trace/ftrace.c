@@ -1,6 +1,7 @@
 #include <trace/ftrace.h>
 #include <trace/elf.h>
 
+#define MAX_FUNC_TRACE 1024
 static FTraceEntry te[MAX_FUNC_TRACE];
 static int nr_func_trace_event = 0;
 
@@ -55,4 +56,24 @@ void ftrace_print() {
     }
   }
   printf("------------------------------\n");
+}
+
+/**
+ * 根据 PC 返回函数名和偏移量，例如 "main+12"
+ * 用于 ErrorLog 的横向整合输出
+ */
+char* get_f_name(vaddr_t pc) {
+    static char func_info[128];
+    int fid = elf_find_func_by_addr(pc);
+    if (fid != -1) {
+        Func *f = elf_get_func_by_id(fid);
+        uint32_t offset = pc - f->begin;
+        if (offset == 0) {
+            snprintf(func_info, sizeof(func_info), "<%s+0x%x>", f->name, offset);
+        } else {
+            snprintf(func_info, sizeof(func_info), "<%s+0x%x>", f->name, offset);
+        }
+        return func_info;
+    }
+    return NULL; 
 }
