@@ -88,16 +88,13 @@ static int decode_exec(Decode *s) {
   word_t src1 = 0, src2 = 0, imm = 0; \
   decode_operand(s, &rd, &src1, &src2, &imm, concat(TYPE_, type)); \
   \
-  /* 记录旧值 */ \
-  if (rd != 0) { \
-    s->reg_res.reg_num = rd; \
-    s->reg_res.old_val = gpr(rd); \
-  } else { \
-    s->reg_res.reg_num = -1; \
-  } \
+  /* 记录快照 */ \
+  s->reg_res.reg_num = (rd != 0) ? rd : -1; \
+  s->reg_res.old_val = (rd != 0) ? gpr(rd) : 0; \
   \
   __VA_ARGS__ ; \
-  /* 记录新值 */ \
+  \
+  /* 记录结果 */ \
   if (s->reg_res.reg_num != -1) { \
     s->reg_res.new_val = gpr(rd); \
   } \
