@@ -25,24 +25,24 @@
 5. 拼接最终的物理地址
 */
 paddr_t isa_mmu_translate(vaddr_t vaddr, int len, int type) {
-  paddr_t pg_dir_base = (cpu.csr.satp & 0x3fffff) << 12;
+  word_t satp = cpu.csr.satp;
+  if (!(satp & 0x80000000)) return MEM_RET_OK; 
+
+  paddr_t pg_dir_base = (satp & 0x3fffff) << 12;
 
   uint32_t vpn1 = (vaddr >> 22) & 0x3ff;
+  paddr_t pte1_addr = pg_dir_base + vpn1 * 4;
+  word_t pte1 = paddr_read(pte1_addr, 4);
+
+  assert(pte1 & 0x1); 
+
+  paddr_t pg_tab_base = (pte1 >> 10) << 12;
   uint32_t vpn0 = (vaddr >> 12) & 0x3ff;
-  uint32_t offset = vaddr & 0xfff;
+  paddr_t pte0_addr = pg_tab_base + vpn0 * 4;
+  word_t pte0 = paddr_read(pte0_addr, 4);
 
-  paddr_t pde_addr = pg_dir_base + vpn1 * 4;
-  uint32_t pde = paddr_read(pde_addr, 4);
+  assert(pte0 & 0x1);
 
-  assert(pde & 0x1); 
-
-  paddr_t pg_tab_base = (pde >> 10) << 12;
-  paddr_t pte_addr = pg_tab_base + vpn0 * 4;
-  uint32_t pte = paddr_read(pte_addr, 4);
-
-  assert(pte & 0x1);
-
-  paddr_t pa = ((pte >> 10) << 12) | offset;
-
-  return pa;
+  paddr_t paddr = ((pte0 >> 10) << 12) | (vaddr & 0xfff);
+  return paddr;
 }
