@@ -18,31 +18,28 @@ void print_recent_insts() {
     printf("------- [ Recent Instructions (itrace) ] -------\n");
     uint64_t start = (nr_i > MAX_I_RING_SIZE) ? (nr_i - MAX_I_RING_SIZE) : 0;
 
-    int last_line = -1;
-    char last_file[128] = "";
-
     for (uint64_t i = start; i < nr_i; i++) {
         ITraceEntry *e = &i_ring[i % MAX_I_RING_SIZE];
         
+        char clean_asmb[64];
+        strncpy(clean_asmb, e->asmb, 63);
+        for (char *p = clean_asmb; *p; p++) if (*p == '\t') *p = ' ';
+
         char filename[128]; int line = -1;
         get_pc_source(e->pc, filename, &line);
+        char *code = (line != -1) ? get_src(filename, line) : "";
         char *short_name = strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename;
 
-        // 打印前半部分：箭头 + PC + 汇编
-        printf("%s %-40s", (i == nr_i - 1 ? "-->" : "   "), e->asmb);
-
-        // 判断是否需要打印源码列
-        if (line != -1 && (line != last_line || strcmp(filename, last_file) != 0)) {
-            char *code = get_src(filename, line);
-            printf(" | %s:%-3d | %s", short_name, line, code);
-            
-            // 更新最后记录
-            last_line = line;
-            strcpy(last_file, filename);
-        } else {
-            // 如果行号相同，只打印分隔符或留空，保持对齐
-            printf(" | %-10s |", ""); 
-        }
-        printf("\n");
+        // 3. 重新设计格式化字符串
+        // %-3s    : 箭头
+        // %08x    : PC
+        // %-40s   : 汇编（现在没有 Tab 了，对齐会很准）
+        // | %s:%-3d : 文件和行号
+        // | %s      : 源码
+        printf("%s %-40s | %s:%-3d | %s", 
+               (i == nr_i - 1 ? "-->" : "   "), 
+               clean_asmb, 
+               short_name, line, 
+               code);
     }
 }
