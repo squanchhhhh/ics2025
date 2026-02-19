@@ -76,7 +76,7 @@ void __am_switch(Context *c) {
 5. 填写二级页表项 (PTE)
 */
 void map(AddrSpace *as, void *va, void *pa, int prot) {
-  if ((uintptr_t)va >= 0x40000000) {
+  if ((uintptr_t)va >= 0x40000000 &&(uintptr_t)va<=0x80000000 ) {
     printf("MAP: va %p -> pa %p\n", va, pa);
   }
   uintptr_t vpn1 = ((uintptr_t)va >> 22) & 0x3ff;
