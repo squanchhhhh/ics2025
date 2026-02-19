@@ -74,66 +74,70 @@ void snprintf_handler(char c, void *ctx) {
 //将字符流输出给uart
 void uart_handler(char c, void *ctx) { putch(c); }
 
+// 辅助函数：处理对齐和填充
+static int print_padded(putc_handler_t handler, void *ctx, const char *content, 
+                        int len, int width, bool left_align, char pad_char) {
+    int count = 0;
+    int pad_len = (width > len) ? (width - len) : 0;
+
+    if (!left_align) {
+        for (int i = 0; i < pad_len; i++) { handler(pad_char, ctx); count++; }
+    }
+    for (int i = 0; i < len; i++) { handler(content[i], ctx); count++; }
+    if (left_align) {
+        for (int i = 0; i < pad_len; i++) { handler(' ', ctx); count++; } 
+    }
+    return count;
+}
+
 int vfmt_print(putc_handler_t handler, void *ctx, const char *fmt, va_list ap) {
   int char_count = 0;
   while (*fmt) {
     if (*fmt != '%') {
-      handler(*fmt, ctx);
-      char_count++;
-    } else {
-      fmt++;
-      switch (*fmt) {
-      case 's': {
-        char *s = va_arg(ap, char *);
-        if (!s)
-          s = "(null)";
-        while (*s) {
-          handler(*s++, ctx);
-          char_count++;
-        }
-        break;
-      }
-      case 'd': {
-        int d = va_arg(ap, int);
-        char buf[32];
-        int len = itoa(buf, d);
-        for (int i = 0; i < len; i++) {
-          handler(buf[i], ctx);
-          char_count++;
-        }
-        break;
-      }
-      case 'c': {
-        char c = (char)va_arg(ap, int);
-        handler(c, ctx);
-        char_count++;
-        break;
-      }
-      case 'x': {
-        uint32_t x = va_arg(ap, uint32_t);
-        char buf[32];
-        int len = itox(buf, x);
-        for (int i = 0; i < len; i++) {
-          handler(buf[i], ctx);
-          char_count++;
-        }
-        break;
-      }
-      case 'p': {
-        uintptr_t p = (uintptr_t)va_arg(ap, void *);
-        handler('0', ctx);
-        handler('x', ctx);
-        char_count += 2;
-        char buf[32];
-        int len = itox(buf, p);
-        for (int i = 0; i < len; i++) {
-          handler(buf[i], ctx);
-          char_count++;
-        }
-        break;
-      }
-      }
+      handler(*fmt++, ctx); char_count++;
+      continue;
     }
+
+    fmt++; // 跳过 '%'
+    bool left_align = false;
+    char pad_char = ' ';
+    int width = 0;
+
+    if (*fmt == '-') { left_align = true; fmt++; }
+    if (*fmt == '0') { pad_char = '0'; fmt++; }
+    while (*fmt >= '0' && *fmt <= '9') { width = width * 10 + (*fmt++ - '0'); }
+
+    char buf[64]; 
+    char *s = buf;
+    int len = 0;
+
+    switch (*fmt) {
+      case 's':
+        s = va_arg(ap, char *);
+        if (!s) s = "(null)";
+        len = strlen(s);
+        break;
+      case 'd':
+        len = itoa(buf, va_arg(ap, int));
+        break;
+      case 'x':
+        len = itox(buf, va_arg(ap, uint32_t));
+        break;
+      case 'p':
+        handler('0', ctx); handler('x', ctx); char_count += 2;
+        len = itox(buf, (uintptr_t)va_arg(ap, void *));
+        width = (width > 2) ? width - 2 : 0; // 减去 0x 的宽度
+        break;
+      case 'c':
+        buf[0] = (char)va_arg(ap, int);
+        len = 1;
+        break;
+      default: // 处理 %% 或者未知格式
+        buf[0] = *fmt;
+        len = 1;
+    }
+    
+    char_count += print_padded(handler, ctx, s, len, width, left_align, pad_char);
     fmt++;
   }
   return char_count;
