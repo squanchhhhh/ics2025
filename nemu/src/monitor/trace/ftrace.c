@@ -34,15 +34,13 @@ void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type) {
  */
 static int find_block_end(int start) {
   if (te[start].type != FUNC_CALL) return -1;
-  
-  int depth = 0;
-  for (int i = start; i < nr_func_trace_event; i++) {
-    if (te[i].func_id == te[start].func_id) {
-      if (te[i].type == FUNC_CALL) depth++;
-      else if (te[i].type == FUNC_RET) depth--;
-      
-      if (depth == 0) return i;
-    }
+
+  int depth = 1;
+  for (int i = start + 1; i < nr_func_trace_event; i++) {
+    if (te[i].type == FUNC_CALL) depth++;
+    else if (te[i].type == FUNC_RET) depth--;
+
+    if (depth == 0) return i;
   }
   return -1;
 }
@@ -52,8 +50,12 @@ static int find_block_end(int start) {
 static bool is_block_equal(int s1, int e1, int s2, int e2) {
   if ((e1 - s1) != (e2 - s2)) return false;
   for (int i = 0; i <= (e1 - s1); i++) {
-    if (te[s1 + i].func_id != te[s2 + i].func_id || 
-        te[s1 + i].type != te[s2 + i].type) return false;
+    FTraceEntry *a = &te[s1 + i];
+    FTraceEntry *b = &te[s2 + i];
+    if (a->func_id != b->func_id ||
+        a->type    != b->type    ||
+        a->pc      != b->pc)
+      return false;
   }
   return true;
 }
