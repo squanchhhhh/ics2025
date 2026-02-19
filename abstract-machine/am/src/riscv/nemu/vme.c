@@ -67,7 +67,8 @@ void __am_switch(Context *c) {
     printf("Switching to pdir: %p\n", c->pdir);
     set_satp(c->pdir);
   } else {
-    printf("Stay in kernel pdir\n");
+    printf("switch to kernel pdir\n");
+    set_satp(kas.ptr);
   }
 }
 
