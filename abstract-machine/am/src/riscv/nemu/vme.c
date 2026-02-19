@@ -16,6 +16,7 @@ static Area segments[] = {      // Kernel memory mappings
 static inline void set_satp(void *pdir) {
   uintptr_t mode = 1ul << (__riscv_xlen - 1);
   asm volatile("csrw satp, %0" : : "r"(mode | ((uintptr_t)pdir >> 12)));
+  asm volatile("sfence.vma zero, zero"); 
 }
 
 static inline uintptr_t get_satp() {
@@ -66,7 +67,29 @@ void __am_switch(Context *c) {
   }
 }
 
+/*
+功能：在页表中填入页表项
+ 1. 提取虚拟地址的 VPN[1] (一级索引) 和 VPN[0] (二级索引)
+ 2. 找到一级页表基地址 (Page Directory)
+ 3. 检查一级页表项 (PDE)，将新页表的物理地址转换成 PDE 格式填入 (PPN 位在 10-31)
+ 4. 找到二级页表基地址 (Page Table)，从 PDE 中提取 PPN 部分并还原成物理地址
+5. 填写二级页表项 (PTE)
+*/
 void map(AddrSpace *as, void *va, void *pa, int prot) {
+
+  uintptr_t vpn1 = ((uintptr_t)va >> 22) & 0x3ff;
+  uintptr_t vpn0 = ((uintptr_t)va >> 12) & 0x3ff;
+  
+  uintptr_t *pgdir = (uintptr_t *)as->ptr;
+
+  if (!(pgdir[vpn1] & 0x1)) { 
+    void *new_pt = pgalloc_usr(PGSIZE);
+    pgdir[vpn1] = (((uintptr_t)new_pt >> 12) << 10) | 0x1; 
+  }
+
+  uintptr_t *pgtab = (uintptr_t *)((pgdir[vpn1] >> 10) << 12);
+
+  pgtab[vpn0] = (((uintptr_t)pa >> 12) << 10) | 0xf;
 }
 
 Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
