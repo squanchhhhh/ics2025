@@ -16,30 +16,31 @@ void push_inst(vaddr_t pc, const char *s) {
 }
 void print_recent_insts() {
     printf("------- [ Recent Instructions (itrace) ] -------\n");
-
     uint64_t start = (nr_i > MAX_I_RING_SIZE) ? (nr_i - MAX_I_RING_SIZE) : 0;
-    uint64_t end = nr_i;
 
-    for (uint64_t i = start; i < end; i++) {
+    for (uint64_t i = start; i < nr_i; i++) {
         ITraceEntry *e = &i_ring[i % MAX_I_RING_SIZE];
         
-        const char *prefix = (i == nr_i - 1) ? "-->" : "   ";
-        printf("%s 0x%08x: %-40s", prefix, e->pc, e->asmb);
+        char clean_asmb[64];
+        strncpy(clean_asmb, e->asmb, 63);
+        for (char *p = clean_asmb; *p; p++) if (*p == '\t') *p = ' ';
 
-        char filename[256];
-        int line_num = -1;
-        get_pc_source(e->pc, filename, &line_num);
+        char filename[128]; int line = -1;
+        get_pc_source(e->pc, filename, &line);
+        char *code = (line != -1) ? get_src(filename, line) : "";
+        char *short_name = strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename;
 
-        if (line_num != -1) {
-            char *content = get_src(filename, line_num);
-            char *short_name = strrchr(filename, '/');
-            short_name = (short_name) ? short_name + 1 : filename;
-
-            printf(" | %s:%d | %s", short_name, line_num, content);
-        } else {
-            printf(" | [unknown source]");
-        }
-        printf("\n");
+        // 3. 重新设计格式化字符串
+        // %-3s    : 箭头
+        // %08x    : PC
+        // %-40s   : 汇编（现在没有 Tab 了，对齐会很准）
+        // | %s:%-3d : 文件和行号
+        // | %s      : 源码
+        printf("%s 0x%08x: %-40s | %s:%-3d | %s\n", 
+               (i == nr_i - 1 ? "-->" : "   "), 
+               e->pc, 
+               clean_asmb, 
+               short_name, line, 
+               code);
     }
-    printf("------------------------------------------------\n");
 }

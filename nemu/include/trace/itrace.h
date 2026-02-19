@@ -13,6 +13,5 @@ typedef struct {
 
 void push_inst(vaddr_t pc, const char *s);
 void print_recent_insts();
-void init_iring();
 
 #endif
