@@ -49,7 +49,7 @@ void dump_insts() {
         char *code = (line != -1) ? get_src(filename, line) : "";
         char *short_name = strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename;
 
-        printf("%s %-50s | %-28s | %s:%-3d | %s", 
+        printf("%s %-45s | %-28s | %s:%-3d | %s", 
                (i == nr_i - 1 ? "-->" : "   "), 
                clean_asmb, 
                reg_info,
