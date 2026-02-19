@@ -1,154 +1,74 @@
-#include <proc.h>
+#include "common.h"
+#include "memory.h"
 #include <elf.h>
 #include <fs.h>
+#include <proc.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #ifdef __LP64__
-# define Elf_Ehdr Elf64_Ehdr
-# define Elf_Phdr Elf64_Phdr
+#define Elf_Ehdr Elf64_Ehdr
+#define Elf_Phdr Elf64_Phdr
 #else
-# define Elf_Ehdr Elf32_Ehdr
-# define Elf_Phdr Elf32_Phdr
+#define Elf_Ehdr Elf32_Ehdr
+#define Elf_Phdr Elf32_Phdr
 #endif
 
 uintptr_t loader(PCB *pcb, const char *filename) {
-  Log("Trace[2]: Loader finished reading ELF");
-  Log("  filename check: %s", filename);
-  Elf32_Ehdr ehdr;
   int fd = vfs_open(filename, 0);
-  if (fd < 0) panic("Open %s failed", filename);
-  vfs_read(fd, &ehdr, sizeof(Elf32_Ehdr));
-  assert(*(uint32_t *)ehdr.e_ident == 0x464c457f);
+  panic_on(fd < 0, "Open file failed in loader");
+  Elf_Ehdr ehdr;
+  vfs_read(fd, &ehdr, sizeof(Elf_Ehdr));
+  panic_on(memcmp(ehdr.e_ident, ELFMAG, 4) != 0, "Invalid ELF file");
+  Elf_Phdr phdr;
   for (int i = 0; i < ehdr.e_phnum; i++) {
-    Elf32_Phdr ph;
-    vfs_lseek(fd, ehdr.e_phoff + i * ehdr.e_phentsize, SEEK_SET);
-    vfs_read(fd, &ph, sizeof(Elf32_Phdr));
-    if (ph.p_type == PT_LOAD) {
-      vfs_lseek(fd, ph.p_offset, SEEK_SET);
-      vfs_read(fd, (void *)ph.p_vaddr, ph.p_filesz);
-      if (ph.p_memsz > ph.p_filesz) {
-        memset((void *)(ph.p_vaddr + ph.p_filesz), 0, ph.p_memsz - ph.p_filesz);
+    vfs_lseek(fd, ehdr.e_phoff + i * sizeof(Elf_Phdr), SEEK_SET);
+    vfs_read(fd, &phdr, sizeof(Elf_Phdr));
+    if (phdr.p_type == PT_LOAD) {
+      uintptr_t vaddr_start = phdr.p_vaddr;
+      uintptr_t vaddr_end   = phdr.p_vaddr + phdr.p_memsz;
+      uintptr_t pg_start = ROUNDDOWN(vaddr_start, PGSIZE);
+      uintptr_t pg_end   = ROUNDUP(vaddr_end, PGSIZE);
+      uintptr_t file_offset = phdr.p_offset;
+      uintptr_t file_left   = phdr.p_filesz;
+      uintptr_t inner_off   = vaddr_start & (PGSIZE - 1);
+      for (uintptr_t va = pg_start; va < pg_end; va += PGSIZE) {
+        void *pa = new_page(1); 
+        map(&pcb->as, (void *)va, pa, 0);
+        memset(pa, 0, PGSIZE);
+        if (file_left > 0) {
+          uintptr_t read_len = (file_left < PGSIZE - inner_off) ? file_left : (PGSIZE - inner_off);
+          vfs_lseek(fd, file_offset, SEEK_SET);
+          vfs_read(fd, pa + inner_off, read_len);
+          file_left   -= read_len;
+          file_offset += read_len;
+        }
+        inner_off = 0;
       }
     }
   }
-  //printf("current fd = %d\n",fd);
-  vfs_close(fd); 
+  vfs_close(fd);
   return ehdr.e_entry;
 }
-/*
-void naive_uload(PCB *pcb, const char *filename) {
-    uintptr_t entry = loader(pcb, filename);
-    uintptr_t stack_top = (uintptr_t)heap.end & ~0xf; 
-    
-    // 在栈上压入 3 个 0 (argc, argv, envp)
-    uintptr_t *sp = (uintptr_t *)stack_top;
-    sp -= 4;
-    sp[0] = 0; 
-    
-    Log("Jump to entry = %p, SP = %p", (void *)entry, sp);
-    asm volatile (
-        "mv sp, %0; jr %1" 
-        : : "r"(sp), "r"(entry) : "memory"
-    );
-}*/
+
 void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
-  Area kstack = { .start = pcb->stack, .end = pcb->stack + sizeof(pcb->stack) };
-  pcb->cp = kcontext(kstack, entry, arg);
+  Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
+  Context *cp = kcontext(kstack, entry, arg);
+  pcb->cp = cp;
 }
-
-static char* stack_push_str(uintptr_t *cur_sp, const char *str) {
-  if (!str) return NULL;
-  size_t len = strlen(str) + 1;
-  *cur_sp -= len;
-  memcpy((void *)*cur_sp, str, len);
-  return (char *)*cur_sp;
-}
-
-static uintptr_t setup_stack(uintptr_t sp_top, char *const argv[], char *const envp[]) {
-  uintptr_t cur_sp = sp_top;
-  int argc = 0, envc = 0;
-
-  if (argv) { while (argv[argc]) argc++; }
-  if (envp) { while (envp[envc]) envc++; }
-
-  Log("SetupStack: sp_top=%p, argc=%d, envc=%d", (void*)sp_top, argc, envc);
-
-  // 1. 推入字符串内容
-  char *argv_va[argc];
-  char *envp_va[envc];
-
-  // 增加对环境变量的监控，有些程序（如 BusyBox）对 envp 的格式非常敏感
-  for (int i = envc - 1; i >= 0; i--) {
-    envp_va[i] = stack_push_str(&cur_sp, envp[i]);
-  }
-  
-  for (int i = argc - 1; i >= 0; i--) {
-    argv_va[i] = stack_push_str(&cur_sp, argv[i]);
-    Log("  Pushing argv[%d]: '%s' at %p", i, argv_va[i], (void*)argv_va[i]);
-  }
-
-  // 2. 计算指针表空间并对齐
-  int total_slots = 1 + argc + 1 + envc + 1;
-  uintptr_t array_start = cur_sp - (total_slots * sizeof(uintptr_t));
-  uintptr_t final_sp = array_start & ~0xf; // 16字节对齐
-  
-  // 打印对齐前后的差异，确认没有“吃掉”重要数据
-  Log("  Pointer area: start=%p, final_sp=%p (padding: %d bytes)", 
-      (void*)array_start, (void*)final_sp, (int)(array_start - final_sp));
-
-  // 3. 填充指针表
-  uintptr_t *ptr_stack = (uintptr_t *)final_sp;
-  int k = 0;
-  
-  ptr_stack[k++] = (uintptr_t)argc;
-  for (int i = 0; i < argc; i++) {
-    ptr_stack[k++] = (uintptr_t)argv_va[i];
-  }
-  ptr_stack[k++] = 0; // argv[argc] = NULL
-  
-  for (int i = 0; i < envc; i++) {
-    ptr_stack[k++] = (uintptr_t)envp_va[i];
-  }
-  ptr_stack[k++] = 0; // envp[envc] = NULL
-
-  // 4. 深度内存检查：打印 final_sp 处的原始数据（以 4 字节为单位）
-  // 这能帮你确认 argc 是否真的在栈底
-  Log("  Stack Raw Data Dump (at final_sp):");
-  for (int i = 0; i < total_slots; i++) {
-     Log("    sp[%d] (%p): 0x%08x", i, &ptr_stack[i], ptr_stack[i]);
-  }
-
-  // 5. 最后的验证 Log
-  Log("Stack verification: sp=%p, argc=%d, argv[0] at %p is '%s'", 
-      (void*)final_sp, (int)ptr_stack[0], (void*)ptr_stack[1], (char*)ptr_stack[1]);
-
-  return final_sp;
-}
-
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
-  Log("Trace[3]: About to setup_stack for %s", filename);
-  if (argv && argv[0]) {
-      Log("  Final check before push: argv[0] at %p is '%s'", argv[0], argv[0]);
-  };
-  // 1. 加载 ELF
+  protect(&pcb->as);
+  uintptr_t v_top = (uintptr_t)pcb->as.area.end;
+  uintptr_t v_bottom = v_top - 8 * PGSIZE;
+  for (uintptr_t va = v_bottom; va < v_top; va += PGSIZE) {
+    void *pa = new_page(1);
+    map(&pcb->as, (void *)va, pa, 0);
+  }
   uintptr_t entry = loader(pcb, filename);
-  
-  // 2. 准备用户栈
-  uintptr_t ustack_top = 0x87ffffff;
-
-  // 3. 调用拆分后的压栈函数
-  uintptr_t final_sp = setup_stack(ustack_top, argv, envp);
-
-  // 4. 准备上下文和进程信息
-  Area kstack = { .start = pcb->stack, .end = pcb->stack + sizeof(pcb->stack) };
-  
-  for (int i = 0; i < MAX_NR_PROC_FILE; i++) pcb->fd_table[i] = -1; 
-  pcb->fd_table[0] = 0; pcb->fd_table[1] = 1; pcb->fd_table[2] = 2;
-
-  pcb->cp = ucontext(NULL, kstack, (void *)entry);
-  pcb->cp->GPRx = final_sp; // RISC-V: a0 = sp
-
-  strcpy(pcb->name, filename);
-  Log("DEBUG BEFORE RETURN: sp=%p, argc=%d, argv[0]=%s", (void*)final_sp, *(int*)final_sp, ((char**)final_sp)[1]);
+  // 内核栈依然使用 pcb->stack
+  Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
+  Context *cp = ucontext(&pcb->as, kstack, (void *)entry);
+  // 设置初始用户栈指针 (Virtual SP)
+  cp->GPRx = v_top; 
+  pcb->cp = cp;
 }

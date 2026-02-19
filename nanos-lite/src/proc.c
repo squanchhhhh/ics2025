@@ -23,28 +23,14 @@ void hello_fun(void *arg) {
     yield();
   }
 }
-/*
-void init_proc() {
-  switch_boot_pcb();
-  Log("Initializing processes...");
-  char * file_name = "/bin/nterm";
-  current->name = file_name;
-  for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
-      if (i < 3) {
-        current->fd_table[i] = i;
-      } else {
-        current->fd_table[i] = -1;
-      }
-    }
-  naive_uload(NULL, file_name);
-}*/
+
 void init_proc() {
   context_kload(&pcb[0], hello_fun, (void *)1);
 
   char *argv[] = {"hello", "world", NULL};
   char *envp[] = {"PATH=/bin:/usr/bin", NULL};
   
-  context_uload(&pcb[1], NULL, argv, envp);
+  context_uload(&pcb[1], "/bin/dummy", argv, envp);
 
   switch_boot_pcb();
 }

@@ -76,26 +76,25 @@ void __am_switch(Context *c) {
 5. 填写二级页表项 (PTE)
 */
 void map(AddrSpace *as, void *va, void *pa, int prot) {
-
   uintptr_t vpn1 = ((uintptr_t)va >> 22) & 0x3ff;
   uintptr_t vpn0 = ((uintptr_t)va >> 12) & 0x3ff;
-  
   uintptr_t *pgdir = (uintptr_t *)as->ptr;
 
   if (!(pgdir[vpn1] & 0x1)) { 
     void *new_pt = pgalloc_usr(PGSIZE);
+    memset(new_pt, 0, PGSIZE); 
     pgdir[vpn1] = (((uintptr_t)new_pt >> 12) << 10) | 0x1; 
   }
 
   uintptr_t *pgtab = (uintptr_t *)((pgdir[vpn1] >> 10) << 12);
-
-  pgtab[vpn0] = (((uintptr_t)pa >> 12) << 10) | 0xf;
+  
+  pgtab[vpn0] = (((uintptr_t)pa >> 12) << 10) | 0x1f;
 }
 
 Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
   Context *c = (Context *)((uintptr_t)kstack.end - sizeof(Context));
   c->mepc = (uintptr_t)entry;
-  c->mstatus = 0x1800; 
+  c->mstatus = 0x180 | 0x80;
   c->pdir = (as != NULL ? as->ptr : NULL);
   return c;
 }
