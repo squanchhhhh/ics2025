@@ -63,12 +63,9 @@ void __am_get_cur_as(Context *c) {
 }
 
 void __am_switch(Context *c) {
-  if (vme_enable && c->pdir != NULL) {
-    printf("DEBUG: Switching! Context at %p, pdir value inside is %p\n", c, c->pdir);
+  if (c->pdir != NULL) {
     set_satp(c->pdir);
-  } else {
-    printf("switch to kas.ptr %x\n",kas.ptr);
-    set_satp(kas.ptr);
+    asm volatile("csrw mscratch, %0" : : "r"((uintptr_t)c + sizeof(Context)));
   }
 }
 
