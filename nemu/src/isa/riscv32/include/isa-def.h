@@ -26,6 +26,7 @@ typedef struct {
     word_t mtvec;   // 异常入口地址
     word_t mepc;    // 保存触发异常时的 PC
     word_t mcause;  // 触发异常的原因编号
+    word_t mscratch;
     word_t satp;    // 页表地址
   } csr;
 } MUXDEF(CONFIG_RV64, riscv64_CPU_state, riscv32_CPU_state);

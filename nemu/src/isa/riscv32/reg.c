@@ -40,7 +40,7 @@ void isa_reg_display() {
     printf("-------------------------------------------------\n");
     printf("\033[1;35mmstatus\033[0m : 0x%08x  | \033[1;35mmtvec \033[0m : 0x%08x\n", cpu.csr.mstatus, cpu.csr.mtvec);
     printf("\033[1;35mmepc   \033[0m : 0x%08x  | \033[1;35mmcause\033[0m : 0x%08x\n", cpu.csr.mepc, cpu.csr.mcause);
-    printf("\033[1;35msatp    \033[0m : 0x%08x  | \033[1;35\033[0m\n", cpu.csr.satp);
+    printf("\033[1;35msatp   \033[0m : 0x%08x  | \033[1;35mmscratch\033[0m : 0x%08x\n", cpu.csr.satp,cpu.csr.mscratch);
     printf("=================================================\n");
 }
 
@@ -57,6 +57,7 @@ word_t isa_reg_str2val(const char *s, bool *success) {
   if (strcmp(s, "mtvec") == 0)   return cpu.csr.mtvec;
   if (strcmp(s, "mcause") == 0)  return cpu.csr.mcause;
   if (strcmp(s, "satp") == 0)    return cpu.csr.satp;
+  if (strcmp(s, "mscratch") == 0)return cpu.csr.mscratch;
   *success = false;
   return 0;
 }
@@ -68,6 +69,7 @@ word_t csr_read(uint32_t addr) {
     case 0x341: return cpu.csr.mepc;
     case 0x342: return cpu.csr.mcause;
     case 0x180: return cpu.csr.satp;
+    case 0x340: return cpu.csr.mscratch;
     default: panic("Unimplemented CSR read at addr 0x%x", addr);
   }
 }
@@ -79,6 +81,7 @@ void csr_write(uint32_t addr, word_t data) {
     case 0x341: cpu.csr.mepc = data; break;
     case 0x342: cpu.csr.mcause = data; break;
     case 0x180: cpu.csr.satp = data; break;
+    case 0x340: cpu.csr.mscratch = data; break;
     default: panic("Unimplemented CSR write at addr 0x%x", addr);
   }
 }
