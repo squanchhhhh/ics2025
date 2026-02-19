@@ -3,6 +3,11 @@
 #include "proc.h"
 void do_syscall(Context *ctx);
 static Context* do_event(Event e, Context* c) {
+  if (c->pdir != NULL && (uintptr_t)c->pdir != 0x80aec000 && (uintptr_t)c->pdir != 0) {
+     Log("CRITICAL: Context at %p is corrupted! pdir = %p", c, c->pdir);
+     uint32_t *ptr = (uint32_t *)c;
+     for(int i=0; i<5; i++) printf("offset %d: 0x%08x\n", i*4, ptr[i]);
+  }
   switch (e.event) {
     case EVENT_YIELD:
       return schedule(c);
