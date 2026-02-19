@@ -40,13 +40,11 @@ Context* schedule(Context *prev) {
   if (current != NULL) {
     current->cp = prev;
   }
-
   if (current == &pcb[0]) {
     current = &pcb[1];
   } else {
     current = &pcb[0];
   }
-
   return current->cp;
 }
 
