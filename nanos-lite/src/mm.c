@@ -11,9 +11,12 @@ void* new_page(size_t nr_page) {
 
 #ifdef HAS_VME
 static void* pg_alloc(int n) {
+  size_t alloc_size = ROUNDUP(n, PGSIZE);
   void *ret = pf;
-  pf += n;
-  memset(ret, 0, n);
+  
+  pf = (uint8_t *)pf + alloc_size;
+
+  memset(ret, 0, alloc_size);
   return ret;
 }
 #endif
