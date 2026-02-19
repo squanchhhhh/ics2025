@@ -1,24 +1,23 @@
 #include "trace/mtrace.h"
 #include "trace/tui.h"
+#include "trace/error.h"
 #define MAX_MTRACE 16
 MTraceEntry me[MAX_MTRACE];
 static uint64_t nr_m = 0; 
 
-void push_mtrace(vaddr_t pc, paddr_t addr, uint64_t data, int len, MemAccessType type) {
+void push_m(vaddr_t pc, paddr_t addr, uint64_t data, int len, MemAccessType type) {
     if (addr == pc && type == MEM_READ) {
         return;
     }
-
     MTraceEntry *e = &me[nr_m % MAX_MTRACE];
-    
     e->addr = addr;
     e->data = data;
     e->len  = len;
     e->pc   = pc;
     e->type = type;
-
     nr_m++; 
 }
+
 void dump_mtrace(void) {
     printf("------- [ Recent Memory Trace (mtrace) ] -------\n");
     uint64_t start = (nr_m > MAX_MTRACE) ? (nr_m - MAX_MTRACE) : 0;
@@ -37,5 +36,22 @@ void dump_mtrace(void) {
         
         printf("%s  pc:0x%08x  addr:0x%08x  len:%d  data:0x%016lx | %s:%d\n", 
                op, e->pc, e->addr, e->len, e->data, short_name, line);
+    }
+}
+
+void get_error_mtrace(ErrorEntry *e) {
+    memset(&e->me, 0, sizeof(MTraceEntry));
+    e->me.pc = 0; // 用 PC=0 表示未关联到内存记录
+
+    if (nr_m == 0) return;
+
+    uint64_t count = (nr_m > MAX_MTRACE) ? MAX_MTRACE : nr_m;
+    
+    for (uint64_t i = 0; i < count; i++) {
+        uint64_t idx = (nr_m - 1 - i) % MAX_MTRACE;
+        if (me[idx].pc == e->ie.pc) {
+            e->me = me[idx];
+            return;
+        }
     }
 }

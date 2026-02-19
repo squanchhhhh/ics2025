@@ -57,7 +57,7 @@ word_t paddr_read(paddr_t addr, int len) {
   if (likely(in_pmem(addr))){
     word_t data = pmem_read(addr, len);
     #ifdef CONFIG_MTRACE
-    push_mtrace(cpu.pc,addr,data,len,MEM_READ);
+    push_m(cpu.pc,addr,data,len,MEM_READ);
     #endif
     return data;
   }
@@ -69,7 +69,7 @@ word_t paddr_read(paddr_t addr, int len) {
 void paddr_write(paddr_t addr, int len, word_t data) {
   if (likely(in_pmem(addr))) { 
     #ifdef CONFIG_MTRACE
-    push_mtrace(cpu.pc,addr,data,len,MEM_WRITE);
+    push_m(cpu.pc,addr,data,len,MEM_WRITE);
     #endif
     pmem_write(addr, len, data); 
     return; 

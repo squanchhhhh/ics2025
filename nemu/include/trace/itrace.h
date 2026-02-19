@@ -16,7 +16,7 @@ typedef struct {
 } ITraceEntry;
 
 
-void push_inst(vaddr_t pc, const char *s, RegEntry *reg);
+void push_i(vaddr_t pc, const char *s, RegEntry *reg);
 void dump_insts();
 
 #endif

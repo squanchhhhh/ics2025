@@ -203,7 +203,7 @@ static int cmd_m(char*args){
 }
 
 static int cmd_f(char*args){
-  ftrace_print();
+  dump_ftrace();
   return 0;
 }
 
@@ -245,7 +245,7 @@ int nemu_printf(const char *fmt, ...) {
     return n;
 }
 static int cmd_bt(char *args){
-  ftrace_print_stack(); 
+  dump_ftrace_stack(); 
   return 0;
 }
 void sdb_set_batch_mode() {

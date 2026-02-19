@@ -2,7 +2,6 @@
 #define __MTRACE_H__
 
 #include <common.h>
-
 #define MTRACE_BUF_SIZE 32
 typedef enum {
     MEM_READ,
@@ -18,5 +17,6 @@ typedef struct {
 } MTraceEntry;
 
 void dump_mtrace(void) ;
-void push_mtrace(vaddr_t pc,paddr_t addr,uint64_t data,int len,MemAccessType type);
+void push_m(vaddr_t pc,paddr_t addr,uint64_t data,int len,MemAccessType type);
+
 #endif

@@ -27,6 +27,7 @@
 #include "trace/itrace.h"
 #include "trace/mtrace.h"
 #include "trace/elf.h"
+#include "trace/error.h"
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
@@ -83,7 +84,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
-  push_inst(s->pc, s->logbuf, &s->reg_res);
+  push_i(s->pc, s->logbuf, &s->reg_res);
 #endif
 
 }
@@ -109,10 +110,7 @@ static void statistic() {
 }
 
 void assert_fail_msg() {
-  dump_insts();
-  #ifdef CONFIG_MTRACE
-  dump_mtrace();
-  #endif
+  dump_unified_error();
   isa_reg_display();
   statistic();
 }

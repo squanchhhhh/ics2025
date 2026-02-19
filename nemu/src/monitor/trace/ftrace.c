@@ -1,5 +1,6 @@
 #include <trace/ftrace.h>
 #include <trace/elf.h>
+#include <trace/error.h>
 
 #define MAX_FUNC_TRACE 1024
 static FTraceEntry te[MAX_FUNC_TRACE];
@@ -8,7 +9,7 @@ static int nr_func_trace_event = 0;
 /**
  * 记录追踪事件
  */
-void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type) {
+void push_f(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type) {
   if (!is_elf_loaded()) return;
   if (nr_func_trace_event >= MAX_FUNC_TRACE) {
     static bool warned = false;
@@ -31,7 +32,7 @@ void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type) {
 /**
  * 格式化打印追踪记录
  */
-void ftrace_print() {
+void dump_ftrace() {
   printf("------- [ FTrace Log ] -------\n");
   int indentation = 0;
 
@@ -58,7 +59,7 @@ void ftrace_print() {
   printf("------------------------------\n");
 }
 
-void ftrace_print_stack() {
+void dump_ftrace_stack() {
   printf("------- [ FTrace Stack ] -------\n");
 
   int call_stack[MAX_FUNC_TRACE];
@@ -83,21 +84,18 @@ void ftrace_print_stack() {
 }
 
 /**
- * 根据 PC 返回函数名和偏移量，例如 "main+12"
- * 用于 ErrorLog 的横向整合输出
+ * 根据 ErrorEntry 中的 PC 返回函数名和偏移量
+ * 整合进 ErrorEntry 视图，自动处理函数内偏移
  */
-char* get_f_name(vaddr_t pc) {
-    static char func_info[128];
+void get_error_ftrace(ErrorEntry *e) {
+    vaddr_t pc = e->ie.pc;
     int fid = elf_find_func_by_addr(pc);
+    
     if (fid != -1) {
         Func *f = elf_get_func_by_id(fid);
         uint32_t offset = pc - f->begin;
-        if (offset == 0) {
-            snprintf(func_info, sizeof(func_info), "<%s+0x%x>", f->name, offset);
-        } else {
-            snprintf(func_info, sizeof(func_info), "<%s+0x%x>", f->name, offset);
-        }
-        return func_info;
+        snprintf(e->fe, sizeof(e->fe), "<%s+0x%x>", f->name, offset);
+    } else {
+        snprintf(e->fe, sizeof(e->fe), "unknown[0x%08x]", pc);
     }
-    return NULL; 
 }

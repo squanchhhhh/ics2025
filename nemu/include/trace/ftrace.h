@@ -21,12 +21,12 @@ typedef struct {
 // 记录一次函数调用或返回
 // target_addr: call 指令的目标地址（用于查询函数名）
 // caller_pc:   当前 call 指令本身的地址（用于打印显示）
-void ftrace_record(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type);
+void push_f(vaddr_t caller_pc, vaddr_t target_addr, FTraceType type);
 
 // 打印所有追踪记录
-void ftrace_print();
+void dump_ftrace();
 
-void ftrace_print_stack() ;
+void dump_ftrace_stack() ;
 
-char* get_f_name(vaddr_t pc);
+
 #endif // __FTRACE_H__

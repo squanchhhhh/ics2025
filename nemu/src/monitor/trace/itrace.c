@@ -2,11 +2,12 @@
 #include "trace/tui.h"
 #include <string.h>
 #include <isa.h>
+#include <trace/error.h>
 #define MAX_ITRACE 16
 static ITraceEntry ie[MAX_ITRACE];
 static uint64_t nr_i = 0; 
 
-void push_inst(vaddr_t pc, const char *s, RegEntry *reg) {
+void push_i(vaddr_t pc, const char *s, RegEntry *reg) {
     ITraceEntry *e = &ie[nr_i % MAX_ITRACE];
     e->pc = pc;
     strncpy(e->asmb, s, sizeof(e->asmb) - 1);
@@ -57,4 +58,23 @@ void dump_insts() {
                code);
     }
     printf("------------------------------------------------\n");
+}
+
+ITraceEntry* get_itrace_record(int n) {
+    if (n >= MAX_ITRACE || n >= nr_i) return NULL;
+    
+    // 计算逻辑下标：最新的在 (nr_i - 1)，往前回溯 n 个
+    uint64_t idx = (nr_i - 1 - n) % MAX_ITRACE;
+    return &ie[idx];
+}
+
+void get_error_itrace(ErrorEntry *e, int n) {
+    ITraceEntry *source = get_itrace_record(n);
+    if (source != NULL) {
+        // 直接结构体拷贝，包括 pc, asmb, reg 等所有信息
+        e->ie = *source;
+    } else {
+        // 如果没有记录，清空结构体
+        memset(&e->ie, 0, sizeof(ITraceEntry));
+    }
 }

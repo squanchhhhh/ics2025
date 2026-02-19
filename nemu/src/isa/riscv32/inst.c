@@ -152,7 +152,7 @@ static int decode_exec(Decode *s) {
     s->dnpc = s->pc + imm;
   #ifdef CONFIG_FTRACE
     if (rd == 1 || rd == 5) { 
-        ftrace_record(s->pc, s->dnpc, FUNC_CALL);
+        push_f(s->pc, s->dnpc, FUNC_CALL);
       }
   #endif
   });
@@ -165,11 +165,11 @@ static int decode_exec(Decode *s) {
   #ifdef CONFIG_FTRACE
   // 1. 判断是否为返回 (ret): 通常是 jalr x0, 0(ra) 即 rd=0, rs1=1
   if (rd == 0 && BITS(s->isa.inst, 19, 15) == 1) {
-    ftrace_record(s->pc, s->pc, FUNC_RET);
+    push_f(s->pc, s->pc, FUNC_RET);
   }
   // 2. 判断是否为调用 (call): rd 为 ra 或 t0
   else if (rd == 1 || rd == 5) {
-    ftrace_record(s->pc, target, FUNC_CALL);
+    push_f(s->pc, target, FUNC_CALL);
   }
   #endif
   });
