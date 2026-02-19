@@ -3,10 +3,14 @@
 #include "proc.h"
 void do_syscall(Context *ctx);
 static Context* do_event(Event e, Context* c) {
-  if (c->pdir != NULL && (uintptr_t)c->pdir != 0x80aec000 && (uintptr_t)c->pdir != 0) {
-     Log("CRITICAL: Context at %p is corrupted! pdir = %p", c, c->pdir);
-     uint32_t *ptr = (uint32_t *)c;
-     for(int i=0; i<5; i++) printf("offset %d: 0x%08x\n", i*4, ptr[i]);
+  if ((uintptr_t)c < 0x80000000) {
+    printf("\n[BUG DETECTED] Context is in User Space at %p!\n", c);
+    printf("pdir content: 0x%08x\n", c->pdir);
+    unsigned char *raw = (unsigned char *)c;
+    printf("Raw data near pdir: ");
+    for(int i = 0; i < 16; i++) printf("%02x ", raw[140 + i]); // 140 是 pdir 偏移
+    printf("\n");
+    panic("Context safely violation.");
   }
   switch (e.event) {
     case EVENT_YIELD:
