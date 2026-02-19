@@ -3,7 +3,7 @@
 static void *pf = NULL;
 
 void* new_page(size_t nr_page) {
-  printf("call new_page current pf = %p\n",pf);
+  //printf("call new_page current pf = %p\n",pf);
   void *p = pf;
   pf = (uint8_t *)pf + nr_page * PGSIZE;
   return p;
