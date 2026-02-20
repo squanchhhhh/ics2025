@@ -62,11 +62,13 @@ void __am_get_cur_as(Context *c) {
 }
 
 void __am_switch(Context *c) {
-  if (c != NULL && c->pdir != NULL) {
-    uintptr_t satp_val = ((uintptr_t)c->pdir >> 12) | 0x80000000;
-    asm volatile("csrw satp, %0" : : "r"(satp_val));
-    asm volatile("sfence.vma"); 
+  if (c == NULL) return;
+  if (c->pdir != NULL) {
+    set_satp(c->pdir);
+  } else {
+    set_satp(kas.ptr); 
   }
+  asm volatile("sfence.vma"); 
 }
 /*
 功能：在页表中填入页表项
