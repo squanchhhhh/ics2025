@@ -82,6 +82,7 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
   Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
   Context *cp = kcontext(kstack, entry, arg);
   pcb->cp = cp;
+  printf("Kernel Thread Context at %p, its SP is %p\n", pcb->cp, (void *)pcb->cp->gpr[2]);
 }
 extern AddrSpace kas;
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
