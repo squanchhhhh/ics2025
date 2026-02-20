@@ -37,6 +37,7 @@ void init_proc() {
 }
 
 Context* schedule(Context *prev) {
+  printf("call schedule\n");
   current->cp = prev;
   
   if (current == &pcb[0]) {
