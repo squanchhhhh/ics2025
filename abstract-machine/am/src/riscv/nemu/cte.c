@@ -60,9 +60,9 @@ Context* kcontext(Area kstack, void (*entry)(void *), void *arg) {
   c->mepc = (uintptr_t)entry;
   c->mstatus = 0x1800; 
   c->GPRx = (uintptr_t)arg; 
-  printf("call kcontext set sp %p\n",kstack.end);
   c->gpr[2] = (uintptr_t)kstack.end; 
   c->pdir = NULL;
+  printf("set kernel stack for kernel thread, address = %p\n",c);
   return c;
 }
 void yield() {
