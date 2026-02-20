@@ -85,25 +85,37 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 }
 
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
-  //1.设置用户页表，copy内核页表到用户页表
+  // 1. 设置用户页表，protect 会将内核映射拷贝到用户页表
   protect(&pcb->as);
-  //2.设置用户栈，并加入到页表中
-  uintptr_t v_top = (uintptr_t)pcb->as.area.end;
+
+  // 2. 设置用户栈（32KB），并映射到页表
+  uintptr_t v_top = (uintptr_t)pcb->as.area.end; // 通常是 0x80000000
   uintptr_t v_stack_low = v_top - 32 * 1024;
-  void *pa_stack_top_page = NULL;  // 暂时保留一个物理地址用于传参
+  void *pa_stack_top_page = NULL; 
+
   for (uintptr_t va = v_stack_low; va < v_top; va += PGSIZE) {
     void *pa = new_page(1);
-    map(&pcb->as, (void *)va, pa, 7); 
+    map(&pcb->as, (void *)va, pa, 7); // 权限: U, R, W
     if (va == v_top - PGSIZE) pa_stack_top_page = pa; 
   }
+
+  // 3. 极简参数传递：仅设置 argc = 0
+  // 我们在物理页的最顶端预留 16 字节空间，并确保对齐
+  uintptr_t *sp_phys = (uintptr_t *)((uintptr_t)pa_stack_top_page + PGSIZE - 16);
+  uintptr_t sp_virt = v_top - 16;
+  
+  *sp_phys = 0; // argc = 0
+
   // 4. 加载 ELF
   uintptr_t entry = loader(pcb, filename);
-  printf("entry = %x\n",entry);
+
   // 5. 创建上下文
   Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
   pcb->cp = ucontext(&pcb->as, kstack, (void *)entry);
-  printf("user proc pdir = %x\n",v_ptr);
-  pcb->cp->gpr[10] = argc;
-  pcb->cp->gpr[2] = v_ptr;
-  printf("Context pointer: %p, stored SP: %x\n", pcb->cp, pcb->cp->gpr[2]);
+
+  // 设置寄存器：a0 (gpr[10]) 是 argc, sp (gpr[2]) 是栈指针
+  pcb->cp->gpr[10] = 0; 
+  pcb->cp->gpr[2] = sp_virt;
+
+  printf("Loader: entry = %x, SP = %x\n", entry, pcb->cp->gpr[2]);
 }
