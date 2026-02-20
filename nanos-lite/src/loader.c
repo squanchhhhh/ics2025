@@ -104,6 +104,6 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   // 5. 创建上下文
   Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
   pcb->cp = ucontext(&pcb->as, kstack, (void *)entry);
-  // 6. 将最终计算出的虚拟 SP 传给 a0
-  pcb->cp->GPRx = v_ptr;
+  pcb->cp->gpr[10] = argc;
+  pcb->cp->gpr[2] = v_ptr;
 }
