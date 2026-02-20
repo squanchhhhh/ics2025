@@ -71,11 +71,7 @@ save_context:
   STORE t1, OFFSET_STATUS(sp)
   STORE t2, OFFSET_EPC(sp)
 
-  # 强制设置 mstatus.MPRV 位（通常用于 Difftest 兼容或特殊的内存访问需求）
-  li a0, (1 << 17)
-  or t1, t1, a0
-  csrw mstatus, t1
-
+  csrw mscratch, zero
   /*
    * 3. 核心处理：调用 C 语言的中断处理程序
    */
