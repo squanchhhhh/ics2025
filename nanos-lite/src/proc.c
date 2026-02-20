@@ -47,8 +47,8 @@ Context* schedule(Context *prev) {
   }
   
   // 打印确认
-   printf("Next PCB: %p, pdir: %p\n", current, current->cp->pdir);
-  
+  printf("Next PCB: %p, pdir: %p\n", current, current->cp->pdir);
+  printf("[Debug] Target SP in Context: %p\n", (void *)current->cp->gpr[2]);
   return current->cp;
 }
 
