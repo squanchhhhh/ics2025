@@ -83,11 +83,17 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
   Context *cp = kcontext(kstack, entry, arg);
   pcb->cp = cp;
 }
-
+extern AddrSpace kas;
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   // 1. 设置用户页表，protect 会将内核映射拷贝到用户页表
   protect(&pcb->as);
-
+  // --- 插入这段调试代码 ---
+  uint32_t *pdir = (uint32_t *)pcb->as.ptr;
+  // 索引 512 对应虚拟地址 0x80000000 (0x80000000 >> 22 = 512)
+  // 索引 1023 对应虚拟地址空间的最顶端
+  printf("Checking user page table (pdir) at %p:\n", pdir);
+  printf("  pdir[512] (0x80000000): 0x%08x\n", pdir[512]);
+  printf("  pdir[1023] (0xffc00000): 0x%08x\n", pdir[1023]);
   // 2. 设置用户栈（32KB），并映射到页表
   uintptr_t v_top = (uintptr_t)pcb->as.area.end; // 通常是 0x80000000
   uintptr_t v_stack_low = v_top - 32 * 1024;
