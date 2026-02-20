@@ -10,7 +10,6 @@ Context* __am_irq_handle(Context *c) {
     // 记录：中断发生的瞬间，当前 Context 的状态
      printf("\n[IRQ Entry] Context: %p, EPC: %x, Cause: %d, pdir: %p\n", 
              c, c->mepc, c->mcause, c->pdir);
-
     switch (c->mcause) {
       case 11: 
         if (c->GPR1 == -1) {
@@ -32,7 +31,7 @@ Context* __am_irq_handle(Context *c) {
        printf("[IRQ Switch] From Context %p (pdir %p) -> To %p (pdir %p)\n", 
                prev, prev->pdir, c, c->pdir);
     }
-    
+    printf("[IRQ Exit] Target SP to restore: %p\n", (void *)c->gpr[2]);
     assert(c != NULL);
   }
 
