@@ -37,15 +37,37 @@ void init_proc() {
 }
 
 Context* schedule(Context *prev) {
-  // 保存当前正在运行的现场
+  // 1. 保存现场
   current->cp = prev;
 
-  // 强制锁定：始终只运行 pcb[1]
+  // 2. 切换到用户进程
   current = &pcb[1];
 
-  // 调试打印：确认每次切换回来的都是用户程序的页表和 SP
-  printf("[Schedule] Forced to User Program. pdir: %p, SP: %p\n", 
-          current->cp->pdir, (void *)current->cp->gpr[2]);
+  // 3. 输出进入用户程序前的全部关键内核信息
+  printf("\n--- [KERNEL PANOPTICON: JUMPING TO USER] ---\n");
+  printf("Target PCB      : %p (pcb[1])\n", current);
+  printf("Target Context  : %p (on kstack)\n", current->cp);
+  
+  // 核心寄存器信息
+  printf("MEPC (PC)       : 0x%08x\n", current->cp->mepc);
+  printf("MSTATUS         : 0x%08x\n", current->cp->mstatus);
+  printf("User SP (gpr[2]): 0x%08x\n", current->cp->gpr[2]);
+  printf("Arg0 (a0/gpr[10]): 0x%08x\n", current->cp->gpr[10]);
+  
+  // 内存/页表信息
+  printf("Page Table (SATP): %p\n", current->cp->pdir);
+  if (current->cp->pdir) {
+      // 这里的 as 是 PCB 中的物理地址空间描述符
+      printf("AS Area Start   : %p\n", current->as.area.start);
+      printf("AS Area End     : %p\n", current->as.area.end);
+  }
+  
+  // 检查是否发生了栈重叠或污染
+  uintptr_t kstack_top = (uintptr_t)current + sizeof(PCB);
+  printf("Current KStack  : Top=%p, CurrentCP=%p, SpaceLeft=%d bytes\n", 
+          (void *)kstack_top, current->cp, (int)((uintptr_t)current->cp - (uintptr_t)current));
+  
+  printf("--------------------------------------------\n\n");
 
   return current->cp;
 }
