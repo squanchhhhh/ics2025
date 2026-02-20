@@ -40,47 +40,76 @@ f(30) f(31)
 .align 3
 .globl __am_asm_trap
 __am_asm_trap:
-  csrrw sp, mscratch, sp
-
-  bnez sp, save_context
-  csrrw sp, mscratch, sp
+  /*
+   * 1. 灵魂交换：判断是从用户态还是内核态进来的
+   * 约定：mscratch 处平时存放着该进程的“内核栈顶”；如果在内核中运行，mscratch 为 0。
+   */
+  csrrw sp, mscratch, sp      # 原子交换 sp 和 mscratch
+  bnez sp, save_context       # 如果交换后 sp != 0，说明来自用户态，此时 sp 已变成内核栈，去保存现场
+  
+  # 走到这里说明 sp 为 0，即来自内核态（嵌套中断）
+  csrrw sp, mscratch, sp      # 再次交换回来，让 sp 恢复为当前的内核栈指针，继续向下运行
 
 save_context:
-  addi sp, sp, -CONTEXT_SIZE
+  /*
+   * 2. 保存现场：在内核栈上开辟空间并压入所有寄存器
+   */
+  addi sp, sp, -CONTEXT_SIZE   # 在内核栈上预留 Context 结构体的空间
+  MAP(REGS, PUSH)              # 宏展开：依次执行 sw x1, x3-x31 到栈上（跳过 x2）
 
-  MAP(REGS, PUSH)
+  # 特殊处理 x2 (sp)：
+  # 如果来自用户态，中断前的真实 sp 现在寄存在 mscratch 里
+  # 如果来自内核态，刚才第二次交换后，mscratch 存的是 0（这个逻辑后续需要精修，目前假设主要处理用户态切换）
+  csrr t0, mscratch            
+  STORE t0, OFFSET_SP(sp)      # 将中断前的原始栈指针存入 Context->gpr[2]
 
-  csrr t0, mscratch
-  STORE t0, OFFSET_SP(sp)
-
+  # 保存 CSR 控制寄存器（异常原因、状态、返回地址）
   csrr t0, mcause
   csrr t1, mstatus
   csrr t2, mepc
-
   STORE t0, OFFSET_CAUSE(sp)
   STORE t1, OFFSET_STATUS(sp)
   STORE t2, OFFSET_EPC(sp)
 
+  # 强制设置 mstatus.MPRV 位（通常用于 Difftest 兼容或特殊的内存访问需求）
   li a0, (1 << 17)
   or t1, t1, a0
   csrw mstatus, t1
 
-  mv a0, sp
-  call __am_irq_handle
+  /*
+   * 3. 核心处理：调用 C 语言的中断处理程序
+   */
+  mv a0, sp                    # 参数 a0 = Context 结构体指针
+  call __am_irq_handle         # 调用 nanos-lite 的处理逻辑
   
-  mv sp, a0
+  # 关键点：a0 是 __am_irq_handle 的返回值，即调度器选出的“下一个进程”的 Context 指针
+  mv sp, a0                    # ！！！正式切换栈指针，sp 此时可能已经跳到了另一个进程的内核栈
 
+  /*
+   * 4. 准备恢复现场
+   */
+  # 恢复目标进程的 sp 到 mscratch 暂存
+  # 这样在 mret 之前的最后时刻，我们可以通过交换把这个 sp 换给硬件
   LOAD t0, OFFSET_SP(sp)
-  csrw mscratch, t0
+  csrw mscratch, t0            # 现在 mscratch = 目标进程的原始栈指针（如 0x7ffffff8）
 
+  # 恢复 CSR 状态，准备返回
   LOAD t1, OFFSET_STATUS(sp)
   LOAD t2, OFFSET_EPC(sp)
   csrw mstatus, t1
   csrw mepc, t2
 
+  # 恢复除 sp 以外的所有通用寄存器
   MAP(REGS, POP)
 
-  addi sp, sp, CONTEXT_SIZE
-  csrrw sp, mscratch, sp
+  /*
+   * 5. 最终退出：跨越特权级屏障
+   */
+  addi sp, sp, CONTEXT_SIZE    # 释放内核栈空间，此时 sp 回到内核栈顶（如 0x802ecf70）
   
-  mret
+  # 临门一脚：交换
+  # 交换后：sp 变回了目标进程的原始栈指针（如 0x7ffffff8）
+  #        mscratch 变回了目标进程的内核栈顶（如 0x802ecf70），为下次中断做好准备！
+  csrrw sp, mscratch, sp       
+  
+  mret                         # 硬件动作：根据 mepc 跳回，根据 mstatus 改变特权级
