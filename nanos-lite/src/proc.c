@@ -45,6 +45,12 @@ Context* schedule(Context *prev) {
   } else {
     current = &pcb[0];
   }
+  if (current->cp != NULL) {
+    printf("[Schedule] Switch to PCB[%s], Context: %p, pdir (satp): %p\n", 
+            (current->name[0] != '\0' ? current->name : "unnamed"),
+            current->cp, 
+            current->cp->pdir);
+  }
   return current->cp;
 }
 
