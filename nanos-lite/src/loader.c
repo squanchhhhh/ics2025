@@ -120,7 +120,7 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   pcb->cp = ucontext(&pcb->as, kstack, (void *)entry);
 
   // 设置寄存器：a0 (gpr[10]) 是 argc, sp (gpr[2]) 是栈指针
-  pcb->cp->gpr[10] = 0; 
+  pcb->cp->gpr[10] = sp_virt;; 
   pcb->cp->gpr[2] = sp_virt;
 
   printf("Loader: entry = %x, SP = %x\n", entry, pcb->cp->gpr[2]);
