@@ -253,12 +253,22 @@ static int cmd_bt(char *args){
   return 0;
 }
 static int cmd_b(char *args){
-  int val = atoi(args);
-  vaddr_t pc = (vaddr_t)val;
-  add_breakpoint(pc);
+  if (args == NULL) {
+    printf("Usage: b ADDR\n");
+    return 0;
+  }
+  vaddr_t addr;
+  addr = strtol(args, NULL, 0); 
+  
+  if (addr == 0 && strcmp(args, "0") != 0) {
+    printf("Invalid address: %s\n", args);
+    return 0;
+  }
+
+  add_breakpoint(addr);
+  printf("Breakpoint set at 0x%08x\n", addr);
   return 0;
 }
-
 void sdb_set_batch_mode() {
   is_batch_mode = true;
 }
