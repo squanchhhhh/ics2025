@@ -26,7 +26,6 @@ static inline uintptr_t get_satp() {
 }
 
 bool vme_init(void* (*pgalloc_f)(int), void (*pgfree_f)(void*)) {
-  printf("C-Context size: %d, pdir offset: %d\n", sizeof(Context), (int)((uintptr_t)&((Context*)0)->pdir));
   pgalloc_usr = pgalloc_f;
   pgfree_usr = pgfree_f;
 
@@ -95,6 +94,8 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
 
 Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
   Context *c = (Context *)((uintptr_t)kstack.end - sizeof(Context));
+  memset(c, 0, sizeof(Context));
+  
   c->mepc = (uintptr_t)entry;
   c->mstatus = 0x180 | 0x80;
   c->pdir = (as != NULL ? as->ptr : NULL);

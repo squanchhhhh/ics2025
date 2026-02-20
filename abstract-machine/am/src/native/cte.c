@@ -167,16 +167,12 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 
 Context* kcontext(Area kstack, void (*entry)(void *), void *arg) {
   Context *c = (Context*)kstack.end - 1;
-
   __am_get_example_uc(c);
   AM_REG_PC(&c->uc) = (uintptr_t)__am_kcontext_start;
   AM_REG_SP(&c->uc) = (uintptr_t)kstack.end;
-
   int ret = sigemptyset(&(c->uc.uc_sigmask)); // enable interrupt
   assert(ret == 0);
-
   c->vm_head = NULL;
-
   c->GPR1 = (uintptr_t)arg;
   c->GPR2 = (uintptr_t)entry;
   c->pdir = NULL;

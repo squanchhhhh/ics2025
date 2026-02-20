@@ -25,12 +25,12 @@ void hello_fun(void *arg) {
 }
 
 void init_proc() {
-  printf("DEBUG: pcb[0] address: %p, pdir value: %p\n", &pcb[0], pcb[0].as.ptr);
-  pcb[0].as.ptr = NULL;
   context_kload(&pcb[0], hello_fun, (void *)1);
 
-  char *argv[] = {"hello", "world", NULL};
-  char *envp[] = {"PATH=/bin:/usr/bin", NULL};
+  //char *argv[] = {"hello", "world", NULL};
+  //char *envp[] = {"PATH=/bin:/usr/bin", NULL};
+  char *argv[] = {NULL};
+  char *envp[] = {NULL};
   context_uload(&pcb[1], "/bin/dummy", argv, envp);
 
   switch_boot_pcb();

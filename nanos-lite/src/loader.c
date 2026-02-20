@@ -56,38 +56,26 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
   Context *cp = kcontext(kstack, entry, arg);
   pcb->cp = cp;
 }
-void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
-  // 1. 创建地址空间 (初始化 as->ptr)
-  //printf("ptr after protect: %p\n", pcb->as.ptr);
-  protect(&pcb->as);
-  //printf("ptr after protect: %p\n", pcb->as.ptr);
 
-  // 2. 分配 32KB 用户栈并映射
+void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
+  //1.设置用户页表，copy内核页表到用户页表
+  protect(&pcb->as);
+  //2.设置用户栈，并加入到页表中
   uintptr_t v_top = (uintptr_t)pcb->as.area.end;
   uintptr_t v_stack_low = v_top - 32 * 1024;
-  void *pa_stack_top_page = NULL;
-
+  void *pa_stack_top_page = NULL;  // 暂时保留一个物理地址用于传参
   for (uintptr_t va = v_stack_low; va < v_top; va += PGSIZE) {
     void *pa = new_page(1);
-    map(&pcb->as, (void *)va, pa, 7); // 可读可写可执行
+    map(&pcb->as, (void *)va, pa, 7); 
     if (va == v_top - PGSIZE) pa_stack_top_page = pa; 
   }
 
-  // 3. 参数传递 (简易版 setup_stack)
-  // 我们在 pa_stack_top_page 物理页内操作
-  // 假设我们把字符串和指针数组都放在这最后一个页面内 (4KB 足够)
-  
+  // 3. 参数传递 
   int argc = 0;
   if (argv) { while (argv[argc]) argc++; }
-
-  // 我们从物理页底部 (即 v_top 对应的物理位置) 开始倒着压
   char *pa_ptr = (char *)pa_stack_top_page + PGSIZE; 
   uintptr_t v_ptr = v_top;
-
-  // 存放 argv 字符串在用户空间虚拟地址的数组
   uintptr_t argv_va[argc];
-
-  // 压入字符串
   for (int i = 0; i < argc; i++) {
     size_t len = strlen(argv[i]) + 1;
     pa_ptr -= len;
@@ -95,24 +83,17 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
     memcpy(pa_ptr, argv[i], len);
     argv_va[i] = v_ptr;
   }
-
-  // 对齐到 4 字节 (RISC-V 要求栈对齐)
   uintptr_t align = (uintptr_t)pa_ptr & 0x3;
   pa_ptr -= align;
   v_ptr -= align;
-
-  // 压入 argv 指针数组 (以 NULL 结尾)
   uintptr_t *pa_argv_list = (uintptr_t *)pa_ptr;
-  pa_argv_list--; // 留出 NULL 的位置
+  pa_argv_list--; 
   v_ptr -= sizeof(uintptr_t);
-  
   for (int i = argc - 1; i >= 0; i--) {
     pa_argv_list--;
     v_ptr -= sizeof(uintptr_t);
     *pa_argv_list = argv_va[i];
   }
-
-  // 压入 argc
   pa_argv_list--;
   v_ptr -= sizeof(uintptr_t);
   *(int *)pa_argv_list = argc;
@@ -123,7 +104,6 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   // 5. 创建上下文
   Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
   pcb->cp = ucontext(&pcb->as, kstack, (void *)entry);
-
   // 6. 将最终计算出的虚拟 SP 传给 a0
   pcb->cp->GPRx = v_ptr;
 }
