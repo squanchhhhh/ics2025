@@ -58,11 +58,10 @@ Context* kcontext(Area kstack, void (*entry)(void *), void *arg) {
   Context *c = (Context *)((uintptr_t)kstack.end - sizeof(Context));
   memset(c, 0, sizeof(Context));
   c->mepc = (uintptr_t)entry;
-  c->mstatus = 0x1800; 
+  c->mstatus = 0x1800 | 0x80; 
   c->GPRx = (uintptr_t)arg; 
-  c->gpr[2] = (uintptr_t)kstack.end; 
+  c->gpr[2] = (uintptr_t)c; 
   c->pdir = NULL;
-  printf("set kernel stack for kernel thread, address = %p\n",c);
   return c;
 }
 void yield() {
