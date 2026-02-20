@@ -33,8 +33,12 @@ int mm_brk(uintptr_t brk) {
 }
 
 void init_mm() {
-  pf = (void *)ROUNDUP(heap.start, PGSIZE);
-  Log("free physical pages starting from %p", pf);
+  uintptr_t base = ROUNDUP(heap.start, PGSIZE);
+  
+  // 预留 1MB 给 klib 的 malloc 使用
+  pf = (void *)(base + 0x100000); 
+  
+  Log("Free physical pages for VME starting from %p", pf);
 
 #ifdef HAS_VME
   vme_init(pg_alloc, free_page);
