@@ -7,6 +7,10 @@ static Context* (*user_handler)(Event, Context*) = NULL;
 Context* __am_irq_handle(Context *c) {
   if (user_handler) {
     Event ev = {0};
+    // 记录：中断发生的瞬间，当前 Context 的状态
+     printf("\n[IRQ Entry] Context: %p, EPC: %x, Cause: %d, pdir: %p\n", 
+             c, c->mepc, c->mcause, c->pdir);
+
     switch (c->mcause) {
       case 11: 
         if (c->GPR1 == -1) {
@@ -18,9 +22,21 @@ Context* __am_irq_handle(Context *c) {
         break;
       default: ev.event = EVENT_ERROR; break;
     }
+
+    // 调用 user_handler (即 do_event)，并在内部调用 schedule
+    Context *prev = c;
     c = user_handler(ev, c);
+    
+    // 记录：调度后的变化
+    if (c != prev) {
+       printf("[IRQ Switch] From Context %p (pdir %p) -> To %p (pdir %p)\n", 
+               prev, prev->pdir, c, c->pdir);
+    }
+    
     assert(c != NULL);
   }
+
+  // 这里的 __am_switch 负责真正的 SATP 硬件切换
   extern void __am_switch(Context *c);
   __am_switch(c);
 
