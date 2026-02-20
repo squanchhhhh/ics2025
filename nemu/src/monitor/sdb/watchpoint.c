@@ -23,7 +23,8 @@ typedef struct watchpoint {
   struct watchpoint *next;
   char expr[128];   
   word_t last_val;
-
+  bool is_breakpoint; 
+  vaddr_t addr;       
 } WP;
 
 static WP wp_pool[NR_WP] = {};
@@ -35,7 +36,6 @@ void init_wp_pool() {
     wp_pool[i].NO = i;
     wp_pool[i].next = (i == NR_WP - 1 ? NULL : &wp_pool[i + 1]);
   }
-
   head = NULL;
   free_ = wp_pool;
 }
@@ -63,14 +63,24 @@ void free_wp(WP *wp) {
   wp->next = free_;
   free_ = wp;
 }
-void set_wp(char *expr_str) {
+
+static void setup_wp(char *expr_str, bool is_bp, vaddr_t addr) {
   WP *wp = new_wp();
+  wp->is_breakpoint = is_bp;
+  wp->addr = addr;
   strncpy(wp->expr, expr_str, sizeof(wp->expr) - 1);
-  wp->expr[sizeof(wp->expr) - 1] = '\0';
-  bool  success = true;
-  wp->last_val = expr(wp->expr,&success); 
+  bool success = true;
+  wp->last_val = expr(wp->expr, &success);
   assert(success);
 }
+
+void add_watchpoint(char *e) { setup_wp(e, false, 0); }
+void add_breakpoint(vaddr_t addr) {
+  char buf[32];
+  snprintf(buf, sizeof(buf), "$pc == 0x%x", addr);
+  setup_wp(buf, true, addr);
+}
+
 bool check_wp(WP *wp) {
   bool  success = true;
   word_t new_val = expr(wp->expr,&success);
@@ -96,32 +106,51 @@ void current_wp(){
 }
 bool check_all_wp() {
   WP *wp = head;
+  bool hit = false;
   while (wp != NULL) {
-    if (check_wp(wp)) {
-      return true; 
+    if (wp->is_breakpoint) {
+      if (cpu.pc == wp->addr) {
+        printf("Breakpoint %d hit at pc = 0x%x\n", wp->NO, cpu.pc);
+        hit = true;
+      }
+    } else {
+      if (check_wp(wp)) hit = true;
     }
     wp = wp->next;
   }
-  return false;
+  return hit;
 }
+bool check_all_breakpoints() {
+    WP *wp = head;
+    while (wp != NULL) {
+        if (wp->is_breakpoint && cpu.pc == wp->addr) {
+            printf("Hit Breakpoint %d at pc = 0x%x\n", wp->NO, cpu.pc);
+            return true;
+        }
+        wp = wp->next;
+    }
+    return false;
+}
+
+bool check_all_watchpoints() {
+    WP *wp = head;
+    while (wp != NULL) {
+        if (!wp->is_breakpoint && check_wp(wp)) return true;
+        wp = wp->next;
+    }
+    return false;
+}
+
 void delete_wp(int n) {
-    WP *prev = NULL;
-    WP *cur = head;
-    while (cur != NULL && cur->NO != n) {
-        prev = cur;
-        cur = cur->next;
-    }
-    if (cur == NULL) {
-        return;
-    }
-    if (prev == NULL) {
-        head = cur->next;
-    } else {
-        prev->next = cur->next;
-    }
-    cur->next = free_;
-    free_ = cur;
-    printf("deleted wp number %d\n",n);
+  WP *cur = head;
+  while (cur != NULL && cur->NO != n) {
+    cur = cur->next;
+  }
+  if (cur == NULL) {
+    printf("Watchpoint/Breakpoint number %d not found.\n", n);
+    return;
+  }
+  free_wp(cur); 
+  printf("Deleted watchpoint/breakpoint number %d\n", n);
 }
-/* TODO: Implement the functionality of watchpoint */
 

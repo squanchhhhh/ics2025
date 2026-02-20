@@ -18,6 +18,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "common.h"
 #include "sdb.h"
 #include "trace/ftrace.h"
@@ -59,6 +60,8 @@ static int cmd_info(char *args);
 
 // 在指定的表达式上设置一个新的监控点（Watchpoint）
 static int cmd_w(char *args);
+
+static int cmd_b(char *args);
 
 // 根据监控点的序号删除指定的监控点
 static int cmd_d(char *args);
@@ -104,7 +107,8 @@ static struct {
   { "m", "Show memory access trace (mtrace)", cmd_m },
   { "i", "Print recently executed instructions", cmd_i },
   { "layout", "Switch TUI layout (asm, src, split)", cmd_layout },
-  {"bt","print func frame",cmd_bt}
+  {"bt","print func frame",cmd_bt},
+  {"b", "breakpoint",cmd_b}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -188,7 +192,7 @@ static int cmd_info(char*args){
 }
 
 static int cmd_w(char * args){
-  set_wp(args);
+  add_watchpoint(args);
   return 0;
 }
 
@@ -248,6 +252,13 @@ static int cmd_bt(char *args){
   dump_ftrace_stack(); 
   return 0;
 }
+static int cmd_b(char *args){
+  int val = atoi(args);
+  vaddr_t pc = (vaddr_t)val;
+  add_breakpoint(pc);
+  return 0;
+}
+
 void sdb_set_batch_mode() {
   is_batch_mode = true;
 }

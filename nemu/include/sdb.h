@@ -22,5 +22,8 @@ extern int NR_CMD;
 word_t expr(char *e, bool *success);
 void current_wp();
 void delete_wp(int n) ;
-void set_wp(char *expr);
+void add_breakpoint(vaddr_t addr);
+void add_watchpoint(char *e) ;
+bool check_all_watchpoints();
+bool check_all_breakpoints();
 #endif
