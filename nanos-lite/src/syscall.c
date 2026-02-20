@@ -28,7 +28,7 @@ void do_syscall(Context *ctx) {
 
   switch (a[0]) {
     case SYS_yield:
-      schedule(ctx);
+      yield();
       ctx->GPRx = 0; 
       break;
 
