@@ -37,6 +37,20 @@ void init_proc() {
 }
 
 Context* schedule(Context *prev) {
+  // 保存当前正在运行的现场
+  current->cp = prev;
+
+  // 强制锁定：始终只运行 pcb[1]
+  current = &pcb[1];
+
+  // 调试打印：确认每次切换回来的都是用户程序的页表和 SP
+  printf("[Schedule] Forced to User Program. pdir: %p, SP: %p\n", 
+          current->cp->pdir, (void *)current->cp->gpr[2]);
+
+  return current->cp;
+}
+/*
+Context* schedule(Context *prev) {
   printf("call schedule\n");
   current->cp = prev;
   
@@ -51,6 +65,7 @@ Context* schedule(Context *prev) {
   printf("[Debug] Target SP in Context: %p\n", (void *)current->cp->gpr[2]);
   return current->cp;
 }
+*/
 
 /*
 功能：在当前进程的文件描述符中，添加一个系统打开文件表的对应
