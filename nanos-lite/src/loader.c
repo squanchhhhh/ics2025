@@ -96,35 +96,6 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
     map(&pcb->as, (void *)va, pa, 7); 
     if (va == v_top - PGSIZE) pa_stack_top_page = pa; 
   }
-
-  // 3. 参数传递 
-  int argc = 0;
-  if (argv) { while (argv[argc]) argc++; }
-  char *pa_ptr = (char *)pa_stack_top_page + PGSIZE; 
-  uintptr_t v_ptr = v_top;
-  uintptr_t argv_va[argc];
-  for (int i = 0; i < argc; i++) {
-    size_t len = strlen(argv[i]) + 1;
-    pa_ptr -= len;
-    v_ptr -= len;
-    memcpy(pa_ptr, argv[i], len);
-    argv_va[i] = v_ptr;
-  }
-  uintptr_t align = (uintptr_t)pa_ptr & 0x3;
-  pa_ptr -= align;
-  v_ptr -= align;
-  uintptr_t *pa_argv_list = (uintptr_t *)pa_ptr;
-  pa_argv_list--; 
-  v_ptr -= sizeof(uintptr_t);
-  for (int i = argc - 1; i >= 0; i--) {
-    pa_argv_list--;
-    v_ptr -= sizeof(uintptr_t);
-    *pa_argv_list = argv_va[i];
-  }
-  pa_argv_list--;
-  v_ptr -= sizeof(uintptr_t);
-  *(int *)pa_argv_list = argc;
-
   // 4. 加载 ELF
   uintptr_t entry = loader(pcb, filename);
   printf("entry = %x\n",entry);
