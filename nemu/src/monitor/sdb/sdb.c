@@ -74,7 +74,7 @@ static int cmd_f(char *args);
 
 // 打印最近执行过的指令列表（itrace），方便定位死循环或崩溃位置
 static int cmd_i(char *args);
-
+static int cmd_v(char *args);
 static int cmd_bt(char *args);
 // 封装后的 printf，支持在 TUI 模式下将输出重定向到专用窗口
 int nemu_printf(const char *fmt, ...);
@@ -108,7 +108,8 @@ static struct {
   { "i", "Print recently executed instructions", cmd_i },
   { "layout", "Switch TUI layout (asm, src, split)", cmd_layout },
   {"bt","print func frame",cmd_bt},
-  {"b", "breakpoint",cmd_b}
+  {"b", "breakpoint",cmd_b},
+  {"v","v_addr",cmd_v}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -178,6 +179,29 @@ static int cmd_x(char * args){
   paddr_t addr = strtol(addr_str, NULL, 0);
   for (int i = 0; i < n; i++){
     printf("0x%08x: 0x%08x\n", addr + i * 4, paddr_read(addr + i * 4, 4));
+  }
+  return 0;
+}
+
+static int cmd_v(char *args) {
+  char *n_str = strtok(args, " ");
+  char *vaddr_str = strtok(NULL, " ");
+
+  if (n_str == NULL || vaddr_str == NULL) {
+    printf("Usage: v [N] [VADDR]\n");
+    return 0;
+  }
+
+  int n = atoi(n_str);
+  vaddr_t vaddr = strtol(vaddr_str, NULL, 0);
+
+  printf("Virtual Memory Scan at 0x%08x:\n", vaddr);
+  for (int i = 0; i < n; i++) {
+    word_t val = vaddr_read(vaddr + i * 4, 4);
+    printf("v[0x%08x]:  p[0x%08x]  ->  0x%08x\n", 
+            vaddr + i * 4, 
+            isa_mmu_translate(vaddr + i * 4, 0, 0), 
+            val);
   }
   return 0;
 }
