@@ -37,20 +37,17 @@ void init_proc() {
 }
 
 Context* schedule(Context *prev) {
-  if (current != NULL) {
-    current->cp = prev;
-  }
+  current->cp = prev;
+  
   if (current == &pcb[0]) {
     current = &pcb[1];
   } else {
     current = &pcb[0];
   }
-  if (current->cp != NULL) {
-    printf("[Schedule] Switch to PCB[%s], Context: %p, pdir (satp): %p\n", 
-            (current->name[0] != '\0' ? current->name : "unnamed"),
-            current->cp, 
-            current->cp->pdir);
-  }
+  
+  // 打印确认
+   printf("Next PCB: %p, pdir: %p\n", current, current->cp->pdir);
+  
   return current->cp;
 }
 
