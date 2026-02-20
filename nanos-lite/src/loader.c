@@ -107,4 +107,5 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   printf("user proc pdir = %x\n",v_ptr);
   pcb->cp->gpr[10] = argc;
   pcb->cp->gpr[2] = v_ptr;
+  printf("Context pointer: %p, stored SP: %x\n", pcb->cp, pcb->cp->gpr[2]);
 }
