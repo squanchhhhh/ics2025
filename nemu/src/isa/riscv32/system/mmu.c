@@ -39,8 +39,8 @@ paddr_t isa_mmu_translate(vaddr_t vaddr, int len, int type) {
 
   if (!(pte1 & 0x1)) {
     // 这里的格式直接写死，避开 FMT_VADDR 宏
-    Log("MMU L1 Error: vaddr=0x%08x, pte1_addr=0x%08x, pte1=0x%08x, satp=0x%08x", 
-        vaddr, pte1_addr, pte1, satp);
+    Log("MMU L1 Error: vaddr=0x%08x, pte1_addr=0x%08x, pte1=0x%08x, satp=0x%08x, pc = %x", 
+        vaddr, pte1_addr, pte1, satp,cpu.pc);
   }
   assert(pte1 & 0x1); 
 
