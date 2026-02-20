@@ -62,12 +62,12 @@ void __am_get_cur_as(Context *c) {
 }
 
 void __am_switch(Context *c) {
-  if (c->pdir != NULL) {
-    set_satp(c->pdir);
-    asm volatile("csrw mscratch, %0" : : "r"((uintptr_t)c + sizeof(Context)));
+  if (c != NULL && c->pdir != NULL) {
+    uintptr_t satp_val = ((uintptr_t)c->pdir >> 12) | 0x80000000;
+    asm volatile("csrw satp, %0" : : "r"(satp_val));
+    asm volatile("sfence.vma"); 
   }
 }
-
 /*
 功能：在页表中填入页表项
  1. 提取虚拟地址的 VPN[1] (一级索引) 和 VPN[0] (二级索引)
