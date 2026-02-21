@@ -69,7 +69,7 @@ Context* schedule(Context *prev) {
   Context *next_cp = current->cp;
   uintptr_t next_pc = next_cp->mepc;
 
-  printf("[Sched] To pcb1 (EPC: %x)\n", next_pc);
+  printf("call schedule (EPC: %x)\n", next_pc);
 
   return next_cp;
 }
