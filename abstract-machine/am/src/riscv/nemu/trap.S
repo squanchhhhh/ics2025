@@ -42,90 +42,79 @@ f(30) f(31)
 .globl __am_asm_trap
 __am_asm_trap:
   /*
-   * 1. 栈切换逻辑
+   * 1. 栈切换
    */
   csrrw sp, mscratch, sp      # 交换 sp 和 mscratch
-  bnez sp, from_user          # 如果 sp != 0，说明来自用户态
+  bnez sp, from_user          # 如果 sp 不为 0，说明之前在用户态
 
 from_kernel:
-  csrr sp, mscratch           # 来自内核态，拿回原始内核 sp
+  csrr sp, mscratch           # 如果之前就在内核态，把 sp 换回来
   j save_context
 
 from_user:
-  # 此时 sp 已经是内核栈，mscratch 存的是用户栈指针
+  # 此时 sp 已是内核栈，mscratch 是用户栈
 
 save_context:
-  addi sp, sp, -CONTEXT_SIZE   # 在内核栈开辟 Context 空间
-  MAP(REGS, PUSH)              # 保存通用寄存器
+  addi sp, sp, -CONTEXT_SIZE
+  MAP(REGS, PUSH)
 
-  # 特殊处理 sp (x2)
-  csrr t0, mscratch            
-  sw t0, 8(sp)                 # 保存原始 sp 到 Context->gpr[2]
+  # 特殊处理 sp (x2)，将其保存到 Context->gpr[2]
+  csrr t0, mscratch
+  STORE t0, OFFSET_SP(sp)
 
-  # 状态标记：将 mscratch 置 0，表示当前已在内核中
+  # 状态标记：进入内核后 mscratch 置 0
   csrw mscratch, zero
 
-  # 保存 CSR 寄存器
+  # 保存 CSR
   csrr t0, mcause
   csrr t1, mstatus
   csrr t2, mepc
-  sw t0, OFFSET_CAUSE(sp)
-  sw t1, OFFSET_STATUS(sp)
-  sw t2, OFFSET_EPC(sp)
+  STORE t0, OFFSET_CAUSE(sp)
+  STORE t1, OFFSET_STATUS(sp)
+  STORE t2, OFFSET_EPC(sp)
 
-  # --- 修改点 1：Linux 风格，不从硬件读回 satp ---
-  # 因为 Context->pdir 在进程创建/切换时已经由内核定好了。
-  # 我们不需要在每次中断时去覆盖它。
-
-  /*
-   * 2. 调用 C 语言事件分发器
-   */
-  mv a0, sp                    # a0 = Context *c
-  call __am_irq_handle         
-  
-  # 关键：切换到 handle 返回的新 Context (实现进程切换)
-  mv sp, a0                    
+  # 注意：完全不碰 OFFSET_PDIR(sp)！
+  # 里面的值由 C 语言在进程创建或 __am_switch 时填入
 
   /*
-   * 3. 现场恢复
+   * 2. 调用 C 语言处理函数
    */
-  # 恢复 CSR
-  lw t1, OFFSET_STATUS(sp)
-  lw t2, OFFSET_EPC(sp)
+  mv a0, sp                   # a0 = Context *
+  call __am_irq_handle
+  mv sp, a0                   # 切换到返回的 Context (可能是新的进程)
+
+  /*
+   * 3. 恢复现场
+   */
+  LOAD t1, OFFSET_STATUS(sp)
+  LOAD t2, OFFSET_EPC(sp)
   csrw mstatus, t1
   csrw mepc, t2
 
-  # 检查是否返回内核态
-  li t0, 0x1800                
+  # 检查返回模式
+  li t0, 0x1800               # MPP 位
   and t0, t1, t0
-  bnez t0, restore_to_kernel   
+  bnez t0, restore_to_kernel
 
 restore_to_user:
-  # 重新设置 mscratch 为内核栈顶
+  # 准备下一次进入内核的栈顶
   addi t0, sp, CONTEXT_SIZE
   csrw mscratch, t0
-
-  # --- 修改点 2：直接恢复页表，不再进行计算 ---
-  # 此时 OFFSET_PDIR(sp) 里的值已经是 (Mode | PPN) 格式了
-  lw t0, OFFSET_PDIR(sp)
-  beqz t0, 1f                  
+  
+  # --- 只有这一处保留 SATP 恢复，用于进程间切换 ---
+  LOAD t0, OFFSET_PDIR(sp)
+  # 这里不加检查，因为 C 语言必须保证 PDIR 是有效的
   csrw satp, t0
-  sfence.vma                   
-1:
-  MAP(REGS, POP)               
-  lw sp, 8(sp)                 # 恢复用户栈指针
+  # sfence.vma  # 可选：如果 __am_switch 里刷过了，这里可以不刷
+
+  MAP(REGS, POP)
+  LOAD sp, OFFSET_SP(sp)      # 恢复用户栈
   mret
 
 restore_to_kernel:
-  # 回到内核态，mscratch 保持为 0
   csrw mscratch, zero
-
-  # --- 修改点 3：恢复页表逻辑极简化 ---
-  lw t0, OFFSET_PDIR(sp)
-  beqz t0, 1f
-  csrw satp, t0
-  sfence.vma
-1:
-  MAP(REGS, POP)               
-  addi sp, sp, CONTEXT_SIZE    
+  
+  # 内核态返回不切页表，因为 Linux 模式下内核映射是全页表共享的
+  MAP(REGS, POP)
+  addi sp, sp, CONTEXT_SIZE
   mret

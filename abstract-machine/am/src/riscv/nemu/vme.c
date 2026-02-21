@@ -59,15 +59,19 @@ void unprotect(AddrSpace *as) {
 }
 
 void __am_get_cur_as(Context *c) {
-  c->pdir = (vme_enable ? (void *)get_satp() : NULL);
+  uintptr_t satp;
+  asm volatile("csrr %0, satp" : "=r"(satp));
+  c->pdir = (void *)satp; 
 }
 
 void __am_switch(Context *c) {
-  printf("DEBUG: Context at %p, pdir offset = %d\n", c, (int)((void*)&c->pdir - (void*)c));
   if (c == NULL || c->pdir == NULL) return;
-  // 直接写入硬件，因为 c->pdir 已经是 (mode | ppn) 格式了
-  asm volatile("csrw satp, %0" : : "r"(c->pdir));
-  asm volatile("sfence.vma zero, zero");
+  uintptr_t current_satp;
+  asm volatile("csrr %0, satp" : "=r"(current_satp));
+  if (current_satp != (uintptr_t)c->pdir) {
+    asm volatile("csrw satp, %0" : : "r"(c->pdir));
+    asm volatile("sfence.vma zero, zero");
+  }
 }
 /*
 功能：在页表中填入页表项
