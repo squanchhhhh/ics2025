@@ -78,7 +78,20 @@ uintptr_t loader(PCB *pcb, const char *filename) {
   return ehdr.e_entry;
 }
 
+void init_pcb_meta(PCB *p, const char *name) {
+  strncpy(p->name, name, sizeof(p->name) - 1);
+  // 1. 必须将所有 FD 初始化为 -1 (未分配)
+  for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
+    p->fd_table[i] = -1;
+  }
+  // 2. 预留标准 IO
+  p->fd_table[0] = 0; // stdin
+  p->fd_table[1] = 1; // stdout
+  p->fd_table[2] = 2; // stderr
+}
+
 void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
+  init_pcb_meta(pcb,"kthread");
   Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
   Context *cp = kcontext(kstack, entry, arg);
   pcb->cp = cp;
@@ -87,6 +100,7 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 extern AddrSpace kas;
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   printf("load user proc %s\n",filename);
+  init_pcb_meta(pcb,filename);
   // 1. 设置用户页表，protect 会将内核映射拷贝到用户页表
   protect(&pcb->as);
   // --- 插入这段调试代码 ---
