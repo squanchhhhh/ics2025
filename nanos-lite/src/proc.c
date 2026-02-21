@@ -57,18 +57,21 @@ void init_proc() {
 }
 
 Context* schedule(Context *prev) {
-  // 1. 保存当前进程的上下文指针到它的 PCB 中
   current->cp = prev;
-
-  // 2. 简单的轮转逻辑：如果在跑 pcb[0]，就切到 pcb[1]，反之亦然
-  // 这里的逻辑可以根据你的 MAX_NR_PROC 扩展
+  
+  PCB *old = current;
   if (current == &pcb[0]) {
     current = &pcb[1];
   } else {
     current = &pcb[0];
   }
 
-  // 3. 返回新进程保存的上下文指针，交给 trap.S 去恢复现场
+  // 增加这行 Log
+  printf("[Sched] %s -> %s (EPC: %x)\n", 
+         (old == &pcb_boot ? "boot" : (old == &pcb[0] ? "pcb0" : "pcb1")),
+         (current == &pcb[0] ? "pcb0" : "pcb1"),
+         current->cp->mepc);
+
   return current->cp;
 }
 /*
