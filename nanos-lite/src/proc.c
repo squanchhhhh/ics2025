@@ -1,3 +1,4 @@
+#include "am.h"
 #include "debug.h"
 #include <proc.h>
 #include <stdio.h>
@@ -20,6 +21,9 @@ void hello_fun(void *arg) {
           Log("Hello World from Nanos-lite with arg '%p' for the %dth time!", (void *)(uintptr_t)arg, j);
     }
     j ++;
+    if (j == 5000){
+      halt(0);
+    }
     yield();
   }
 }
