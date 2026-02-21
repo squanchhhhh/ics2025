@@ -34,7 +34,7 @@ void hello_fun_another(void *arg) {
   }
   while (1) {
     if (j % 100 == 0) {
-      Log("Greetings from the SECOND thread! arg: '%p', count: %d", arg, j);
+      //Log("Greetings from the SECOND thread! arg: '%p', count: %d", arg, j);
     }
     j++;
     yield();
