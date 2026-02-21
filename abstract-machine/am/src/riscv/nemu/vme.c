@@ -14,7 +14,7 @@ static Area segments[] = {      // Kernel memory mappings
 #define USER_SPACE RANGE(0x40000000, 0x80000000)
 
 static inline void set_satp(void *pdir) {
-  printf("call set_satp, pdir = %x before resolve\n",pdir);
+  //printf("call set_satp, pdir = %x before resolve\n",pdir);
   uintptr_t mode = 1ul << (__riscv_xlen - 1);
   asm volatile("csrw satp, %0" : : "r"(mode | ((uintptr_t)pdir >> 12)));
   asm volatile("sfence.vma zero, zero"); 
@@ -64,16 +64,21 @@ void __am_get_cur_as(Context *c) {
 }
 
 void __am_switch(Context *c) {
-  //printf("call am_switch\n");
-  //printf("current ptr or pdir = %p\n",c->pdir);
   if (c == NULL) return;
-  if (c->pdir != NULL) {
-    //printf("set ptr to c->ptr = %p\n",c->pdir);
-    set_satp(c->pdir);
-  } else {
-    //printf("set ptr to kas.ptr = %p\n",kas.ptr);
-    set_satp(kas.ptr); 
-  }
+  
+  // 1. 获取顶级页表物理地址
+  void *pdir_addr = (c->pdir != NULL) ? c->pdir : kas.ptr;
+
+  // 2. 调用原有的 set_satp (确保当前内核环境能正常访存)
+  set_satp(pdir_addr);
+
+  // 3. 【核心修正】将 pdir 字段修改为硬件 satp 格式
+  // 这样接下来的 trap.S 在恢复上下文时，lw t0 加载到的就是 0x8008043c
+  uintptr_t mode = 1ul << 31;
+  uintptr_t ppn = (uintptr_t)pdir_addr >> 12;
+  c->pdir = (void *)(mode | ppn); 
+
+  // 4. 同步 TLB
   asm volatile("sfence.vma"); 
 }
 /*
