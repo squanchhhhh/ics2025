@@ -85,6 +85,7 @@ int map_to_proc_fd(int s_idx) {
       return i;
     }
   }
+  Log("Proc '%s' attempting to map fd, current fd_table[3]=%d", current->name, current->fd_table[3]);
   printf("Process %s: No available FD slots!\n", current->name);
   return -1;
 }
