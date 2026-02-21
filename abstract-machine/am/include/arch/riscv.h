@@ -20,8 +20,11 @@ struct Context {
 #define GPR1 gpr[17] // a7 系统调用号
 #endif
 
-#define GPR2 gpr[10] // a0: 第 1 个参数
-#define GPR3 gpr[11] // a1: 第 2 个参数
-#define GPR4 gpr[12] // a2: 第 3 个参数
-#define GPRx gpr[10] // a0: 返回值寄存器
+#define GPR2 gpr[10] // a0: 参数 1 / 返回值
+#define GPR3 gpr[11] // a1: 参数 2
+#define GPR4 gpr[12] // a2: 参数 3
+#define GPR5 gpr[13] // a3: 参数 4
+#define GPR6 gpr[14] // a4: 参数 5
+#define GPR7 gpr[15] // a5: 参数 6
+#define GPRx gpr[10] // a0: 返回值
 #endif
