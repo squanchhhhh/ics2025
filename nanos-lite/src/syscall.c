@@ -5,6 +5,13 @@
 #include "proc.h"
 struct timezone;
 
+#define KLOG(format, ...) \
+    do { \
+        char _klog_buf[256]; \
+        int _klog_len = snprintf(_klog_buf, sizeof(_klog_buf), format, ##__VA_ARGS__); \
+        for (int _i = 0; _i < _klog_len; _i++) putch(_klog_buf[_i]); \
+    } while (0)
+
 int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
   if (tv != NULL) {
     uint64_t us = io_read(AM_TIMER_UPTIME).us;
@@ -25,7 +32,7 @@ void do_syscall(Context *ctx) {
   a[1] = ctx->GPR2; 
   a[2] = ctx->GPR3; 
   a[3] = ctx->GPR4;
-  printf("call syscall a[0]=%d, a[1]=%d, a[2]=%x, a[3]=%d\n",a[0],a[1],a[2],a[3]);
+  KLOG("call syscall a[0]=%d, a[1]=%d, a[2]=%x, a[3]=%d\n", a[0], a[1], a[2], a[3]);
   switch (a[0]) {
     case SYS_yield:
     yield();
