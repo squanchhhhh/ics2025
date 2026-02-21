@@ -63,6 +63,7 @@ void __am_get_cur_as(Context *c) {
 }
 
 void __am_switch(Context *c) {
+  printf("DEBUG: Context at %p, pdir offset = %d\n", c, (int)((void*)&c->pdir - (void*)c));
   if (c == NULL || c->pdir == NULL) return;
   // 直接写入硬件，因为 c->pdir 已经是 (mode | ppn) 格式了
   asm volatile("csrw satp, %0" : : "r"(c->pdir));
@@ -88,11 +89,6 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
     
     uintptr_t pde_val = (((uintptr_t)new_pt >> 12) << 10) | 0x1;
     pgdir[vpn1] = pde_val;
-    
-    uintptr_t pt_addr = (pde_val >> 10) << 12;
-    // 每开启一个新的 4MB 区域时打印一次，这很有参考价值
-    printf("[VME] 新区域: VA [%p] 开启, 使用二级表 @ PA [%p]\n", 
-           (void*)((uintptr_t)va & 0xffc00000), (void*)pt_addr);
   }
 
   // 2. 找到二级页表基地址
