@@ -74,7 +74,7 @@ save_context:
   sw t1, OFFSET_STATUS(sp)
   sw t2, OFFSET_EPC(sp)
 
-  # 保存页表基址
+  # 保存页表基址 (注意：保存的是当前硬件正在使用的 satp 格式值)
   csrr t0, satp
   sw t0, OFFSET_PDIR(sp)
 
@@ -109,26 +109,37 @@ restore_to_user:
 
   # 恢复页表 (VME)
   lw t0, OFFSET_PDIR(sp)
-  csrw satp, t0
+  beqz t0, 1f                  # 如果 pdir 为空，跳过
 
-  MAP(REGS, POP)               # 恢复通用寄存器
-  lw sp, 8(sp)                 # 直接从 Context 恢复用户栈指针 (x2)
+  # --- 物理地址到 satp 硬件格式转换 ---
+  # 假设 Context->pdir 存的是原始物理地址 (如 0x8043c000)
+  srli t0, t0, 12              # t0 = PPN (0x8043c)
+  li   t1, 0x80000000          # t1 = Mode bit (Sv32)
+  or   t0, t0, t1              # t0 = 0x8008043c
+  # ----------------------------------
   
-  # 此时 sp 是用户栈，mscratch 是内核栈顶
-  # 注意：这里不需要再执行 csrrw，因为 sp 已经通过 lw 恢复了
+  csrw satp, t0
+  sfence.vma                   # 刷新 TLB，确保新页表立即生效
+1:
+  MAP(REGS, POP)               # 恢复通用寄存器
+  lw sp, 8(sp)                 # 从 Context 恢复用户栈指针 (x2)
   mret
 
 restore_to_kernel:
   # 如果回到内核态，mscratch 必须保持为 0
   csrw mscratch, zero
 
-  # 恢复页表
+  # 恢复页表 (同上逻辑)
   lw t0, OFFSET_PDIR(sp)
-  csrw satp, t0
-
-  MAP(REGS, POP)               # 恢复通用寄存器
-  addi sp, sp, CONTEXT_SIZE    # 简单平移栈指针释放空间
+  beqz t0, 1f
   
-  # 此时 sp 回到了内核态 yield/trap 之前的状态
-  # 且 mscratch 依然是 0
+  srli t0, t0, 12              
+  li   t1, 0x80000000          
+  or   t0, t0, t1              
+  
+  csrw satp, t0
+  sfence.vma
+1:
+  MAP(REGS, POP)               
+  addi sp, sp, CONTEXT_SIZE    # 简单平移栈指针释放空间
   mret
