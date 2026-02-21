@@ -256,7 +256,7 @@ void free_system_fd(int s_idx) {
 4.调用alloc_system_fd将fdx记录到打开文件表中
 */
 int vfs_open(const char *path, int flags) {
-  printf("call vfs_open\n");
+  printf("call vfs_open, try to open %s\n",path);
     for (int i = 0; i < nr_device; i++) {
         if (file_table[i].name != NULL && strcmp(path, file_table[i].name) == 0) {
             return alloc_system_fd(i, flags);
