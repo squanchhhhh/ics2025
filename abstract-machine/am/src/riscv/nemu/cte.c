@@ -29,18 +29,9 @@ Context* __am_irq_handle(Context *c) {
         printf("\033[1;31m[CTE] Unhandled mcause: %d at EPC: 0x%x\033[0m\n", c->mcause, c->mepc);
         break;
     }
-
-    Context *prev = c;
     // 调用 nanos-lite 的 do_event，进而调用 schedule()
     c = user_handler(ev, c);
     assert(c != NULL);
-
-    // Log: 调度追踪
-    // 如果 prev == c，说明没有发生进程切换
-    if (c != prev) {
-       printf("[CTE] Switch: %p -> %p | New EPC: 0x%x | New pdir: %p\n", 
-               prev, c, c->mepc, c->pdir);
-    }
   }
 
   // 这里的 __am_switch 负责真正的 SATP (页表) 硬件切换
