@@ -32,7 +32,7 @@ void do_syscall(Context *ctx) {
   a[1] = ctx->GPR2; 
   a[2] = ctx->GPR3; 
   a[3] = ctx->GPR4;
-  KLOG("call syscall a[0]=%d, a[1]=%d, a[2]=%x, a[3]=%d\n", a[0], a[1], a[2], a[3]);
+  //KLOG("call syscall a[0]=%d, a[1]=%d, a[2]=%x, a[3]=%d\n", a[0], a[1], a[2], a[3]);
   switch (a[0]) {
     case SYS_yield:
     yield();
