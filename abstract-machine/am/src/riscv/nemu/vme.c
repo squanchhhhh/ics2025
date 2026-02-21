@@ -22,6 +22,7 @@ static inline void set_satp(void *pdir) {
 static inline uintptr_t get_satp() {
   uintptr_t satp;
   asm volatile("csrr %0, satp" : "=r"(satp));
+  printf("call get_satp and return %x\n",satp);
   return satp; 
 }
 
