@@ -4,7 +4,7 @@
 #include <common.h>
 #include <memory.h>
 void do_execve(const char *filename, char *const argv[], char *const envp[]) ;
-#define STACK_SIZE (8 * PGSIZE)
+#define STACK_SIZE (128 * PGSIZE)
 #define MAX_NR_PROC_FILE 32
 typedef union {
   uint8_t stack[STACK_SIZE] PG_ALIGN;
