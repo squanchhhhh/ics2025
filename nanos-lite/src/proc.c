@@ -46,7 +46,7 @@ void init_proc() {
   context_kload(&pcb[0], hello_fun, (void *)1);
   
   // 初始化第二个内核线程
-  // context_kload(&pcb[1], hello_fun_another, (void *)2);
+  context_kload(&pcb[1], hello_fun_another, (void *)2);
 
   switch_boot_pcb();
 
@@ -60,28 +60,31 @@ void init_proc() {
 }
 
 Context* schedule(Context *prev) {
-  // 1. 保存当前正在运行进程的上下文指针
+  // 1. 将当前的上下文指针保存回当前进程的 PCB 中
   current->cp = prev;
 
-  // 2. 随机/轮询选择下一个进程
-  // 这里假设你有两个进程：pcb[0] 和 pcb[1]
-  // 使用简单的状态切换逻辑：如果在 pcb[0]，就去 pcb[1]；反之亦然。
-  static int pcb_idx = 1;
-  pcb_idx = (pcb_idx == 1) ? 0 : 1; 
+  // 2. 查找下一个准备就绪的进程
+  // 这里使用静态变量记录位置，实现公平轮询
+  static int pcb_idx = 0;
   
-  // 或者真正的随机（需要包含 klib.h）:
-  // pcb_idx = rand() % 2; 
+  // 简单的轮询逻辑：尝试寻找下一个 PCB
+  // 如果你后续给 PCB 增加了 'status' 字段（如 RUNNING/ZOMBIE），
+  // 可以在这里通过循环跳过那些没准备好的进程
+  pcb_idx = (pcb_idx + 1) % MAX_NR_PROC;
 
+  // 3. 切换指针
   current = &pcb[pcb_idx];
 
-  // 3. 打印调试信息，确保我们知道切到了谁
-  // 注意：pcb[0] 的 cp 必须已经在程序加载时初始化好，否则这里会解引用空指针
+  // 4. 防御性检查：确保我们要切入的进程确实被加载了
   if (current->cp == NULL) {
-    panic("Target PCB context is NULL! Did you forget to load user_exe to pcb[%d]?", pcb_idx);
+    // 如果切到了一个还没初始化的 PCB，通常切回 pcb[0]（内核空闲进程）
+    pcb_idx = 0;
+    current = &pcb[0];
   }
 
-  printf("[Sched] Switch to pcb[%d] (EPC: %x, PDIR: %p)\n", 
-          pcb_idx, current->cp->mepc, current->cp->pdir);
+   //5. 打印调度日志（调试用）
+  printf("[Sched] To pcb%d (EPC: %x, PDIR: %p)\n", 
+           pcb_idx, current->cp->mepc, current->cp->pdir);
 
   return current->cp;
 }
