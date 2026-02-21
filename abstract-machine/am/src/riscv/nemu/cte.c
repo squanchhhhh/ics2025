@@ -54,18 +54,17 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 }
 
 Context* kcontext(Area kstack, void (*entry)(void *), void *arg) {
-  // 1. 让 Context 住在栈的最顶端
+  // 1. Context 依然住在栈的最顶端
   Context *c = (Context *)((uintptr_t)kstack.end - sizeof(Context));
   memset(c, 0, sizeof(Context));
   
   c->mepc = (uintptr_t)entry;
-  c->GPRx = (uintptr_t)arg;
+  c->gpr[10] = (uintptr_t)arg; // a0 = arg
   c->pdir = NULL;
 
-  // 2. 【关键修正】：初始 sp 绝对不能等于 c！
-  // 我们要让程序开始运行时的 sp，处于 c 的下方（更低的地址）
-  // 这样 printf 往高地址存参数时，才不会踩到 Context 结构体本身
-  c->gpr[2] = (uintptr_t)c - 32; // 预留 32 字节或更多的安全空隙
+  // 2. 【终极修正】：让初始 sp 离 Context 远一点！
+  // 比如空出 512 字节，这足够 hello_fun 的局部变量和 printf 用了
+  c->gpr[2] = (uintptr_t)c - 512; 
   
   return c;
 }
