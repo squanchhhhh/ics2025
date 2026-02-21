@@ -46,7 +46,7 @@ void init_proc() {
   context_kload(&pcb[0], hello_fun, (void *)1);
   
   // 初始化第二个内核线程
-  //context_kload(&pcb[1], hello_fun_another, (void *)2);
+  context_kload(&pcb[1], hello_fun_another, (void *)2);
 
   switch_boot_pcb();
 
