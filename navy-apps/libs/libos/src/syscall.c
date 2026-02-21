@@ -190,6 +190,22 @@ int ioctl(int fd, unsigned long request, ...) {
 }
 
 void* mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset) {
-  intptr_t args[6] = {(intptr_t)addr, len, prot, flags, fd, offset};
-  return (void *)_syscall_(SYS_mmap, (intptr_t)args, 0, 0); 
+  // a7 -> x17, a0 -> x10, a1 -> x11, a2 -> x12, a3 -> x13, a4 -> x14, a5 -> x15
+  register intptr_t _gpr1 asm ("x17") = SYS_mmap; 
+  register intptr_t _gpr2 asm ("x10") = (intptr_t)addr;
+  register intptr_t _gpr3 asm ("x11") = len;
+  register intptr_t _gpr4 asm ("x12") = prot;
+  register intptr_t _gpr5 asm ("x13") = flags;
+  register intptr_t _gpr6 asm ("x14") = fd;
+  register intptr_t _gpr7 asm ("x15") = offset;
+  register intptr_t ret  asm ("x10");
+
+  asm volatile (
+    "ecall"
+    : "=r" (ret)
+    : "r"(_gpr1), "r"(_gpr2), "r"(_gpr3), "r"(_gpr4), "r"(_gpr5), "r"(_gpr6), "r"(_gpr7)
+    : "memory"
+  );
+
+  return (void *)ret;
 }
