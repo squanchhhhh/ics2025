@@ -14,12 +14,11 @@ static Area segments[] = {      // Kernel memory mappings
 #define USER_SPACE RANGE(0x40000000, 0x80000000)
 
 static inline void set_satp(void *pdir) {
-  printf("call set_satp, pdir = %x before resolve\n",pdir);
   uintptr_t mode = 1ul << (__riscv_xlen - 1);
-  asm volatile("csrw satp, %0" : : "r"(mode | ((uintptr_t)pdir >> 12)));
+  uintptr_t satp_val = mode | ((uintptr_t)pdir >> 12);
+  asm volatile("csrw satp, %0" : : "r"(satp_val));
   asm volatile("sfence.vma zero, zero"); 
 }
-
 static inline uintptr_t get_satp() {
   uintptr_t satp;
   asm volatile("csrr %0, satp" : "=r"(satp));
@@ -64,12 +63,10 @@ void __am_get_cur_as(Context *c) {
 }
 
 void __am_switch(Context *c) {
-  if (c == NULL) return;
-  // 永远从 Context 拿到原始物理地址或使用内核地址
-  void *pdir = (c->pdir != NULL) ? c->pdir : kas.ptr;
-  
-  // 转换并写入硬件
-  set_satp(pdir); 
+  if (c == NULL || c->pdir == NULL) return;
+  // 直接写入硬件，因为 c->pdir 已经是 (mode | ppn) 格式了
+  asm volatile("csrw satp, %0" : : "r"(c->pdir));
+  asm volatile("sfence.vma zero, zero");
 }
 /*
 功能：在页表中填入页表项
@@ -120,7 +117,15 @@ Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
   memset(c, 0, sizeof(Context));
   c->mepc = (uintptr_t)entry;
   c->mstatus = 0x180 | 0x80;
-  c->pdir = (as != NULL ? as->ptr : NULL);
-  printf("set kernel stack for user, address = %p\n",c);
+
+  // 这里的逻辑就是 Linux 的 switch_mm 预处理
+  uintptr_t mode = 1ul << (__riscv_xlen - 1);
+  if (as != NULL && as->ptr != NULL) {
+    c->pdir = (void *)(mode | ((uintptr_t)as->ptr >> 12));
+  } else {
+    c->pdir = (void *)(mode | ((uintptr_t)kas.ptr >> 12));
+  }
+  
+  printf("set user context: epc=%x, satp_val=%p\n", c->mepc, c->pdir);
   return c;
 }

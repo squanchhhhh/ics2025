@@ -45,10 +45,10 @@ __am_asm_trap:
    * 1. 栈切换逻辑
    */
   csrrw sp, mscratch, sp      # 交换 sp 和 mscratch
-  bnez sp, from_user          # 如果 sp != 0，说明来自用户态（mscratch 原本存着内核栈）
+  bnez sp, from_user          # 如果 sp != 0，说明来自用户态
 
 from_kernel:
-  csrr sp, mscratch           # 如果来自内核态，刚才那句交换让 sp 变 0 了，现在从 mscratch 拿回原始内核 sp
+  csrr sp, mscratch           # 来自内核态，拿回原始内核 sp
   j save_context
 
 from_user:
@@ -56,14 +56,13 @@ from_user:
 
 save_context:
   addi sp, sp, -CONTEXT_SIZE   # 在内核栈开辟 Context 空间
-  MAP(REGS, PUSH)              # 保存通用寄存器 x1, x3-x31 (宏定义)
+  MAP(REGS, PUSH)              # 保存通用寄存器
 
   # 特殊处理 sp (x2)
-  csrr t0, mscratch            # 取出异常发生前的原始 sp (用户栈或内核栈)
-  sw t0, 8(sp)                 # 保存到 Context->gpr[2] (2 * 4 = 8)
+  csrr t0, mscratch            
+  sw t0, 8(sp)                 # 保存原始 sp 到 Context->gpr[2]
 
-  # 状态标记：将 mscratch 置 0
-  # 表示当前已在内核中，若发生嵌套异常，from_kernel 逻辑能正确触发
+  # 状态标记：将 mscratch 置 0，表示当前已在内核中
   csrw mscratch, zero
 
   # 保存 CSR 寄存器
@@ -74,9 +73,9 @@ save_context:
   sw t1, OFFSET_STATUS(sp)
   sw t2, OFFSET_EPC(sp)
 
-  # 保存页表基址 (注意：保存的是当前硬件正在使用的 satp 格式值)
-  csrr t0, satp
-  sw t0, OFFSET_PDIR(sp)
+  # --- 修改点 1：Linux 风格，不从硬件读回 satp ---
+  # 因为 Context->pdir 在进程创建/切换时已经由内核定好了。
+  # 我们不需要在每次中断时去覆盖它。
 
   /*
    * 2. 调用 C 语言事件分发器
@@ -96,50 +95,37 @@ save_context:
   csrw mstatus, t1
   csrw mepc, t2
 
-  # 检查 mstatus.MPP (bits 12:11)
-  # MPP == 0 (User), MPP == 3 (Machine)
+  # 检查是否返回内核态
   li t0, 0x1800                
   and t0, t1, t0
-  bnez t0, restore_to_kernel   # 如果返回内核态 (MPP != 0)，走专用路径
+  bnez t0, restore_to_kernel   
 
 restore_to_user:
-  # 只有回到用户态，才需要重新设置 mscratch 为内核栈顶 (Context 之后的位置)
+  # 重新设置 mscratch 为内核栈顶
   addi t0, sp, CONTEXT_SIZE
   csrw mscratch, t0
 
-  # 恢复页表 (VME)
+  # --- 修改点 2：直接恢复页表，不再进行计算 ---
+  # 此时 OFFSET_PDIR(sp) 里的值已经是 (Mode | PPN) 格式了
   lw t0, OFFSET_PDIR(sp)
-  beqz t0, 1f                  # 如果 pdir 为空，跳过
-
-  # --- 物理地址到 satp 硬件格式转换 ---
-  # 假设 Context->pdir 存的是原始物理地址 (如 0x8043c000)
-  srli t0, t0, 12              # t0 = PPN (0x8043c)
-  li   t1, 0x80000000          # t1 = Mode bit (Sv32)
-  or   t0, t0, t1              # t0 = 0x8008043c
-  # ----------------------------------
-  
+  beqz t0, 1f                  
   csrw satp, t0
-  sfence.vma                   # 刷新 TLB，确保新页表立即生效
+  sfence.vma                   
 1:
-  MAP(REGS, POP)               # 恢复通用寄存器
-  lw sp, 8(sp)                 # 从 Context 恢复用户栈指针 (x2)
+  MAP(REGS, POP)               
+  lw sp, 8(sp)                 # 恢复用户栈指针
   mret
 
 restore_to_kernel:
-  # 如果回到内核态，mscratch 必须保持为 0
+  # 回到内核态，mscratch 保持为 0
   csrw mscratch, zero
 
-  # 恢复页表 (同上逻辑)
+  # --- 修改点 3：恢复页表逻辑极简化 ---
   lw t0, OFFSET_PDIR(sp)
   beqz t0, 1f
-  
-  srli t0, t0, 12              
-  li   t1, 0x80000000          
-  or   t0, t0, t1              
-  
   csrw satp, t0
   sfence.vma
 1:
   MAP(REGS, POP)               
-  addi sp, sp, CONTEXT_SIZE    # 简单平移栈指针释放空间
+  addi sp, sp, CONTEXT_SIZE    
   mret
