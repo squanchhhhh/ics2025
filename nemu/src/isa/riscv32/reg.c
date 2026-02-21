@@ -46,23 +46,24 @@ void isa_reg_display() {
 
 
 word_t isa_reg_str2val(const char *s, bool *success) {
-  if (strcmp(s, "pc") == 0) {
+  const char *reg_name = (s[0] == '$') ? s + 1 : s;
+  if (strcmp(reg_name, "pc") == 0) {
     *success = true;
     return cpu.pc;
   }
-  
+
   for(int i = 0; i < 32; i++){
-    if(!strcmp(s, regs[i])){
+    if(!strcmp(reg_name, regs[i])){
       *success = true;
       return gpr(i);
     }
   }
-  if (strcmp(s, "mstatus") == 0) return cpu.csr.mstatus;
-  if (strcmp(s, "mepc") == 0)    return cpu.csr.mepc;
-  if (strcmp(s, "mtvec") == 0)   return cpu.csr.mtvec;
-  if (strcmp(s, "mcause") == 0)  return cpu.csr.mcause;
-  if (strcmp(s, "satp") == 0)    return cpu.csr.satp;
-  if (strcmp(s, "mscratch") == 0)return cpu.csr.mscratch;
+  if (strcmp(reg_name, "mstatus") == 0) return cpu.csr.mstatus;
+  if (strcmp(reg_name, "mepc") == 0)    return cpu.csr.mepc;
+  if (strcmp(reg_name, "mtvec") == 0)   return cpu.csr.mtvec;
+  if (strcmp(reg_name, "mcause") == 0)  return cpu.csr.mcause;
+  if (strcmp(reg_name, "satp") == 0)    return cpu.csr.satp;
+  if (strcmp(reg_name, "mscratch") == 0)return cpu.csr.mscratch;
   *success = false;
   return 0;
 }
