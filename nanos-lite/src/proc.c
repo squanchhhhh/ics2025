@@ -61,21 +61,17 @@ void init_proc() {
 
 Context* schedule(Context *prev) {
   current->cp = prev;
-  
-  PCB *old = current;
-  if (current == &pcb[0]) {
-    current = &pcb[0];
-  } else {
-    current = &pcb[0];
-  }
 
-  // 增加这行 Log
-  printf("[Sched] %s -> %s (EPC: %x)\n", 
-         (old == &pcb_boot ? "boot" : (old == &pcb[0] ? "pcb0" : "pcb1")),
-         (current == &pcb[0] ? "pcb0" : "pcb1"),
-         current->cp->mepc);
+  // 始终切到 pcb[1] (用户进程) 试试，不要在 schedule 里跳来跳去
+  current = &pcb[1]; 
 
-  return current->cp;
+  // 极其保险的写法：
+  Context *next_cp = current->cp;
+  uintptr_t next_pc = next_cp->mepc;
+
+  printf("[Sched] To pcb1 (EPC: %x)\n", next_pc);
+
+  return next_cp;
 }
 /*
 Context* schedule(Context *prev) {
