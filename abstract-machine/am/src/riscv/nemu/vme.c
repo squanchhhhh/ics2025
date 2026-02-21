@@ -22,7 +22,8 @@ static inline void set_satp(void *pdir) {
 static inline uintptr_t get_satp() {
   uintptr_t satp;
   asm volatile("csrr %0, satp" : "=r"(satp));
-  return satp << 12;
+  if (satp == 0) return 0;
+  return (satp & 0x3fffff) << 12; 
 }
 
 bool vme_init(void* (*pgalloc_f)(int), void (*pgfree_f)(void*)) {
