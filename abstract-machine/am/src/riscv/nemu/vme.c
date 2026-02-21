@@ -63,14 +63,14 @@ void __am_get_cur_as(Context *c) {
 }
 
 void __am_switch(Context *c) {
-  printf("call am_switch\n");
-  printf("current ptr or pdir = %p\n",c->pdir);
+  //printf("call am_switch\n");
+  //printf("current ptr or pdir = %p\n",c->pdir);
   if (c == NULL) return;
   if (c->pdir != NULL) {
-    printf("set ptr to c->ptr = %p\n",c->pdir);
+    //printf("set ptr to c->ptr = %p\n",c->pdir);
     set_satp(c->pdir);
   } else {
-    printf("set ptr to kas.ptr = %p\n",kas.ptr);
+    //printf("set ptr to kas.ptr = %p\n",kas.ptr);
     set_satp(kas.ptr); 
   }
   asm volatile("sfence.vma"); 
