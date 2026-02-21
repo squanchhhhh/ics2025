@@ -97,15 +97,6 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
   // 3. 填写二级页表项 (PTE)
   uintptr_t pte_val = (((uintptr_t)pa >> 12) << 10) | 0x1f;
   pgtab[vpn0] = pte_val;
-
-  // 4. 精简打印：每 1024 页 (4MB) 抽查一次，或者在关键地址处抽查
-  uintptr_t vpn = (uintptr_t)va >> 12;
-  uintptr_t target_pa = (pte_val >> 10) << 12;
-  
-  if (vpn % 1024 == 0) {
-    const char *tag = ((uintptr_t)va == target_pa) ? "[Identity OK]" : "[Mapping DIFF]";
-    printf("[VME] PTE 抽查: VA %p -> PA %p %s\n", va, (void*)target_pa, tag);
-  }
 }
 
 Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
