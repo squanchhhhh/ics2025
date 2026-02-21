@@ -8,7 +8,6 @@ int main() {
   while (j<10) {
     j ++;
     printf("Hello World from Navy-apps for the %dth time!\n", i ++);
-    yield();
   }
   return 0;
 }

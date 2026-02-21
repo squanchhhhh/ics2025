@@ -50,41 +50,21 @@ void init_proc() {
   //char *envp[] = {"PATH=/bin:/usr/bin", NULL};
   char *argv[] = {NULL};
   char *envp[] = {NULL};
-  context_uload(&pcb[2], "/bin/hello", argv, envp);
+  context_uload(&pcb[2], "/bin/nterm", argv, envp);
 
   switch_boot_pcb();
 }
 
 Context* schedule(Context *prev) {
   printf("proc schedule\n");
-  // 1. 记录切换前的状态
-  //int old_idx = (current == &pcb[0] ? 0 : 1); // 假设你目前主要在跑前两个
-  
-  // 2. 保存当前现场
   current->cp = prev;
-
-  // 3. 核心逻辑：选择下一个进程
   static int pcb_idx = 0;
-  pcb_idx = (pcb_idx + 1) % 3; // 先固定在 pcb0 和 pcb1 之间切，方便调试
+  pcb_idx = (pcb_idx + 1) % 3; 
   current = &pcb[pcb_idx];
-
-  // 如果目标进程没初始化，强制切回 pcb0
   if (current->cp == NULL) {
     pcb_idx = 0;
     current = &pcb[0];
   }
-
-  // 4. 打印极其详细的日志
-  // %p 打印地址，方便比对是否踩到了 PCB 头部
-  //printf("[Sched] %d->%d | prev_cp:%p | next_cp:%p | next_EPC:%x | next_PDIR:%p | &current->cp->pdir = %p\n",
-         //prev_idx, pcb_idx, prev, current->cp, current->cp->mepc, current->cp->pdir,&current->cp->pdir);
-
-  // 5. 增加一个紧急防御检测（选做）
-  // 如果 cp 指向的位置就在 pcb 结构体的开头，说明它极大概率被改写了
-  if ((uintptr_t)current->cp == (uintptr_t)current) {
-    printf("  WARNING: cp is pointing to PCB head! Potential overwrite detected.\n");
-  }
-
   return current->cp;
 }
 

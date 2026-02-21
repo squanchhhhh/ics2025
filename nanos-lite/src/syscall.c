@@ -35,7 +35,7 @@ void do_syscall(Context *ctx) {
   //KLOG("call syscall a[0]=%d, a[1]=%d, a[2]=%x, a[3]=%d\n", a[0], a[1], a[2], a[3]);
   switch (a[0]) {
     case SYS_yield:
-    yield();
+      yield();
       ctx->GPRx = 0; 
       break;
 
