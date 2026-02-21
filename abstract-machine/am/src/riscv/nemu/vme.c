@@ -86,15 +86,32 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
   uintptr_t vpn1 = ((uintptr_t)va >> 22) & 0x3ff;
   uintptr_t vpn0 = ((uintptr_t)va >> 12) & 0x3ff;
   uintptr_t *pgdir = (uintptr_t *)as->ptr;
+
+  // 1. 检查一级页表项 (PDE)
   if (!(pgdir[vpn1] & 0x1)) { 
     void *new_pt = pgalloc_usr(PGSIZE);
     memset(new_pt, 0, PGSIZE); 
-    pgdir[vpn1] = (((uintptr_t)new_pt >> 12) << 10) | 0x1; 
+    
+    // 关键打印：记录新页表的分配
+    uintptr_t pde_val = (((uintptr_t)new_pt >> 12) << 10) | 0x1;
+    pgdir[vpn1] = pde_val;
+    
+    printf("[VME] PDE Create: va_base %p, vpn1 %d, new_pt_pa %p, pde_val %08x\n", 
+           (void*)((uintptr_t)va & 0xffc00000), vpn1, new_pt, pde_val);
   }
 
+  // 2. 找到二级页表基地址
   uintptr_t *pgtab = (uintptr_t *)((pgdir[vpn1] >> 10) << 12);
   
-  pgtab[vpn0] = (((uintptr_t)pa >> 12) << 10) | 0x1f;
+  // 3. 填写二级页表项 (PTE)
+  uintptr_t pte_val = (((uintptr_t)pa >> 12) << 10) | 0x1f;
+  pgtab[vpn0] = pte_val;
+
+  // 4. 关键打印：记录每一页的映射关系 (建议仅在 va 为 0x80000000 附近时打印，否则刷屏)
+  if (((uintptr_t)va & 0xfffff000) == 0x80000000) {
+    printf("[VME] PTE Map: va %p -> pa %p, pte_val %08x (at pgtab %p)\n", 
+           va, pa, pte_val, pgtab);
+  }
 }
 
 Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
