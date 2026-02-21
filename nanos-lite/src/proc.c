@@ -56,6 +56,7 @@ void init_proc() {
 }
 
 Context* schedule(Context *prev) {
+  printf("proc schedule\n");
   // 1. 记录切换前的状态
   //int old_idx = (current == &pcb[0] ? 0 : 1); // 假设你目前主要在跑前两个
   
