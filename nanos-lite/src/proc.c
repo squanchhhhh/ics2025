@@ -27,9 +27,25 @@ void hello_fun(void *arg) {
     yield();
   }
 }
+void hello_fun_another(void *arg) {
+  int j = 1;
+  while (1) {
+    if (j % 100 == 0) {
+      Log("Greetings from the SECOND thread! arg: '%p', count: %d", arg, j);
+    }
+    j++;
+    yield();
+  }
+}
 
 void init_proc() {
+  // 初始化第一个内核线程
   context_kload(&pcb[0], hello_fun, (void *)1);
+  
+  // 初始化第二个内核线程
+  context_kload(&pcb[1], hello_fun_another, (void *)2);
+
+  switch_boot_pcb();
 
   //char *argv[] = {"hello", "world", NULL};
   //char *envp[] = {"PATH=/bin:/usr/bin", NULL};
@@ -41,8 +57,18 @@ void init_proc() {
 }
 
 Context* schedule(Context *prev) {
+  // 1. 保存当前进程的上下文指针到它的 PCB 中
   current->cp = prev;
-  current = &pcb[0];
+
+  // 2. 简单的轮转逻辑：如果在跑 pcb[0]，就切到 pcb[1]，反之亦然
+  // 这里的逻辑可以根据你的 MAX_NR_PROC 扩展
+  if (current == &pcb[0]) {
+    current = &pcb[1];
+  } else {
+    current = &pcb[0];
+  }
+
+  // 3. 返回新进程保存的上下文指针，交给 trap.S 去恢复现场
   return current->cp;
 }
 /*
