@@ -53,7 +53,7 @@ static struct rule {
   { "-"        , TK_MINUS  },
   { "[0-9]+u?"   , TK_NUM    },
   { "&"        , TK_ADDR   },
-  {"\\$(0|ra|sp|gp|tp|pc)", TK_REG},
+  {"\\$(0|ra|sp|gp|tp|pc|satp)", TK_REG},
   {"\\$(t[0-6]|s[0-9]|s1[01]|a[0-7])", TK_REG},
   { "\\("      , TK_LEFT   },
   { "\\)"      , TK_RIGHT  },
