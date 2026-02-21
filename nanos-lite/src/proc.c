@@ -52,9 +52,9 @@ void init_proc() {
 
   //char *argv[] = {"hello", "world", NULL};
   //char *envp[] = {"PATH=/bin:/usr/bin", NULL};
-  //char *argv[] = {NULL};
-  //char *envp[] = {NULL};
-  //context_uload(&pcb[2], "/bin/hello", argv, envp);
+  char *argv[] = {NULL};
+  char *envp[] = {NULL};
+  context_uload(&pcb[2], "/bin/hello", argv, envp);
 
   switch_boot_pcb();
 }
