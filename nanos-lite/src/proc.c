@@ -19,10 +19,8 @@ void hello_fun(void *arg) {
   if (j == 1){
     printf("first time in hello_fun\n");
   }
-  while (1) {
-    if (j % 100 == 0){
-      Log("Hello World from Nanos-lite with arg '%p' for the %dth time!", (void *)(uintptr_t)arg, j);
-    }
+  while (j<10) {
+    Log("Hello World from Nanos-lite with arg '%p' for the %dth time!", (void *)(uintptr_t)arg, j);
     j ++;
     yield();
   }
@@ -32,13 +30,10 @@ void hello_fun_another(void *arg) {
   if (j == 1){
     printf("first time in hello_fun_another\n");
   }
-  while (1) {
-    if (j % 100 == 0) {
-      Log("Greetings from the SECOND thread! arg: '%p', count: %d", arg, j);
-          yield();
-    }
+  while (j<10) {
+    Log("Greetings from the SECOND thread! arg: '%p', count: %d", arg, j);
     j++;
-
+    yield();
   }
 }
 
