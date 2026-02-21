@@ -7,41 +7,49 @@ static Context* (*user_handler)(Event, Context*) = NULL;
 Context* __am_irq_handle(Context *c) {
   if (user_handler) {
     Event ev = {0};
-    // 记录：中断发生的瞬间，当前 Context 的状态
-     printf("\n[IRQ Entry] Context: %p, EPC: %x, Cause: %d, pdir: %p\n", 
-             c, c->mepc, c->mcause, c->pdir);
+    
+    // Log: 进入异常时的瞬时状态
+    // 如果 EPC 总是同一个值，说明程序卡死在该指令
+    // printf("\n[CTE] Trap! EPC=0x%x, Cause=%d, a7=%d\n", c->mepc, c->mcause, c->GPR1);
+
     switch (c->mcause) {
-      case 11: 
+      case 11: // Machine environment call (ecall)
+        // 根据约束，GPR1 (a7) 为 -1 表示 yield
         if (c->GPR1 == -1) {
           ev.event = EVENT_YIELD;
         } else {
           ev.event = EVENT_SYSCALL;
         }
+        // 关键：ecall 触发的异常 mepc 指向 ecall 本身
+        // 必须 +4 跳过，否则 mret 后会无限循环执行 ecall
         c->mepc += 4;
         break;
-      default: ev.event = EVENT_ERROR; break;
+      default: 
+        ev.event = EVENT_ERROR; 
+        printf("\033[1;31m[CTE] Unhandled mcause: %d at EPC: 0x%x\033[0m\n", c->mcause, c->mepc);
+        break;
     }
 
-    // 调用 user_handler (即 do_event)，并在内部调用 schedule
     Context *prev = c;
+    // 调用 nanos-lite 的 do_event，进而调用 schedule()
     c = user_handler(ev, c);
-    
-    // 记录：调度后的变化
-    if (c != prev) {
-       printf("[IRQ Switch] From Context %p (pdir %p) -> To %p (pdir %p)\n", 
-               prev, prev->pdir, c, c->pdir);
-    }
-    printf("[IRQ Exit] Target SP to restore: %p\n", (void *)c->gpr[2]);
     assert(c != NULL);
+
+    // Log: 调度追踪
+    // 如果 prev == c，说明没有发生进程切换
+    if (c != prev) {
+       printf("[CTE] Switch: %p -> %p | New EPC: 0x%x | New pdir: %p\n", 
+               prev, c, c->mepc, c->pdir);
+    }
   }
 
-  // 这里的 __am_switch 负责真正的 SATP 硬件切换
+  // 这里的 __am_switch 负责真正的 SATP (页表) 硬件切换
+  // 如果此行导致崩溃，请检查页表是否进行了 Identity Mapping (恒等映射)
   extern void __am_switch(Context *c);
   __am_switch(c);
 
   return c;
 }
-
 extern void __am_asm_trap(void);
 
 bool cte_init(Context*(*handler)(Event, Context*)) {
