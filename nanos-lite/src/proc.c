@@ -68,7 +68,6 @@ Context* schedule(Context *prev) {
 
   // 3. 核心逻辑：选择下一个进程
   static int pcb_idx = 0;
-  int prev_idx = pcb_idx;
   pcb_idx = (pcb_idx + 1) % 2; // 先固定在 pcb0 和 pcb1 之间切，方便调试
   current = &pcb[pcb_idx];
 
@@ -80,8 +79,8 @@ Context* schedule(Context *prev) {
 
   // 4. 打印极其详细的日志
   // %p 打印地址，方便比对是否踩到了 PCB 头部
-  printf("[Sched] %d->%d | prev_cp:%p | next_cp:%p | next_EPC:%x | next_PDIR:%p | &current->cp->pdir = %p\n",
-         prev_idx, pcb_idx, prev, current->cp, current->cp->mepc, current->cp->pdir,&current->cp->pdir);
+  //printf("[Sched] %d->%d | prev_cp:%p | next_cp:%p | next_EPC:%x | next_PDIR:%p | &current->cp->pdir = %p\n",
+         //prev_idx, pcb_idx, prev, current->cp, current->cp->mepc, current->cp->pdir,&current->cp->pdir);
 
   // 5. 增加一个紧急防御检测（选做）
   // 如果 cp 指向的位置就在 pcb 结构体的开头，说明它极大概率被改写了
