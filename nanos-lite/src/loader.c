@@ -79,6 +79,7 @@ uintptr_t loader(PCB *pcb, const char *filename) {
 }
 
 void init_pcb_meta(PCB *p, const char *name) {
+  printf("proc %s init fd\n",name);
   strncpy(p->name, name, sizeof(p->name) - 1);
   // 1. 必须将所有 FD 初始化为 -1 (未分配)
   for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
