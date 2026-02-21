@@ -33,41 +33,41 @@ f(30) f(31)
 
 #define CONTEXT_SIZE  ((NR_REGS + 4) * XLEN)
 #define OFFSET_SP     ( 2 * XLEN)
-#define OFFSET_CAUSE  ((NR_REGS + 0) * XLEN)
-#define OFFSET_STATUS ((NR_REGS + 1) * XLEN)
-#define OFFSET_EPC    ((NR_REGS + 2) * XLEN)
+#define OFFSET_CAUSE  (32 * XLEN)  // 128
+#define OFFSET_STATUS (33 * XLEN)  // 132
+#define OFFSET_EPC    (34 * XLEN)  // 136
+#define OFFSET_PDIR   (35 * XLEN)  // 140
 
 .align 3
 .globl __am_asm_trap
 __am_asm_trap:
   /*
-   * 1. 栈切换与身份识别
+   * 1. 栈切换逻辑
+   * mscratch 初值为 0。如果是从用户态进入，mscratch 存有内核栈顶。
    */
   csrrw sp, mscratch, sp      # 交换 sp 和 mscratch
-  bnez sp, from_user          # 如果交换后 sp != 0，说明来自用户态
+  bnez sp, from_user          # 如果交换后 sp != 0，说明之前 sp 存的是内核栈，来自用户态
 
 from_kernel:
-  csrr sp, mscratch           # 如果来自内核态，把被换出去的内核 sp 还原回来
+  csrr sp, mscratch           # 如果来自内核态，还原被换走的内核 sp
   j save_context
 
 from_user:
-  # 此时 sp 已经是内核栈指针，mscratch 存的是用户栈指针
-  # 无需额外操作，直接向下保存
+  # 此时 sp 已是内核栈，mscratch 存的是用户栈指针
 
 save_context:
-  addi sp, sp, -CONTEXT_SIZE
-  MAP(REGS, PUSH)
+  addi sp, sp, -CONTEXT_SIZE   # 在内核栈开辟 Context 空间
+  MAP(REGS, PUSH)              # 保存通用寄存器 x1, x3-x31
 
-  # 特殊处理 sp
-  # 我们需要知道中断发生前，sp 到底在哪里
-  csrr t0, mscratch
-  STORE t0, OFFSET_SP(sp)
+  # 特殊处理 sp (x2)
+  csrr t0, mscratch            # 取出异常发生前的原始 sp
+  STORE t0, (2 * XLEN)(sp)     # 保存到 Context->gpr[2]
 
-  # 如果是从用户态来的，现在把 mscratch 清零，标记内核状态
-  # 这样如果在内核里再发生异常，bnez sp 就会失败，走 from_kernel 分支
+  # 状态标记：将 mscratch 置 0，表示当前已在内核中
+  # 防止内核态嵌套异常时再次发生错误的栈切换
   csrw mscratch, zero
 
-  # 保存 CSR
+  # 保存 CSR 寄存器 (关键现场)
   csrr t0, mcause
   csrr t1, mstatus
   csrr t2, mepc
@@ -75,17 +75,22 @@ save_context:
   STORE t1, OFFSET_STATUS(sp)
   STORE t2, OFFSET_EPC(sp)
 
-  /*
-   * 2. 调用 C 语言处理函数
-   */
-  mv a0, sp
-  call __am_irq_handle
-  
-  # a0 现在是下一个进程的 Context 指针
-  mv sp, a0
+  # --- 核心修复：保存页表基址 (VME 相关) ---
+  # 将当前 satp 存入 Context->pdir，防止返回时读取到随机脏数据
+  csrr t0, satp
+  STORE t0, OFFSET_PDIR(sp)
 
   /*
-   * 3. 准备返回
+   * 2. 调用 C 语言事件分发器
+   */
+  mv a0, sp                    # a0 = Context *c
+  call __am_irq_handle         # 处理事件
+  
+  # 注意：__am_irq_handle 可能会调用 schedule() 返回一个新的 Context 指针
+  mv sp, a0                    # 切换到目标进程的栈
+
+  /*
+   * 3. 现场恢复
    */
   # 恢复 CSR
   LOAD t1, OFFSET_STATUS(sp)
@@ -93,27 +98,30 @@ save_context:
   csrw mstatus, t1
   csrw mepc, t2
 
-  # 关键：判断我们要返回到哪里？
-  # 检查 mstatus.MPP (bits 11-12)
-  # 如果 MPP != 0 (Machine Mode)，说明返回内核，mscratch 应该保持为 0
-  # 如果 MPP == 0 (User Mode)，说明返回用户态，mscratch 应该设为内核栈顶
-  li t0, 0x1800
+  # 决定返回后的栈状态
+  # 检查 mstatus.MPP (Machine Previous Privilege)
+  # 如果 MPP == 0 (User Mode)，说明要返回用户态
+  li t0, 0x1800                # MPP 掩码
   and t0, t1, t0
-  bnez t0, restore_regs       # 如果要回到内核，跳过 mscratch 设置
+  bnez t0, restore_regs        # 如果 MPP != 0 (内核态)，跳过 mscratch 重置
 
-  # 只有回到用户态才设置 mscratch
+  # 只有回到用户态，才需要重新设置 mscratch 为内核栈顶
+  # 这样下一次用户态 ecall 才能找到内核栈
   addi t0, sp, CONTEXT_SIZE
   csrw mscratch, t0
 
 restore_regs:
-  MAP(REGS, POP)
+  # --- 核心修复：页表切换 ---
+  # 恢复目标进程的 satp (页表)
+  LOAD t0, OFFSET_PDIR(sp)
+  csrw satp, t0
 
-  # 释放内核栈空间
-  addi sp, sp, CONTEXT_SIZE
+  MAP(REGS, POP)               # 恢复通用寄存器
+  addi sp, sp, CONTEXT_SIZE    # 释放 Context 空间
 
-  # 最后一次灵魂交换
-  # 如果回到用户态：sp 变回用户栈，mscratch 变回内核栈顶
-  # 如果回到内核态：sp 没变（因为 mscratch 之前是 0），mscratch 依然是 0
+  # 最后一次 sp 交换
+  # 返回用户态：sp 恢复为用户栈，mscratch 保存内核栈顶
+  # 返回内核态：sp 保持内核栈，mscratch 保持为 0
   csrrw sp, mscratch, sp
   
   mret
