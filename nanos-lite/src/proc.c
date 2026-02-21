@@ -24,14 +24,14 @@ void hello_fun(void *arg) {
           Log("Hello World from Nanos-lite with arg '%p' for the %dth time!", (void *)(uintptr_t)arg, j);
     }
     j ++;
-    if (j == 5000){
-      halt(0);
-    }
     yield();
   }
 }
 void hello_fun_another(void *arg) {
   int j = 1;
+  if (j == 1){
+    printf("first time in hello_fun_another\n");
+  }
   while (1) {
     if (j % 100 == 0) {
       Log("Greetings from the SECOND thread! arg: '%p', count: %d", arg, j);
