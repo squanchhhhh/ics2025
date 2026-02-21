@@ -284,8 +284,8 @@ int fs_open(const char *path, int flags, mode_t mode) {
         vfs_close(s_idx); 
         return -1;
     }
-    Log("[Syscall] Process '%s' mapped System Index %d (%s) and file idx %d to local FD %d", 
-            current->name, s_idx, file_table[system_open_table[s_idx].file_idx].name,system_open_table[s_idx].file_idx,fd);
+    //Log("[Syscall] Process '%s' mapped System Index %d (%s) and file idx %d to local FD %d", 
+            //current->name, s_idx, file_table[system_open_table[s_idx].file_idx].name,system_open_table[s_idx].file_idx,fd);
     return fd; 
 }
 /*
