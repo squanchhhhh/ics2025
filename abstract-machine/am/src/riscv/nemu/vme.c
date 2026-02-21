@@ -124,12 +124,7 @@ Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
   memset(c, 0, sizeof(Context));
   c->mepc = (uintptr_t)entry;
   c->mstatus = 0x180 | 0x80;
-  if (as != NULL && as->ptr != NULL) {
-    uintptr_t mode = 1ul << 31;
-    c->pdir = (void *)(mode | ((uintptr_t)as->ptr >> 12));
-  } else {
-    c->pdir = NULL;
-  }
+  c->pdir = (as != NULL ? as->ptr : NULL);
   printf("set kernel stack for user, address = %p\n",c);
   return c;
 }
