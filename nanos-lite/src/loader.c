@@ -86,6 +86,7 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 }
 extern AddrSpace kas;
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
+  printf("load user proc %s\n",filename);
   // 1. 设置用户页表，protect 会将内核映射拷贝到用户页表
   protect(&pcb->as);
   // --- 插入这段调试代码 ---
