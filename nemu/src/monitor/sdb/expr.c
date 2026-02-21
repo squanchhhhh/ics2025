@@ -57,7 +57,6 @@ static struct rule {
   {"\\$(t[0-6]|s[0-9]|s1[01]|a[0-7])", TK_REG},
   { "\\("      , TK_LEFT   },
   { "\\)"      , TK_RIGHT  },
-
 };
 
 #define NR_REGEX ARRLEN(rules)
