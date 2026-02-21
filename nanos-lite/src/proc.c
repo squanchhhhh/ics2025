@@ -43,7 +43,7 @@ void hello_fun_another(void *arg) {
 
 void init_proc() {
   // 初始化第一个内核线程
-  context_kload(&pcb[0], hello_fun, (void *)1);
+  //context_kload(&pcb[0], hello_fun, (void *)1);
   
   // 初始化第二个内核线程
   // context_kload(&pcb[1], hello_fun_another, (void *)2);
@@ -64,7 +64,7 @@ Context* schedule(Context *prev) {
   
   PCB *old = current;
   if (current == &pcb[0]) {
-    current = &pcb[1];
+    current = &pcb[0];
   } else {
     current = &pcb[0];
   }
