@@ -87,7 +87,7 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
   uintptr_t vpn0 = ((uintptr_t)va >> 12) & 0x3ff;
   uintptr_t *pgdir = (uintptr_t *)as->ptr;
 
-  // 1. 检查一级页表项 (PDE)
+  // 1. 检查并建立一级页表项 (PDE)
   if (!(pgdir[vpn1] & 0x1)) { 
     void *new_pt = pgalloc_usr(PGSIZE);
     memset(new_pt, 0, PGSIZE); 
@@ -95,12 +95,10 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
     uintptr_t pde_val = (((uintptr_t)new_pt >> 12) << 10) | 0x1;
     pgdir[vpn1] = pde_val;
     
-    // 还原二级页表本身的物理存放地址
     uintptr_t pt_addr = (pde_val >> 10) << 12;
-    printf("[VME] 建立一级表项: 虚拟区间 [%p -> %p] 使用二级表 @ 物理地址 [%p]\n", 
-           (void*)((uintptr_t)va & 0xffc00000), 
-           (void*)(((uintptr_t)va & 0xffc00000) + 0x3fffff),
-           (void*)pt_addr);
+    // 每开启一个新的 4MB 区域时打印一次，这很有参考价值
+    printf("[VME] 新区域: VA [%p] 开启, 使用二级表 @ PA [%p]\n", 
+           (void*)((uintptr_t)va & 0xffc00000), (void*)pt_addr);
   }
 
   // 2. 找到二级页表基地址
@@ -110,12 +108,14 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
   uintptr_t pte_val = (((uintptr_t)pa >> 12) << 10) | 0x1f;
   pgtab[vpn0] = pte_val;
 
-  // 4. 打印最终映射关系
-  // 为了防止 0x80000000 循环打印太多，我们可以根据需要调整过滤条件
+  // 4. 精简打印：每 1024 页 (4MB) 抽查一次，或者在关键地址处抽查
+  uintptr_t vpn = (uintptr_t)va >> 12;
   uintptr_t target_pa = (pte_val >> 10) << 12;
-  const char *tag = ((uintptr_t)va == (uintptr_t)target_pa) ? "[Identity OK]" : "[Mapping DIFF]";
-
-  printf("[VME] PTE 映射: VA %p -> PA %p %s\n", va, (void*)target_pa, tag);
+  
+  if (vpn % 1024 == 0) {
+    const char *tag = ((uintptr_t)va == target_pa) ? "[Identity OK]" : "[Mapping DIFF]";
+    printf("[VME] PTE 抽查: VA %p -> PA %p %s\n", va, (void*)target_pa, tag);
+  }
 }
 
 Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
