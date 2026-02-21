@@ -68,7 +68,7 @@ Context* schedule(Context *prev) {
 
   // 3. 核心逻辑：选择下一个进程
   static int pcb_idx = 0;
-  pcb_idx = (pcb_idx + 1) % 2; // 先固定在 pcb0 和 pcb1 之间切，方便调试
+  pcb_idx = (pcb_idx + 1) % 3; // 先固定在 pcb0 和 pcb1 之间切，方便调试
   current = &pcb[pcb_idx];
 
   // 如果目标进程没初始化，强制切回 pcb0
