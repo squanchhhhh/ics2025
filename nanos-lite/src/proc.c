@@ -52,40 +52,24 @@ void init_proc() {
 
   //char *argv[] = {"hello", "world", NULL};
   //char *envp[] = {"PATH=/bin:/usr/bin", NULL};
-  char *argv[] = {NULL};
-  char *envp[] = {NULL};
-  context_uload(&pcb[2], "/bin/hello", argv, envp);
+  //char *argv[] = {NULL};
+  //char *envp[] = {NULL};
+  //context_uload(&pcb[2], "/bin/hello", argv, envp);
 
   switch_boot_pcb();
 }
 
 Context* schedule(Context *prev) {
-  // 1. 将当前的上下文指针保存回当前进程的 PCB 中
   current->cp = prev;
-
-  // 2. 查找下一个准备就绪的进程
-  // 这里使用静态变量记录位置，实现公平轮询
   static int pcb_idx = 0;
-  
-  // 简单的轮询逻辑：尝试寻找下一个 PCB
-  // 如果你后续给 PCB 增加了 'status' 字段（如 RUNNING/ZOMBIE），
-  // 可以在这里通过循环跳过那些没准备好的进程
   pcb_idx = (pcb_idx + 1) % MAX_NR_PROC;
-
-  // 3. 切换指针
   current = &pcb[pcb_idx];
-
-  // 4. 防御性检查：确保我们要切入的进程确实被加载了
   if (current->cp == NULL) {
-    // 如果切到了一个还没初始化的 PCB，通常切回 pcb[0]（内核空闲进程）
     pcb_idx = 0;
     current = &pcb[0];
   }
-
-   //5. 打印调度日志（调试用）
   printf("[Sched] To pcb%d (EPC: %x, PDIR: %p)\n", 
            pcb_idx, current->cp->mepc, current->cp->pdir);
-
   return current->cp;
 }
 
