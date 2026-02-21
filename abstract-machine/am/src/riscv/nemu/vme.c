@@ -92,25 +92,29 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
     void *new_pt = pgalloc_usr(PGSIZE);
     memset(new_pt, 0, PGSIZE); 
     
-    // 关键打印：记录新页表的分配
+    // 物理地址 >> 12 后左移 10，填入 V=1
     uintptr_t pde_val = (((uintptr_t)new_pt >> 12) << 10) | 0x1;
     pgdir[vpn1] = pde_val;
     
-    printf("[VME] PDE Create: va_base %p, vpn1 %d, new_pt_pa %p, pde_val %08x\n", 
-           (void*)((uintptr_t)va & 0xffc00000), vpn1, new_pt, pde_val);
+    // --- 修改后的打印：还原物理地址 ---
+    // 通过 (val >> 10) << 12 还原回你认识的 0x80... 地址
+    uintptr_t pt_addr = (pde_val >> 10) << 12;
+    printf("[VME] 建立一级映射: 虚拟区域 [%p] -> 二级页表物理地址 [%p]\n", 
+           (void*)((uintptr_t)va & 0xffc00000), (void*)pt_addr);
   }
 
-  // 2. 找到二级页表基地址
+  // 2. 找到二级页表基地址 (同样还原物理地址)
   uintptr_t *pgtab = (uintptr_t *)((pgdir[vpn1] >> 10) << 12);
   
   // 3. 填写二级页表项 (PTE)
   uintptr_t pte_val = (((uintptr_t)pa >> 12) << 10) | 0x1f;
   pgtab[vpn0] = pte_val;
 
-  // 4. 关键打印：记录每一页的映射关系 (建议仅在 va 为 0x80000000 附近时打印，否则刷屏)
+  // 4. --- 修改后的打印：还原最终映射 ---
   if (((uintptr_t)va & 0xfffff000) == 0x80000000) {
-    printf("[VME] PTE Map: va %p -> pa %p, pte_val %08x (at pgtab %p)\n", 
-           va, pa, pte_val, pgtab);
+    uintptr_t target_pa = (pte_val >> 10) << 12;
+    printf("[VME] 最终映射落地: 虚拟页 %p -> 物理页 %p (二级表在 %p)\n", 
+           va, (void*)target_pa, pgtab);
   }
 }
 
