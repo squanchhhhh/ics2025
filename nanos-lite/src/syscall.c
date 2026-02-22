@@ -154,6 +154,7 @@ void do_syscall(Context *ctx) {
   
   case SYS_execve:
     KLOG("  -> [Dispatch] SYS_execve, path=%s\n", (char *)a[1]);
+    printf("  -> [Dispatch] SYS_execve, path=%s\n", (char *)a[1]);
     do_execve((const char *)a[1], (char *const *)a[2], (char *const *)a[3]);
     break;
 
