@@ -114,7 +114,7 @@ void do_syscall(Context *ctx) {
     KLOG("  -> [Dispatch] SYS_lseek, fd=%d, off=%d, whence=%d\n", a[1], a[2], a[3]);
     ctx->GPRx = fs_lseek(a[1], a[2], a[3]);
     break;
-
+/*
   case SYS_mmap:
     KLOG("  -> [Dispatch] SYS_mmap, addr=%p, len=%x, fd=%d\n", (void*)a[1], a[2], a[5]);
     uintptr_t vaddr = a[1];
@@ -134,8 +134,36 @@ void do_syscall(Context *ctx) {
       ctx->GPRx = -1;
     }
     printf("mmap return %d\n",ctx->GPRx);
-    break;
+    break;*/
+case SYS_mmap: {
+   KLOG("  -> [Dispatch] SYS_mmap, addr=%p, len=%x, fd=%d\n", (void*)a[1], a[2], a[5]);
+    int fd = a[5]; 
+    uintptr_t vaddr = a[1];
+    size_t len = a[2];
+    if (fd < 0 || fd >= MAX_NR_PROC_FILE) { ctx->GPRx = -1; break; }
+    int s_idx = current->fd_table[fd];
 
+    if (s_idx < 0 || s_idx >= MAX_OPEN_FILES || !system_open_table[s_idx].used) {
+        ctx->GPRx = -1; break;
+    }
+    int f_idx = system_open_table[s_idx].file_idx;
+    Finfo *f = &file_table[f_idx];
+    if (f->name != NULL && strcmp(f->name, "/dev/fb") == 0) {
+        
+        uintptr_t map_vaddr = (vaddr == 0) ? 0x40000000 : vaddr;
+
+        for (uintptr_t offset = 0; offset < len; offset += 4096) {
+            map(&current->as, (void *)(map_vaddr + offset), (void *)(FB_ADDR + offset), 7);
+        }
+
+        KLOG("  -> [VFS] mmap: %s (f_idx:%d) -> vaddr:%p\n", f->name, f_idx, (void*)map_vaddr);
+        ctx->GPRx = map_vaddr;
+    } else {
+        KLOG("  -> [VFS] mmap: Refused for fd %d (name: %s)\n", fd, f->name ? f->name : "NULL");
+        ctx->GPRx = -1;
+    }
+    break;
+}
   case SYS_execve:
     KLOG("  -> [Dispatch] SYS_execve, path=%s\n", (char *)a[1]);
     do_execve((const char *)a[1], (char *const *)a[2], (char *const *)a[3]);
