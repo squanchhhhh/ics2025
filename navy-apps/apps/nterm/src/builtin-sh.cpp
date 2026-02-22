@@ -42,17 +42,19 @@ static void sh_handle_cmd(const char *cmd) {
     token = strtok(NULL, " ");
   }
   argv[argc] = NULL;
-  int pid = fork();
+  int pid = _fork(); 
   if (pid < 0) {
     sh_printf("Fork failed\n");
     return;
   }
+
   if (pid == 0) {
     execve(argv[0], argv, NULL);
     sh_printf("sh: command not found: %s\n", argv[0]);
-    exit(-1);
+    _exit(-1); 
+  } else {
     int status;
-    _wait(&status);
+    _wait(&status); 
   }
 }
 void builtin_sh_run() {
