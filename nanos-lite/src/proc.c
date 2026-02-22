@@ -157,6 +157,14 @@ void hello_fun_another(void *arg) {
 }
 
 void init_proc() {
+  for (int i = 0; i < 4; i++) {
+    printf("[DEBUG] PCB[%d] at %p (end at %x), stack range: [%p, %x]\n", 
+           i, 
+           &pcb[i], 
+           (uintptr_t)&pcb[i] + sizeof(PCB),
+           pcb[i].stack, 
+           (uintptr_t)pcb[i].stack + sizeof(pcb[i].stack));
+  }
     current = &pcb_boot;
     current->pid = 0;
     strcpy(current->name, "idle");
