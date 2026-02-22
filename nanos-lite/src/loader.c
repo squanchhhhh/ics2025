@@ -15,9 +15,10 @@
 #endif
 
 uintptr_t loader(PCB *pcb, const char *filename) {
+  
   int fd = vfs_open(filename, 0);
   panic_on(fd < 0, "Open file failed in loader");
-
+  uintptr_t max_vaddr_end = 0;
   Elf_Ehdr ehdr;
   vfs_read(fd, &ehdr, sizeof(Elf_Ehdr));
   panic_on(memcmp(ehdr.e_ident, ELFMAG, 4) != 0, "Invalid ELF file");
@@ -74,6 +75,8 @@ uintptr_t loader(PCB *pcb, const char *filename) {
       }
     }
   }
+  pcb->max_brk = max_vaddr_end; 
+  printf("PCB %s: initial max_brk set to %p\n", filename, (void *)pcb->max_brk);
   vfs_close(fd);
   return ehdr.e_entry;
 }
@@ -102,6 +105,7 @@ extern AddrSpace kas;
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   printf("load user proc %s\n",filename);
   init_pcb_meta(pcb,filename);
+  
   // 1. 设置用户页表，protect 会将内核映射拷贝到用户页表
   protect(&pcb->as);
   // --- 插入这段调试代码 ---

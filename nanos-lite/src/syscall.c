@@ -69,9 +69,21 @@ void do_syscall(Context *ctx) {
     ctx->GPRx = fs_open((char *)a[1], a[2], a[3]);
     break;
 
-  case SYS_brk:
-    ctx->GPRx = 0;
-    break;
+case SYS_brk: {
+  uintptr_t new_brk = a[1];
+  if (new_brk > current->max_brk) {
+    uintptr_t va_start = ROUNDUP(current->max_brk, PGSIZE);
+    uintptr_t va_end   = ROUNDUP(new_brk, PGSIZE);
+    
+    for (uintptr_t va = va_start; va < va_end; va += PGSIZE) {
+      void *pa = new_page(1);
+      map(&current->as, (void *)va, pa, 7); 
+    }
+    current->max_brk = new_brk; 
+  }
+  ctx->GPRx = 0;
+  break;
+}
 
   case SYS_gettimeofday:
     ctx->GPRx = sys_gettimeofday((struct timeval *)ctx->GPR2,
