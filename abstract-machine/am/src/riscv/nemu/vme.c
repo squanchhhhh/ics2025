@@ -82,6 +82,18 @@ void __am_switch(Context *c) {
 5. 填写二级页表项 (PTE)
 */
 void map(AddrSpace *as, void *va, void *pa, int prot) {
+  // --- Log 控制逻辑 ---
+  static int map_count = 0;
+  if (map_count % 100 == 0) {
+    printf("[MAP LOG #%d] va: %p -> pa: %p (as->ptr: %p)\n", map_count, va, pa, as->ptr);
+  }
+  map_count++;
+
+  // --- 非法地址预警 (针对 0x88000000 错误) ---
+  if ((uintptr_t)va >= 0x88000000) {
+    printf("\033[1;31m[MAP WARNING]\033[0m Attempting to map high address: %p -> %p\n", va, pa);
+  }
+
   uintptr_t vpn1 = ((uintptr_t)va >> 22) & 0x3ff;
   uintptr_t vpn0 = ((uintptr_t)va >> 12) & 0x3ff;
   uintptr_t *pgdir = (uintptr_t *)as->ptr;
@@ -91,14 +103,18 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
     void *new_pt = pgalloc_usr(PGSIZE);
     memset(new_pt, 0, PGSIZE); 
     
+    // Sv32: PPN = 物理地址 >> 12. PDE 只需要 V(bit 0) 位
     uintptr_t pde_val = (((uintptr_t)new_pt >> 12) << 10) | 0x1;
     pgdir[vpn1] = pde_val;
   }
 
   // 2. 找到二级页表基地址
+  // 物理页号 PPN 在 PDE 的 31-10 位，取出来后左移 12 位得到物理地址
   uintptr_t *pgtab = (uintptr_t *)((pgdir[vpn1] >> 10) << 12);
   
   // 3. 填写二级页表项 (PTE)
+  // 0x1f = 11111b (V, R, W, X, U 全开)
+  // 建议：如果 prot 指示了权限，可以用 (prot << 1) | 0x1
   uintptr_t pte_val = (((uintptr_t)pa >> 12) << 10) | 0x1f;
   pgtab[vpn0] = pte_val;
 }
