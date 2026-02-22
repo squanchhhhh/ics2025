@@ -54,6 +54,7 @@ void protect(AddrSpace *as) {
   as->ptr = updir;
   as->area = USER_SPACE;
   as->pgsize = PGSIZE;
+  printf("[VME] protect: new as->ptr = %p\n", as->ptr);
   memcpy(updir, kas.ptr, PGSIZE);
 }
 
