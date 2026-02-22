@@ -120,6 +120,7 @@ void do_syscall(Context *ctx) {
     uintptr_t vaddr = a[1];
     size_t len = a[2];
     int fd = a[5];
+    KLOG("mmap checking fd=%d, name=%s\n", fd, file_table[fd].name);
     if (fd < 0 || fd >= MAX_OPEN_FILES) {
       ctx->GPRx = -1;
       break;
