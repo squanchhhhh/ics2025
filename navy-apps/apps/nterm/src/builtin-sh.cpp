@@ -1,7 +1,13 @@
+#include <SDL.h>
 #include <nterm.h>
 #include <stdarg.h>
 #include <unistd.h>
-#include <SDL.h>
+
+extern "C" {
+  int _wait(int *status);
+  int _fork();
+  int _execve(const char *fname, char * const argv[], char *const envp[]);
+}
 
 char handle_key(SDL_Event *ev);
 
@@ -18,36 +24,36 @@ static void sh_banner() {
   sh_printf("Built-in Shell in NTerm (NJU Terminal)\n\n");
 }
 
-static void sh_prompt() {
-  sh_printf("sh> ");
-}
+static void sh_prompt() { sh_printf("sh> "); }
 
 static void sh_handle_cmd(const char *cmd) {
   static char buf[128];
   strncpy(buf, cmd, sizeof(buf) - 1);
-  
-  // 1. 去掉换行符
   char *ptr = strchr(buf, '\n');
-  if (ptr) *ptr = '\0';
-  if (strlen(buf) == 0) return;
-
-  // 2. 切分字符串 (使用 strtok)
-  char *argv[16]; // 最多支持 16 个参数
+  if (ptr)
+    *ptr = '\0';
+  if (strlen(buf) == 0)
+    return;
+  char *argv[16];
   int argc = 0;
-  
   char *token = strtok(buf, " ");
   while (token != NULL && argc < 15) {
     argv[argc++] = token;
     token = strtok(NULL, " ");
   }
-  argv[argc] = NULL; // 按照要求，argv 必须以 NULL 结尾
-
-  // 3. 执行
-  // 第一个参数 argv[0] 应该是命令路径本身
-  execve(argv[0], argv, NULL);
-
-  // 4. 如果 execve 返回了，说明执行失败
-  printf("Command not found: %s\n", argv[0]);
+  argv[argc] = NULL;
+  int pid = fork();
+  if (pid < 0) {
+    sh_printf("Fork failed\n");
+    return;
+  }
+  if (pid == 0) {
+    execve(argv[0], argv, NULL);
+    sh_printf("sh: command not found: %s\n", argv[0]);
+    exit(-1);
+    int status;
+    _wait(&status);
+  }
 }
 void builtin_sh_run() {
   sh_banner();

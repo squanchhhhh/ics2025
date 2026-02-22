@@ -88,16 +88,13 @@ uintptr_t loader(PCB *pcb, const char *filename) {
 }
 
 void init_pcb_meta(PCB *p, const char *name) {
-  printf("proc %s init fd\n",name);
   strncpy(p->name, name, sizeof(p->name) - 1);
-  // 1. 必须将所有 FD 初始化为 -1 (未分配)
   for (int i = 0; i < MAX_NR_PROC_FILE; i++) {
     p->fd_table[i] = -1;
   }
-  // 2. 预留标准 IO
-  p->fd_table[0] = 0; // stdin
-  p->fd_table[1] = 1; // stdout
-  p->fd_table[2] = 2; // stderr
+  p->fd_table[0] = 0; 
+  p->fd_table[1] = 1;
+  p->fd_table[2] = 2; 
 }
 
 void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
@@ -107,6 +104,7 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
   pcb->cp = cp;
   MLOG(LOADER_LOG,"Kernel Thread Context at %p, its SP is %p\n", pcb->cp, (void *)pcb->cp->gpr[2]);
 }
+
 extern AddrSpace kas;
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   MLOG(LOADER_LOG,"load user proc %s",filename);

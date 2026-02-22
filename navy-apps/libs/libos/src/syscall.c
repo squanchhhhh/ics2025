@@ -127,8 +127,7 @@ pid_t _getpid() {
 }
 
 pid_t _fork() {
-  assert(0);
-  return -1;
+  return _syscall_(SYS_fork, 0, 0, 0);
 }
 
 pid_t vfork() {
@@ -147,8 +146,7 @@ int _unlink(const char *n) {
 }
 
 pid_t _wait(int *status) {
-  assert(0);
-  return -1;
+  return _syscall_(SYS_wait, (intptr_t)status, 0, 0);
 }
 
 clock_t _times(void *buf) {
