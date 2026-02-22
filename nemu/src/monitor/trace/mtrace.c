@@ -10,6 +10,7 @@ void push_m(vaddr_t pc, paddr_t addr, uint64_t data, int len, MemAccessType type
     if (addr == pc && type == MEM_READ) {
         return;
     }
+    /*
     if (type == MEM_WRITE && (uint32_t)data == 0x80519000) {
         printf("\n\033[1;31m[MTRACE BINARY TRAP]\033[0m Detected write of corrupted pdir value!\n");
         printf("  PC   : 0x%08x\n", pc);
@@ -24,6 +25,7 @@ void push_m(vaddr_t pc, paddr_t addr, uint64_t data, int len, MemAccessType type
         // 触发自毁/停机，方便你直接看 trace
         assert(0); 
     }
+        */
     MTraceEntry *e = &me[nr_m % MAX_MTRACE];
     e->addr = addr;
     e->data = data;
