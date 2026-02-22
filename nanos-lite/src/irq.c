@@ -12,7 +12,7 @@ static Context* do_event(Event e, Context* c) {
     case EVENT_SYSCALL:
       //printf("Syscall event recognized!\n");
       do_syscall(c);
-      break;
+      return current->cp;
     default: 
       panic("Unhandled event ID = %d", e.event);
   }
