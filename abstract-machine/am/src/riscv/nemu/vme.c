@@ -57,13 +57,13 @@ void protect(AddrSpace *as) {
 
 void unprotect(AddrSpace *as) {
 }
-
+/*
 void __am_get_cur_as(Context *c) {
   uintptr_t satp;
   asm volatile("csrr %0, satp" : "=r"(satp));
   c->pdir = (void *)satp; 
 }
-
+*/
 void __am_switch(Context *c) {
   if (c == NULL || c->pdir == NULL) return;
   uintptr_t current_satp;
