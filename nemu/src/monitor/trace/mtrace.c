@@ -1,6 +1,7 @@
 #include "trace/mtrace.h"
 #include "trace/tui.h"
 #include "trace/error.h"
+#include <assert.h>
 #define MAX_MTRACE 16
 MTraceEntry me[MAX_MTRACE];
 static uint64_t nr_m = 0; 
@@ -8,6 +9,20 @@ static uint64_t nr_m = 0;
 void push_m(vaddr_t pc, paddr_t addr, uint64_t data, int len, MemAccessType type) {
     if (addr == pc && type == MEM_READ) {
         return;
+    }
+    if (type == MEM_WRITE && (uint32_t)data == 0x80519000) {
+        printf("\n\033[1;31m[MTRACE BINARY TRAP]\033[0m Detected write of corrupted pdir value!\n");
+        printf("  PC   : 0x%08x\n", pc);
+        printf("  Addr : 0x%08x (This is where c->pdir is located)\n", addr);
+        printf("  Data : 0x%016lx\n", data);
+        
+        // 尝试获取源码位置
+        char file[128]; int line;
+        get_pc_source(pc, file, &line);
+        printf("  Source: %s:%d\n", file, line);
+        
+        // 触发自毁/停机，方便你直接看 trace
+        assert(0); 
     }
     MTraceEntry *e = &me[nr_m % MAX_MTRACE];
     e->addr = addr;
