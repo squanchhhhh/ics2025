@@ -3,6 +3,7 @@
 #include "proc.h"
 void do_syscall(Context *ctx);
 static Context* do_event(Event e, Context* c) {
+  printf("Event %d processed, returning context at %p\n", e.event, c);
   switch (e.event) {
     case EVENT_YIELD:
       return schedule(c);
