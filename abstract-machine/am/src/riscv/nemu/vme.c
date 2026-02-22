@@ -13,16 +13,23 @@ static Area segments[] = {      // Kernel memory mappings
 
 #define USER_SPACE RANGE(0x40000000, 0x80000000)
 
+#define VME_LOG 1
+#define MLOG(flag, fmt, ...) \
+    do { \
+        if (flag) printf("\33[1;32m[%s] " fmt "\33[0m\n", __func__, ##__VA_ARGS__); \
+    } while (0)
+    
 static inline void set_satp(void *pdir) {
+  MLOG(VME_LOG, "call set_satp pdir = %x", pdir);
   uintptr_t mode = 1ul << (__riscv_xlen - 1);
   uintptr_t satp_val = mode | ((uintptr_t)pdir >> 12);
   asm volatile("csrw satp, %0" : : "r"(satp_val));
-  asm volatile("sfence.vma zero, zero"); 
 }
+
 static inline uintptr_t get_satp() {
   uintptr_t satp;
   asm volatile("csrr %0, satp" : "=r"(satp));
-  printf("call get_satp and return %x\n",satp);
+  MLOG(VME_LOG,"call get_satp and return %x\n",satp);
   return satp; 
 }
 
@@ -47,7 +54,6 @@ void protect(AddrSpace *as) {
   as->ptr = updir;
   as->area = USER_SPACE;
   as->pgsize = PGSIZE;
-  // map kernel space
   memcpy(updir, kas.ptr, PGSIZE);
 }
 
@@ -96,13 +102,6 @@ void __am_switch(Context *c) {
 5. 填写二级页表项 (PTE)
 */
 void map(AddrSpace *as, void *va, void *pa, int prot) {
-  /*
-  static int map_count = 0;
-  if (map_count % 1000 == 0) {
-    printf("[MAP LOG #%d] va: %p -> pa: %p (as->ptr: %p)\n", map_count, va, pa, as->ptr);
-  }
-  map_count++;
-*/
   uintptr_t vpn1 = ((uintptr_t)va >> 22) & 0x3ff;
   uintptr_t vpn0 = ((uintptr_t)va >> 12) & 0x3ff;
   uintptr_t *pgdir = (uintptr_t *)as->ptr;
@@ -122,15 +121,12 @@ Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
   memset(c, 0, sizeof(Context));
   c->mepc = (uintptr_t)entry;
   c->mstatus = 0x180 | 0x80;
-
-  // 这里的逻辑就是 Linux 的 switch_mm 预处理
   uintptr_t mode = 1ul << (__riscv_xlen - 1);
   if (as != NULL && as->ptr != NULL) {
     c->pdir = (void *)(mode | ((uintptr_t)as->ptr >> 12));
   } else {
     c->pdir = (void *)(mode | ((uintptr_t)kas.ptr >> 12));
   }
-  
-  printf("set user context: epc=%x, satp_val=%p\n", c->mepc, c->pdir);
+  MLOG(VME_LOG,"set user context: epc=%x, satp_val=%p\n", c->mepc, c->pdir);
   return c;
 }
