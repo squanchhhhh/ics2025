@@ -183,7 +183,8 @@ Context* schedule(Context *prev) {
         current = next;
         current->state = RUNNING;
     }
-    MLOG(PROC_LOG, "Schedule: Next PID %d (%s)", current->pid, current->name);
+    printf("Switching to PCB %s, cp at %p, pdir value at %p is %p\n", 
+       next->name, next->cp, &(next->cp->pdir), next->cp->pdir);
     return current->cp;
 }
 
