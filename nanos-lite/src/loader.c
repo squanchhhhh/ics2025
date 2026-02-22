@@ -13,8 +13,9 @@
 #define Elf_Ehdr Elf32_Ehdr
 #define Elf_Phdr Elf32_Phdr
 #endif
-
+#define LOADER_LOG 1
 uintptr_t loader(PCB *pcb, const char *filename) {
+  MLOG(LOADER_LOG, "hello");
   int fd = vfs_open(filename, 0);
   if (fd < 0) {
     Log("Loader: file '%s' not found!", filename);
