@@ -45,9 +45,13 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg);
 // 进程生命周期管理
 void do_execve(const char *filename, char *const argv[], char *const envp[]);
 void do_exit(int status);
+int sys_fork(Context *c);
+int sys_wait(int *status);
 int do_brk(uintptr_t brk);
 
 // 资源映射
 int map_to_proc_fd(int s_idx);
+
+
 
 #endif

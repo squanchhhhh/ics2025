@@ -65,12 +65,6 @@ void do_syscall(Context *ctx) {
     ctx->GPRx = 0;
     break;
 
-  case SYS_exit:
-    KLOG("  -> [Dispatch] SYS_exit, code=%d\n", a[1]);
-    Log("Process exited with code %d", a[1]);
-    halt(0);
-    break;
-
   case SYS_write:
     KLOG("  -> [Dispatch] SYS_write, fd=%d, buf=%p, len=%d\n", (int)a[1], (void*)a[2], (int)a[3]);
     ctx->GPRx = fs_write(a[1], (void *)a[2], a[3]);
@@ -142,6 +136,21 @@ void do_syscall(Context *ctx) {
     }
     break;
   }
+
+  case SYS_fork:
+    KLOG("  -> [Dispatch] SYS_fork\n");
+    ctx->GPRx = sys_fork(ctx);
+    break;
+
+  case SYS_wait:
+    KLOG("  -> [Dispatch] SYS_wait, status_ptr=%p\n", (void*)a[1]);
+    ctx->GPRx = sys_wait((int *)a[1]);
+    break;
+
+  case SYS_exit:
+    KLOG("  -> [Dispatch] SYS_exit, code=%d\n", a[1]);
+    do_exit(a[1]);
+    break;
   
   case SYS_execve:
     KLOG("  -> [Dispatch] SYS_execve, path=%s\n", (char *)a[1]);
