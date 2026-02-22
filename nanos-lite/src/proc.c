@@ -46,19 +46,30 @@ Context* copy_context_to_child_stack(PCB *child, Context *parent_ctx) {
 }
 
 int sys_fork(Context *c) {
+    MLOG(PROC_LOG, "Step 1: Allocating PCB...");
     PCB *child = pcb_alloc();
     if (!child) return -1;
+
     int child_pid = child->pid;
     list_head child_list = child->list; 
+
+    MLOG(PROC_LOG, "Step 2: Cloning PCB...");
     memcpy(child, current, sizeof(PCB));
     child->pid = child_pid;
     child->list = child_list; 
     child->parent = current; 
+
+    MLOG(PROC_LOG, "Step 3: Copying Address Space...");
     copy_as(&child->as, &current->as);
+
+    MLOG(PROC_LOG, "Step 4: Setting up context...");
     child->cp = copy_context_to_child_stack(child, c);
     child->cp->GPRx = 0; 
+    
     child->state = READY;
     pcb_enqueue(child);
+
+    MLOG(PROC_LOG, "Step 5: Fork Done, returning %d", child->pid);
     return child->pid; 
 }
 /**
