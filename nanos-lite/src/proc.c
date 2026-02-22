@@ -196,21 +196,41 @@ void init_proc() {
 
 Context* schedule(Context *prev) {
     if (current != NULL) {
+        // 记录当前进程挂起时的状态
+        if (current->pid == 1 || (current->parent && current->parent->pid == 1)) {
+            printf("[SCHED_DEBUG] Pre-switch: Current %s (PID %d, State %d) saves cp %p, pdir %p\n", 
+                   current->name, current->pid, current->state, prev, prev->pdir);
+        }
+        
         current->cp = prev;
+        
         if (current != &pcb_boot && current->state == RUNNING) {
             current->state = READY;
             pcb_enqueue(current);
         }
     }
+
     PCB *next = pcb_dequeue();
+    
     if (next == NULL) {
         current = &pcb_boot;
     } else {
         current = next;
         current->state = RUNNING;
     }
-    printf("Switching to PCB %s, cp at %p, pdir value at %p is %p\n", 
-       next->name, next->cp, &(next->cp->pdir), next->cp->pdir);
+
+    // 重点：检查即将恢复的进程，其 Context 是否合法
+    if (current->cp != NULL) {
+        uintptr_t *pdir_ptr = (uintptr_t *)&(current->cp->pdir);
+        printf("[SCHED_DEBUG] Post-switch: To %s (PID %d), cp %p, pdir at %p is %p\n", 
+               current->name, current->pid, current->cp, pdir_ptr, current->cp->pdir);
+        
+        // 如果发现 pdir 变成了 PCB 地址，立即拦截
+        if ((uintptr_t)current->cp->pdir == (uintptr_t)current) {
+            printf("!!! [CRITICAL] Context Corrupted: pdir matches PCB address!\n");
+        }
+    }
+
     return current->cp;
 }
 
