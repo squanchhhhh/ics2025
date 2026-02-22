@@ -148,6 +148,7 @@ void do_syscall(Context *ctx) {
     break;
 
   case SYS_exit:
+    *(volatile uint32_t *)0x80000000 = 0xDEADC0DE;
     KLOG("  -> [Dispatch] SYS_exit, code=%d\n", a[1]);
     do_exit(a[1]);
     break;
