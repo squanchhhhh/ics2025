@@ -70,6 +70,8 @@ void do_syscall(Context *ctx) {
     break;
 
 case SYS_brk: {
+  printf("SYS_brk: current->max_brk = %p, new_brk = %p\n", 
+          (void*)current->max_brk, (void*)a[1]);
   uintptr_t new_brk = a[1];
   if (new_brk > current->max_brk) {
     uintptr_t va_start = ROUNDUP(current->max_brk, PGSIZE);

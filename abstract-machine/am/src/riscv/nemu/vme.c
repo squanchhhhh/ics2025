@@ -84,7 +84,7 @@ void __am_switch(Context *c) {
 void map(AddrSpace *as, void *va, void *pa, int prot) {
   // --- Log 控制逻辑 ---
   static int map_count = 0;
-  if (map_count % 100 == 0) {
+  if (map_count % 1000 == 0) {
     printf("[MAP LOG #%d] va: %p -> pa: %p (as->ptr: %p)\n", map_count, va, pa, as->ptr);
   }
   map_count++;
