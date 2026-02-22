@@ -10,6 +10,36 @@ static PCB pcb[MAX_NR_PROC] __attribute__((used)) = {};
 static PCB pcb_boot = {};
 PCB *current = NULL;
 
+static list_head ready_queue = LIST_HEAD_INIT(ready_queue);
+
+PCB* pcb_alloc() {
+  for (int i = 0; i < MAX_NR_PROC; i++) {
+    if (pcb[i].state == UNUSED) {
+      memset(&pcb[i], 0, sizeof(PCB)); 
+      pcb[i].pid = i + 1; 
+      for(int j = 0; j < MAX_NR_PROC_FILE; j++) pcb[i].fd_table[j] = -1;
+      pcb[i].fd_table[0] = 0; // stdin
+      pcb[i].fd_table[1] = 1; // stdout
+      pcb[i].fd_table[2] = 2; // stderr
+      return &pcb[i];
+    }
+  }
+  return NULL; 
+}
+
+void pcb_enqueue(PCB *p) {
+    if (p->state == READY) {
+        list_add_tail(&p->list, &ready_queue);
+    }
+}
+
+PCB* pcb_dequeue() {
+    if (ready_queue.next == &ready_queue) return NULL;
+    list_head *node = ready_queue.next;
+    list_del(node);
+    return list_entry(node, PCB, list);
+}
+
 void switch_boot_pcb() {
   current = &pcb_boot;
 }
@@ -38,33 +68,38 @@ void hello_fun_another(void *arg) {
 }
 
 void init_proc() {
-  // 初始化第一个内核线程
-  //context_kload(&pcb[0], hello_fun, (void *)1);
-  
-  // 初始化第二个内核线程
-  //context_kload(&pcb[1], hello_fun_another, (void *)2);
+    // 1. 确立当前身份为 idle (PID 0)
+    current = &pcb_boot;
+    current->pid = 0;
+    strcpy(current->name, "idle");
 
-  switch_boot_pcb();
-
-  //char *argv[] = {"hello", "world", NULL};
-  //char *envp[] = {"PATH=/bin:/usr/bin", NULL};
-  char *argv[] = {NULL};
-  char *envp[] = {NULL};
-  context_uload(&pcb[0], "/bin/nterm", argv, envp);
-
-  switch_boot_pcb();
+    // 2. 加载第一个真正的人类进程 (PID 1)
+    PCB *p1 = pcb_alloc(); // 找到 pcb[0]
+    char * argv[] = {NULL};
+    char * envp[] = {NULL};
+    context_uload(p1, "/bin/nterm", argv, envp);
+    p1->state = READY;
+    pcb_enqueue(p1); // 加入链表
 }
-
 Context* schedule(Context *prev) {
-  printf("proc schedule\n");
-  current->cp = prev;
-  static int pcb_idx = 0;
-  pcb_idx = (pcb_idx + 1) % 3; 
-  current = &pcb[pcb_idx];
-  if (current->cp == NULL) {
-    pcb_idx = 0;
-    current = &pcb[0];
+  if (current != NULL) {
+    current->cp = prev;
+
+    if (current != &pcb_boot && current->state == RUNNING) {
+      current->state = READY;
+      pcb_enqueue(current);
+    }
   }
+  PCB *next = pcb_dequeue();
+
+  if (next == NULL) {
+    current = &pcb_boot;
+  } else {
+    current = next;
+    current->state = RUNNING;
+  }
+
+  Log("Next process: %s (PID:%d)", current->name, current->pid);
   return current->cp;
 }
 
