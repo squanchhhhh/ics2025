@@ -3,7 +3,6 @@
 #include "proc.h"
 void do_syscall(Context *ctx);
 static Context* do_event(Event e, Context* c) {
-  printf("Event %d processed, returning context at %p\n", e.event, c);
   switch (e.event) {
     case EVENT_YIELD:
       return schedule(c);
@@ -12,6 +11,7 @@ static Context* do_event(Event e, Context* c) {
     case EVENT_SYSCALL:
       //printf("Syscall event recognized!\n");
       do_syscall(c);
+      printf("[DEBUG] Syscall done. Old c: %p, New cp: %p\n", c, current->cp);
       return current->cp;
     default: 
       panic("Unhandled event ID = %d", e.event);
