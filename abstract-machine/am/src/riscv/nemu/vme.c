@@ -82,13 +82,13 @@ void __am_switch(Context *c) {
 5. 填写二级页表项 (PTE)
 */
 void map(AddrSpace *as, void *va, void *pa, int prot) {
-  // --- Log 控制逻辑 ---
+  /*
   static int map_count = 0;
   if (map_count % 1000 == 0) {
     printf("[MAP LOG #%d] va: %p -> pa: %p (as->ptr: %p)\n", map_count, va, pa, as->ptr);
   }
   map_count++;
-
+*/
   uintptr_t vpn1 = ((uintptr_t)va >> 22) & 0x3ff;
   uintptr_t vpn0 = ((uintptr_t)va >> 12) & 0x3ff;
   uintptr_t *pgdir = (uintptr_t *)as->ptr;

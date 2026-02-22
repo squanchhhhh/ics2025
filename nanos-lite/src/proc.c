@@ -77,7 +77,7 @@ void init_proc() {
     PCB *p1 = pcb_alloc(); // 找到 pcb[0]
     char * argv[] = {NULL};
     char * envp[] = {NULL};
-    context_uload(p1, "/bin/nterm", argv, envp);
+    context_uload(p1, "/bin/hello", argv, envp);
     p1->state = READY;
     pcb_enqueue(p1); // 加入链表
 }
