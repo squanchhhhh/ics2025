@@ -23,6 +23,21 @@ int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
   }
   return 0;
 }
+
+static const char *syscall_names[] = {
+  "SYS_exit", "SYS_yield", "SYS_open", "SYS_read", "SYS_write",
+  "SYS_kill", "SYS_getpid", "SYS_close", "SYS_lseek", "SYS_brk",
+  "SYS_fstat", "SYS_time", "SYS_signal", "SYS_execve", "SYS_fork",
+  "SYS_link", "SYS_unlink", "SYS_wait", "SYS_times", 
+  "SYS_gettimeofday", "SYS_mmap"
+};
+
+const char* get_syscall_name(int id) {
+  if (id >= 0 && id < sizeof(syscall_names) / sizeof(syscall_names[0])) {
+    return syscall_names[id];
+  }
+  return "SYS_unknown";
+}
 // GPR1 映射到 a7 (系统调用号)
 // GPR2 映射到 a0 (第一个参数)
 // GPR3 参数2
@@ -38,7 +53,7 @@ void do_syscall(Context *ctx) {
   a[4] = ctx->GPR5; // a3: arg4
   a[5] = ctx->GPR6; // a4: arg5
   a[6] = ctx->GPR7; // a5: arg6
-  KLOG("call syscall a[0]=%x, a[1]=%x, a[2]=%x, a[3]=%x,a[4]=%x,a[5]=%x,a[6]=%x\n", a[0], a[1], a[2],
+  KLOG("call syscall a[0]=%x name=%s, a[1]=%x, a[2]=%x, a[3]=%x,a[4]=%x,a[5]=%x,a[6]=%x\n", a[0],get_syscall_name(a[0]) ,a[1], a[2],
        a[3],a[4],a[5],a[6]);
   switch (a[0]) {
   case SYS_yield:
