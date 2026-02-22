@@ -8,7 +8,7 @@
 struct timezone;
 #define FB_ADDR 0xa1000000
 
-#define VERBOSE_SYSCALL 0  // 设为 1 开启输出，设为 0 关闭输出
+#define VERBOSE_SYSCALL 1 
 
 #define KLOG(format, ...)                                                      \
   do {                                                                         \
