@@ -150,7 +150,7 @@ case SYS_mmap: {
     Finfo *f = &file_table[f_idx];
     if (f->name != NULL && strcmp(f->name, "/dev/fb") == 0) {
         
-        uintptr_t map_vaddr = (vaddr == 0) ? 0x40000000 : vaddr;
+        uintptr_t map_vaddr = (vaddr == 0) ? 0x60000000 : vaddr;
 
         for (uintptr_t offset = 0; offset < len; offset += 4096) {
             map(&current->as, (void *)(map_vaddr + offset), (void *)(FB_ADDR + offset), 7);
