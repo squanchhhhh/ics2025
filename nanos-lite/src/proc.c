@@ -18,16 +18,26 @@ static list_head ready_queue = LIST_HEAD_INIT(ready_queue);
 
 
 PCB* pcb_alloc() {
-  MLOG(PROC_LOG,"call pcb_alloc current = %s",current->name);
+  MLOG(PROC_LOG, "call pcb_alloc current = %s (PID %d) at %p", current->name, current->pid, current);
+  
   for (int i = 0; i < MAX_NR_PROC; i++) {
+    // 重点：打印每一个被扫描到的 PCB 状态
+    printf("[DEBUG] Checking PCB[%d] at %p: state=%d, pid=%d, name=%s\n", 
+           i, &pcb[i], pcb[i].state, pcb[i].pid, pcb[i].name ? pcb[i].name : "NULL");
+
     if (pcb[i].state == UNUSED) {
-      printf("alloc pcb[%d]\n",i);
+      printf(">>> ALLOCATING pcb[%d] at %p for NEW PROCESS\n", i, &pcb[i]);
+      
       pcb[i].pid = i + 1;
-      pcb[i].state = READY;
+      pcb[i].state = RUNNING; // 建议分配后设为非 UNUSED 状态，防止被后续调用抢占
+      // 可以在这里清空一下 PCB 管理区，防止旧数据干扰
+      // memset(&pcb[i], 0, offsetof(PCB, stack)); 
+      
       INIT_LIST_HEAD(&pcb[i].list);
       return &pcb[i];
     }
   }
+  printf("!!! [ERROR] No UNUSED PCB found!\n");
   return NULL;
 }
 
