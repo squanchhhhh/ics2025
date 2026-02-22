@@ -32,7 +32,9 @@ uintptr_t loader(PCB *pcb, const char *filename) {
       // 计算虚拟地址范围
       uintptr_t vaddr_start = phdr.p_vaddr;
       uintptr_t vaddr_end   = phdr.p_vaddr + phdr.p_memsz;
-      
+      if (vaddr_end > max_vaddr_end) {
+        max_vaddr_end = vaddr_end;
+      }
       // 按页对齐范围
       uintptr_t pg_start = ROUNDDOWN(vaddr_start, PGSIZE);
       uintptr_t pg_end   = ROUNDUP(vaddr_end, PGSIZE);

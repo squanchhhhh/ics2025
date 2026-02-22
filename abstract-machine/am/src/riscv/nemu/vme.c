@@ -89,11 +89,6 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
   }
   map_count++;
 
-  // --- 非法地址预警 (针对 0x88000000 错误) ---
-  if ((uintptr_t)va >= 0x88000000) {
-    printf("\033[1;31m[MAP WARNING]\033[0m Attempting to map high address: %p -> %p\n", va, pa);
-  }
-
   uintptr_t vpn1 = ((uintptr_t)va >> 22) & 0x3ff;
   uintptr_t vpn0 = ((uintptr_t)va >> 12) & 0x3ff;
   uintptr_t *pgdir = (uintptr_t *)as->ptr;
