@@ -18,7 +18,7 @@ static Area segments[] = {      // Kernel memory mappings
     do { \
         if (flag) printf("\33[1;32m[%s] " fmt "\33[0m\n", __func__, ##__VA_ARGS__); \
     } while (0)
-    
+
 static inline void set_satp(void *pdir) {
   MLOG(VME_LOG, "call set_satp pdir = %x", pdir);
   uintptr_t mode = 1ul << (__riscv_xlen - 1);
@@ -29,7 +29,7 @@ static inline void set_satp(void *pdir) {
 static inline uintptr_t get_satp() {
   uintptr_t satp;
   asm volatile("csrr %0, satp" : "=r"(satp));
-  MLOG(VME_LOG,"call get_satp and return %x\n",satp);
+  MLOG(VME_LOG,"call get_satp and return %x",satp);
   return satp; 
 }
 
@@ -127,6 +127,6 @@ Context* ucontext(AddrSpace *as, Area kstack, void *entry) {
   } else {
     c->pdir = (void *)(mode | ((uintptr_t)kas.ptr >> 12));
   }
-  MLOG(VME_LOG,"set user context: epc=%x, satp_val=%p\n", c->mepc, c->pdir);
+  MLOG(VME_LOG,"set user context: epc=%x, satp_val=%p", c->mepc, c->pdir);
   return c;
 }

@@ -8,6 +8,7 @@
 #include <string.h>
 #include "device.h"
 
+#define FS_LOG 0
 Finfo file_table[MAX_MEM_INODES] __attribute__((used)) = {
   /*
   [FD_STDIN]  = { .name = "stdin",  .read = invalid_read, .write = invalid_write },
@@ -124,7 +125,7 @@ void init_fs(){
   int fd1 = vfs_open("/dev/serial", 0); // stdout
   int fd2 = vfs_open("/dev/serial", 0); // stderr
   
-  Log("Kernel standard I/O initialized: fd[%d, %d, %d]", fd0, fd1, fd2);
+  MLOG(FS_LOG,"Kernel standard I/O initialized: fd[%d, %d, %d]", fd0, fd1, fd2);
 }
 
 /*
@@ -256,7 +257,7 @@ void free_system_fd(int s_idx) {
 4.调用alloc_system_fd将fdx记录到打开文件表中
 */
 int vfs_open(const char *path, int flags) {
-  printf("call vfs_open, try to open %s\n",path);
+  MLOG(FS_LOG,"call vfs_open, try to open %s\n",path);
     for (int i = 0; i < nr_device; i++) {
         if (file_table[i].name != NULL && strcmp(path, file_table[i].name) == 0) {
             return alloc_system_fd(i, flags);
