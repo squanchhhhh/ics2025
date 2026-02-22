@@ -53,6 +53,11 @@ size_t fs_lseek(int fd, size_t offset, int whence);
 void vfs_close(int s_idx);
 int fs_close(int fd);                        
 void fstate(int fd, struct dinode *d); 
+
+size_t ramdisk_read(void *buf, size_t offset, size_t len);
+size_t ramdisk_write(const void *buf, size_t offset, size_t len);
+
+
 #include <sys/types.h> 
 #ifndef SEEK_SET
 #define SEEK_SET 0
