@@ -37,11 +37,20 @@ void pcb_enqueue(PCB *p) {
 }
 
 Context* copy_context_to_child_stack(PCB *child, Context *parent_ctx) {
-  uintptr_t kstack_end = (uintptr_t)&child->stack + sizeof(child->stack);
+  uintptr_t kstack_start = (uintptr_t)child->stack;
+  uintptr_t kstack_end = (uintptr_t)child->stack + sizeof(child->stack);
+  
   Context *child_ctx = (Context *)(kstack_end - sizeof(Context));
+  printf("[FORK_DEBUG] Child PCB: %p, kstack: [%x, %x]\n", child, kstack_start, kstack_end);
+  printf("[FORK_DEBUG] parent_ctx: %p, child_ctx created at: %p\n", parent_ctx, child_ctx);
+
   memcpy(child_ctx, parent_ctx, sizeof(Context));
+  
   uintptr_t mode = 1ul << (__riscv_xlen - 1);
   child_ctx->pdir = (void *)(mode | ((uintptr_t)child->as.ptr >> 12));
+  
+  printf("[FORK_DEBUG] child_ctx->pdir set to: %p\n", child_ctx->pdir);
+  
   return child_ctx;
 }
 
