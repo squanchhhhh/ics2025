@@ -15,9 +15,11 @@
 #endif
 
 uintptr_t loader(PCB *pcb, const char *filename) {
-  
   int fd = vfs_open(filename, 0);
-  panic_on(fd < 0, "Open file failed in loader");
+  if (fd < 0) {
+    Log("Loader: file '%s' not found!", filename);
+    return 0; 
+  }
   uintptr_t max_vaddr_end = 0;
   Elf_Ehdr ehdr;
   vfs_read(fd, &ehdr, sizeof(Elf_Ehdr));
