@@ -113,6 +113,9 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
   }
   uintptr_t *pgtab = (uintptr_t *)((pgdir[vpn1] >> 10) << 12);
   uintptr_t pte_val = (((uintptr_t)pa >> 12) << 10) | 0x1f;
+  if ((uintptr_t)&pgtab[vpn0] >= 0x80300000 && (uintptr_t)&pgtab[vpn0] <= 0x80400000) {
+    printf("DANGER! map is trying to write to kernel memory at %p\n", &pgtab[vpn0]);
+}
   pgtab[vpn0] = pte_val;
 }
 
