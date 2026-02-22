@@ -16,7 +16,6 @@
 #endif
 #define LOADER_LOG 1
 uintptr_t loader(PCB *pcb, const char *filename) {
-  MLOG(LOADER_LOG, "hello");
   int fd = vfs_open(filename, 0);
   if (fd < 0) {
     Log("Loader: file '%s' not found!", filename);
@@ -107,8 +106,6 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 
 extern AddrSpace kas;
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
-  printf("Nanos-lite Context size: %d, OFFSET of pdir: %d\n", 
-       sizeof(Context), (uintptr_t)&(((Context*)0)->pdir));
   MLOG(LOADER_LOG,"load user proc %s",filename);
   init_pcb_meta(pcb,filename);
 

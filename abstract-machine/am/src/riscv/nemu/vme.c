@@ -86,7 +86,6 @@ void __am_get_cur_as(Context *c) {
 }
 */
 void __am_switch(Context *c) {
-  printf("OFFSET of pdir is %d\n", (int)((uintptr_t)&(c->pdir) - (uintptr_t)c));
   if (c == NULL || c->pdir == NULL) return;
   uintptr_t current_satp;
   asm volatile("csrr %0, satp" : "=r"(current_satp));

@@ -21,6 +21,7 @@ PCB* pcb_alloc() {
   MLOG(PROC_LOG,"call pcb_alloc current = %s",current->name);
   for (int i = 0; i < MAX_NR_PROC; i++) {
     if (pcb[i].state == UNUSED) {
+      printf("alloc pcb[%d]\n",i);
       pcb[i].pid = i + 1;
       pcb[i].state = READY;
       INIT_LIST_HEAD(&pcb[i].list);
