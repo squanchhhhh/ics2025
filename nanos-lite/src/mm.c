@@ -100,22 +100,48 @@ static void* pg_query(AddrSpace *as, void *va) {
   return (void *)((pgtab[vpn0] >> 10) << 12);
 }
 
-/**
- * copy_as - 克隆地址空间及其内容
- * @dst: 子进程地址空间 (未初始化)
- * @src: 父进程地址空间 (已存在)
- */
+#define MM_LOG 1
+
 void copy_as(AddrSpace *dst, AddrSpace *src) {
+  MLOG(MM_LOG, "copy_as: Cloning AS from PID %d to new child", current->pid);
+  
   protect(dst);
+  MLOG(MM_LOG, "copy_as: New child pgdir created at %p", dst->ptr);
+
   uintptr_t va_start = (uintptr_t)src->area.start;
   uintptr_t va_end   = (uintptr_t)current->max_brk;
+  
+  MLOG(MM_LOG, "copy_as: Scanning VA range [%p, %p]", (void *)va_start, (void *)va_end);
+  int page_count = 0;
   for (uintptr_t va = va_start; va < va_end; va += PGSIZE) {
     void *pa_src = pg_query(src, (void *)va);
+  
     if (pa_src != NULL) {
-      void *pa_dst = new_page(1);         
-      memcpy(pa_dst, pa_src, PGSIZE);       
-      map(dst, (void *)va, pa_dst, 7);      
+      void *pa_dst = new_page(1);
+      if (!pa_dst) panic("copy_as: Out of memory during cloning!");
+      
+      memcpy(pa_dst, pa_src, PGSIZE);
+      
+      map(dst, (void *)va, pa_dst, 7); 
+      
+      page_count++;
+      if (page_count % 64 == 0 || va >= (va_end - PGSIZE)) {
+         MLOG(MM_LOG, "  [Page %d] Map VA %p: Parent PA %p -> Child PA %p", 
+              page_count, (void *)va, pa_src, pa_dst);
+      }
     }
   }
-}
+  uintptr_t stack_top = (uintptr_t)src->area.end;
+  for (uintptr_t va = stack_top - 8 * PGSIZE; va < stack_top; va += PGSIZE) {
+    void *pa_src = pg_query(src, (void *)va);
+    if (pa_src != NULL) {
+      void *pa_dst = new_page(1);
+      memcpy(pa_dst, pa_src, PGSIZE);
+      map(dst, (void *)va, pa_dst, 7);
+      MLOG(MM_LOG, "  [Stack] Map VA %p: Parent PA %p -> Child PA %p", 
+           (void *)va, pa_src, pa_dst);
+    }
+  }
 
+  MLOG(MM_LOG, "copy_as: Finished cloning %d data pages + stack pages", page_count);
+}
