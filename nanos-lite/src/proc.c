@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "fs.h"
+#include "list.h"
+#include "mm.h"
 #define MAX_NR_PROC 4
 
 static PCB pcb[MAX_NR_PROC] __attribute__((used)) = {};
@@ -15,23 +17,65 @@ static list_head ready_queue = LIST_HEAD_INIT(ready_queue);
 PCB* pcb_alloc() {
   for (int i = 0; i < MAX_NR_PROC; i++) {
     if (pcb[i].state == UNUSED) {
-      memset(&pcb[i], 0, sizeof(PCB)); 
-      pcb[i].pid = i + 1; 
-      for(int j = 0; j < MAX_NR_PROC_FILE; j++) pcb[i].fd_table[j] = -1;
-      pcb[i].fd_table[0] = 0; // stdin
-      pcb[i].fd_table[1] = 1; // stdout
-      pcb[i].fd_table[2] = 2; // stderr
+      pcb[i].pid = i + 1;
+      pcb[i].state = READY;
+      INIT_LIST_HEAD(&pcb[i].list);
       return &pcb[i];
     }
   }
-  return NULL; 
+  return NULL;
 }
-
 void pcb_enqueue(PCB *p) {
     if (p->state == READY) {
         list_add_tail(&p->list, &ready_queue);
     }
 }
+Context* copy_context_to_child_stack(PCB *child, Context *parent_ctx) {
+  uintptr_t kstack_end = (uintptr_t)&child->stack + sizeof(child->stack);
+  Context *child_ctx = (Context *)(kstack_end - sizeof(Context));
+  
+  // 1. 拷贝上下文
+  memcpy(child_ctx, parent_ctx, sizeof(Context));
+  
+  // 2. 修正 pdir (必须包含 Sv32 模式位)
+  uintptr_t mode = 1ul << (__riscv_xlen - 1);
+  child_ctx->pdir = (void *)(mode | ((uintptr_t)child->as.ptr >> 12));
+  
+  return child_ctx;
+}
+
+int sys_fork(Context *c) {
+    // 1. 先申请一个空的、有新 PID 的 PCB
+    PCB *child = pcb_alloc();
+    if (!child) return -1;
+
+    // 2. 暂时保存子进程独有的属性
+    int child_pid = child->pid;
+    list_head child_list = child->list; 
+
+    // 3. 拷贝父进程内容（注意这里会覆盖 pid 和 list）
+    memcpy(child, current, sizeof(PCB));
+
+    // 4. 还原/修正子进程独有的属性
+    child->pid = child_pid;
+    child->list = child_list; 
+    child->parent = current; // 如果你在 PCB 里加了 parent 指针的话
+
+    // 5. 内存拷贝 (这是你之前实现的 mm.c 里的函数)
+    copy_as(&child->as, &current->as);
+    
+    // 6. 构造上下文
+    child->cp = copy_context_to_child_stack(child, c);
+    child->cp->GPRx = 0; // 子进程 a0 = 0
+
+    // 7. 加入调度队列
+    child->state = READY;
+    pcb_enqueue(child);
+
+    return child->pid; // 父进程拿到子进程 PID
+}
+
+
 
 PCB* pcb_dequeue() {
     if (ready_queue.next == &ready_queue) return NULL;
@@ -81,6 +125,7 @@ void init_proc() {
     p1->state = READY;
     pcb_enqueue(p1); // 加入链表
 }
+
 Context* schedule(Context *prev) {
   if (current != NULL) {
     current->cp = prev;

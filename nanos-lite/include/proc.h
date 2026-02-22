@@ -27,7 +27,7 @@ typedef struct pcb {
   int fd_table[MAX_NR_PROC_FILE];
   
   list_head list;
-
+  struct pcb * parent;
   uint8_t stack[STACK_SIZE] PG_ALIGN;
 } PCB;
 

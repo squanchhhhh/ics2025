@@ -29,9 +29,7 @@ static inline uintptr_t get_satp() {
 bool vme_init(void* (*pgalloc_f)(int), void (*pgfree_f)(void*)) {
   pgalloc_usr = pgalloc_f;
   pgfree_usr = pgfree_f;
-
   kas.ptr = pgalloc_f(PGSIZE);
-
   int i;
   for (i = 0; i < LENGTH(segments); i ++) {
     void *va = segments[i].start;
@@ -39,10 +37,8 @@ bool vme_init(void* (*pgalloc_f)(int), void (*pgfree_f)(void*)) {
       map(&kas, va, va, 0);
     }
   }
-
   set_satp(kas.ptr);
   vme_enable = 1;
-
   return true;
 }
 
@@ -55,7 +51,25 @@ void protect(AddrSpace *as) {
   memcpy(updir, kas.ptr, PGSIZE);
 }
 
+/**
+ * unprotect - 彻底销毁一个地址空间并回收页表物理页
+ * @as: 要销毁的地址空间
+ */
 void unprotect(AddrSpace *as) {
+  if (as == NULL || as->ptr == NULL) return;
+  uintptr_t *pgdir = (uintptr_t *)as->ptr;
+  int start_idx = (uintptr_t)USER_SPACE.start >> 22;
+  int end_idx   = (uintptr_t)USER_SPACE.end >> 22;
+  for (int i = start_idx; i < end_idx; i++) {
+    uintptr_t pde = pgdir[i];
+    if ((pde & 0x1) && !(pde & 0xe)) {
+      void *pgtab = (void *)((pde >> 10) << 12);
+      pgfree_usr(pgtab);
+      pgdir[i] = 0;
+    }
+  }
+  pgfree_usr(pgdir);
+  as->ptr = NULL;
 }
 /*
 void __am_get_cur_as(Context *c) {
@@ -92,24 +106,13 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
   uintptr_t vpn1 = ((uintptr_t)va >> 22) & 0x3ff;
   uintptr_t vpn0 = ((uintptr_t)va >> 12) & 0x3ff;
   uintptr_t *pgdir = (uintptr_t *)as->ptr;
-
-  // 1. 检查并建立一级页表项 (PDE)
   if (!(pgdir[vpn1] & 0x1)) { 
     void *new_pt = pgalloc_usr(PGSIZE);
     memset(new_pt, 0, PGSIZE); 
-    
-    // Sv32: PPN = 物理地址 >> 12. PDE 只需要 V(bit 0) 位
     uintptr_t pde_val = (((uintptr_t)new_pt >> 12) << 10) | 0x1;
     pgdir[vpn1] = pde_val;
   }
-
-  // 2. 找到二级页表基地址
-  // 物理页号 PPN 在 PDE 的 31-10 位，取出来后左移 12 位得到物理地址
   uintptr_t *pgtab = (uintptr_t *)((pgdir[vpn1] >> 10) << 12);
-  
-  // 3. 填写二级页表项 (PTE)
-  // 0x1f = 11111b (V, R, W, X, U 全开)
-  // 建议：如果 prot 指示了权限，可以用 (prot << 1) | 0x1
   uintptr_t pte_val = (((uintptr_t)pa >> 12) << 10) | 0x1f;
   pgtab[vpn0] = pte_val;
 }
