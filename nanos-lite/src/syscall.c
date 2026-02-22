@@ -144,6 +144,7 @@ void do_syscall(Context *ctx) {
 
   case SYS_wait:
     KLOG("  -> [Dispatch] SYS_wait, status_ptr=%p\n", (void*)a[1]);
+    *(volatile uint32_t *)0x80000000 = 0x11111111;
     ctx->GPRx = sys_wait((int *)a[1]);
     break;
 
