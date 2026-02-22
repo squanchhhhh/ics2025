@@ -138,9 +138,7 @@ void do_exit(int status) {
 void do_execve(const char *filename, char *const argv[], char *const envp[]) {
     MLOG(PROC_LOG, "Execve: PID %d replacing image with %s", current->pid, filename);
     context_uload(current, filename, argv, envp);
-    yield(); 
 }
-
 
 PCB* pcb_dequeue() {
     if (ready_queue.next == &ready_queue) return NULL;
