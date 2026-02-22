@@ -3,16 +3,23 @@
 #include "proc.h"
 #include <common.h>
 #include <stdio.h>
+#include <string.h>
+
 struct timezone;
 #define FB_ADDR 0xa1000000
 
+// === 增加调试开关 ===
+#define VERBOSE_SYSCALL 0  // 设为 1 开启输出，设为 0 关闭输出
+
 #define KLOG(format, ...)                                                      \
   do {                                                                         \
-    char _klog_buf[256];                                                       \
-    int _klog_len =                                                            \
-        snprintf(_klog_buf, sizeof(_klog_buf), format, ##__VA_ARGS__);         \
-    for (int _i = 0; _i < _klog_len; _i++)                                     \
-      putch(_klog_buf[_i]);                                                    \
+    if (VERBOSE_SYSCALL) {                                                     \
+      char _klog_buf[256];                                                     \
+      int _klog_len =                                                          \
+          snprintf(_klog_buf, sizeof(_klog_buf), format, ##__VA_ARGS__);       \
+      for (int _i = 0; _i < _klog_len; _i++)                                   \
+        putch(_klog_buf[_i]);                                                  \
+    }                                                                          \
   } while (0)
 
 int sys_gettimeofday(struct timeval *tv, struct timezone *tz) {
@@ -38,11 +45,6 @@ const char* get_syscall_name(int id) {
   }
   return "SYS_unknown";
 }
-// GPR1 映射到 a7 (系统调用号)
-// GPR2 映射到 a0 (第一个参数)
-// GPR3 参数2
-// GPR4 参数3
-// GPRx 也映射到 a0 (返回值)
 
 void do_syscall(Context *ctx) {
   uintptr_t a[7];
@@ -54,7 +56,7 @@ void do_syscall(Context *ctx) {
   a[5] = ctx->GPR6; // a4: arg5
   a[6] = ctx->GPR7; // a5: arg6
 
-  // 这里的 name=%s 是根据数组查的，可能不准，所以 case 内部的 log 才是真相
+  // 统一打印入口信息
   KLOG("call syscall [ID=%x] name=%s\n", a[0], get_syscall_name(a[0]));
 
   switch (a[0]) {
@@ -71,7 +73,7 @@ void do_syscall(Context *ctx) {
     break;
 
   case SYS_write:
-    KLOG("  -> [Dispatch] SYS_write, fd=%d, buf=%p, len=%d\n", a[1], (void*)a[2], a[3]);
+    KLOG("  -> [Dispatch] SYS_write, fd=%d, buf=%p, len=%d\n", (int)a[1], (void*)a[2], (int)a[3]);
     ctx->GPRx = fs_write(a[1], (void *)a[2], a[3]);
     break;
 
@@ -80,7 +82,7 @@ void do_syscall(Context *ctx) {
     ctx->GPRx = fs_open((char *)a[1], a[2], a[3]);
     break;
 
-  case SYS_brk:
+  case SYS_brk:{
     KLOG("  -> [Dispatch] SYS_brk, new_brk=%p\n", (void*)a[1]);
     uintptr_t new_brk = a[1];
     if (new_brk > current->max_brk) {
@@ -94,49 +96,29 @@ void do_syscall(Context *ctx) {
     }
     ctx->GPRx = 0;
     break;
-
+  }
   case SYS_gettimeofday:
     KLOG("  -> [Dispatch] SYS_gettimeofday, tv=%p\n", (void*)a[1]);
     ctx->GPRx = sys_gettimeofday((struct timeval *)a[1], (struct timezone *)a[2]);
     break;
 
   case SYS_close:
-    KLOG("  -> [Dispatch] SYS_close, fd=%d\n", a[1]);
+    KLOG("  -> [Dispatch] SYS_close, fd=%d\n", (int)a[1]);
     ctx->GPRx = fs_close(a[1]);
     break;
 
   case SYS_read:
-    KLOG("  -> [Dispatch] SYS_read, fd=%d, buf=%p, len=%d\n", a[1], (void*)a[2], a[3]);
+    KLOG("  -> [Dispatch] SYS_read, fd=%d, buf=%p, len=%d\n", (int)a[1], (void*)a[2], (int)a[3]);
     ctx->GPRx = fs_read(a[1], (void *)a[2], a[3]);
     break;
 
   case SYS_lseek:
-    KLOG("  -> [Dispatch] SYS_lseek, fd=%d, off=%d, whence=%d\n", a[1], a[2], a[3]);
+    KLOG("  -> [Dispatch] SYS_lseek, fd=%d, off=%d, whence=%d\n", (int)a[1], (int)a[2], (int)a[3]);
     ctx->GPRx = fs_lseek(a[1], a[2], a[3]);
     break;
-/*
-  case SYS_mmap:
-    KLOG("  -> [Dispatch] SYS_mmap, addr=%p, len=%x, fd=%d\n", (void*)a[1], a[2], a[5]);
-    uintptr_t vaddr = a[1];
-    size_t len = a[2];
-    int fd = a[5];
-    KLOG("mmap checking fd=%d, name=%s\n", fd, file_table[fd].name);
-    if (fd < 0 || fd >= MAX_OPEN_FILES) {
-      ctx->GPRx = -1;
-      break;
-    }
-    if (file_table[fd].inum == 0xFFFFFFFF && strcmp(file_table[fd].name, "/dev/fb") == 0) {
-      for (uintptr_t offset = 0; offset < len; offset += 4096) {
-        map(&current->as, (void *)(vaddr + offset), (void *)(FB_ADDR + offset), 7);
-      }
-      ctx->GPRx = vaddr;
-    } else {
-      ctx->GPRx = -1;
-    }
-    printf("mmap return %d\n",ctx->GPRx);
-    break;*/
-case SYS_mmap: {
-   KLOG("  -> [Dispatch] SYS_mmap, addr=%p, len=%x, fd=%d\n", (void*)a[1], a[2], a[5]);
+
+  case SYS_mmap: {
+    KLOG("  -> [Dispatch] SYS_mmap, addr=%p, len=%x, fd=%d\n", (void*)a[1], (unsigned int)a[2], (int)a[5]);
     int fd = a[5]; 
     uintptr_t vaddr = a[1];
     size_t len = a[2];
@@ -149,13 +131,10 @@ case SYS_mmap: {
     int f_idx = system_open_table[s_idx].file_idx;
     Finfo *f = &file_table[f_idx];
     if (f->name != NULL && strcmp(f->name, "/dev/fb") == 0) {
-        
         uintptr_t map_vaddr = (vaddr == 0) ? 0x60000000 : vaddr;
-
         for (uintptr_t offset = 0; offset < len; offset += 4096) {
             map(&current->as, (void *)(map_vaddr + offset), (void *)(FB_ADDR + offset), 7);
         }
-
         KLOG("  -> [VFS] mmap: %s (f_idx:%d) -> vaddr:%p\n", f->name, f_idx, (void*)map_vaddr);
         ctx->GPRx = map_vaddr;
     } else {
@@ -163,14 +142,15 @@ case SYS_mmap: {
         ctx->GPRx = -1;
     }
     break;
-}
+  }
+  
   case SYS_execve:
     KLOG("  -> [Dispatch] SYS_execve, path=%s\n", (char *)a[1]);
     do_execve((const char *)a[1], (char *const *)a[2], (char *const *)a[3]);
     break;
 
   default:
-    KLOG("  -> [Dispatch] UNKNOWN SYSCALL ID=%d\n", a[0]);
-    panic("Unhandled syscall ID = %d", a[0]);
+    KLOG("  -> [Dispatch] UNKNOWN SYSCALL ID=%d\n", (int)a[0]);
+    panic("Unhandled syscall ID = %d", (int)a[0]);
   }
 }
