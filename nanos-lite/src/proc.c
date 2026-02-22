@@ -18,7 +18,7 @@ static list_head ready_queue = LIST_HEAD_INIT(ready_queue);
 
 
 PCB* pcb_alloc() {
-  MLOG(PROC_LOG,"call pcb_alloc current = %s\n",current->name);
+  MLOG(PROC_LOG,"call pcb_alloc current = %s",current->name);
   for (int i = 0; i < MAX_NR_PROC; i++) {
     if (pcb[i].state == UNUSED) {
       pcb[i].pid = i + 1;

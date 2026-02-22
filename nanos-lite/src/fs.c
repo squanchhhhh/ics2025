@@ -448,7 +448,7 @@ void vfs_close(int s_idx) {
 */
 int fs_close(int fd) {
   if (fd >= 0 && fd <= 2) return 0; //禁止关闭stdio
-  printf("fs_close fd = %d\n",fd);
+  MLOG(FS_LOG,"fs_close fd = %d",fd);
   if (fd < 0 || fd >= MAX_NR_PROC_FILE) {
     return -1;
   }

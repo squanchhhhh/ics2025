@@ -1,4 +1,5 @@
 #include "common.h"
+#include "debug.h"
 #include "memory.h"
 #include <elf.h>
 #include <fs.h>
@@ -81,7 +82,7 @@ uintptr_t loader(PCB *pcb, const char *filename) {
     }
   }
   pcb->max_brk = max_vaddr_end; 
-  printf("PCB %s: initial max_brk set to %p\n", filename, (void *)pcb->max_brk);
+  MLOG(LOADER_LOG,"PCB %s: initial max_brk set to %p", filename, (void *)pcb->max_brk);
   vfs_close(fd);
   return ehdr.e_entry;
 }
@@ -104,50 +105,33 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
   Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
   Context *cp = kcontext(kstack, entry, arg);
   pcb->cp = cp;
-  printf("Kernel Thread Context at %p, its SP is %p\n", pcb->cp, (void *)pcb->cp->gpr[2]);
+  MLOG(LOADER_LOG,"Kernel Thread Context at %p, its SP is %p\n", pcb->cp, (void *)pcb->cp->gpr[2]);
 }
 extern AddrSpace kas;
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
-  printf("load user proc %s\n",filename);
+  MLOG(LOADER_LOG,"load user proc %s",filename);
   init_pcb_meta(pcb,filename);
-  
-  // 1. 设置用户页表，protect 会将内核映射拷贝到用户页表
+
   protect(&pcb->as);
-  // --- 插入这段调试代码 ---
-  uint32_t *pdir = (uint32_t *)pcb->as.ptr;
-  // 索引 512 对应虚拟地址 0x80000000 (0x80000000 >> 22 = 512)
-  // 索引 1023 对应虚拟地址空间的最顶端
-  printf("Checking user page table (pdir) at %p:\n", pdir);
-  printf("  pdir[512] (0x80000000): 0x%08x\n", pdir[512]);
-  printf("  pdir[1023] (0xffc00000): 0x%08x\n", pdir[1023]);
-  // 2. 设置用户栈（32KB），并映射到页表
-  uintptr_t v_top = (uintptr_t)pcb->as.area.end; // 通常是 0x80000000
+
+  uintptr_t v_top = (uintptr_t)pcb->as.area.end; 
   uintptr_t v_stack_low = v_top - 32 * 1024;
   void *pa_stack_top_page = NULL; 
 
   for (uintptr_t va = v_stack_low; va < v_top; va += PGSIZE) {
     void *pa = new_page(1);
-    map(&pcb->as, (void *)va, pa, 7); // 权限: U, R, W
+    map(&pcb->as, (void *)va, pa, 7); 
     if (va == v_top - PGSIZE) pa_stack_top_page = pa; 
   }
-
-  // 3. 极简参数传递：仅设置 argc = 0
-  // 我们在物理页的最顶端预留 16 字节空间，并确保对齐
   uintptr_t *sp_phys = (uintptr_t *)((uintptr_t)pa_stack_top_page + PGSIZE - 16);
   uintptr_t sp_virt = v_top - 16;
   
-  *sp_phys = 0; // argc = 0
+  *sp_phys = 0; 
 
-  // 4. 加载 ELF
   uintptr_t entry = loader(pcb, filename);
-
-  // 5. 创建上下文
   Area kstack = RANGE(pcb->stack, pcb->stack + sizeof(pcb->stack));
   pcb->cp = ucontext(&pcb->as, kstack, (void *)entry);
-
-  // 设置寄存器：a0 (gpr[10]) 是 argc, sp (gpr[2]) 是栈指针
   pcb->cp->gpr[10] = sp_virt;; 
   pcb->cp->gpr[2] = sp_virt;
-
-  printf("Loader: entry = %x, SP = %x\n", entry, pcb->cp->gpr[2]);
+  MLOG(LOADER_LOG,"Loader: entry = %x, SP = %x", entry, pcb->cp->gpr[2]);
 }
