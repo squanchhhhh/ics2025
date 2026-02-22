@@ -132,6 +132,7 @@ void do_syscall(Context *ctx) {
     } else {
       ctx->GPRx = -1;
     }
+    printf("mmap return %d\n",ctx->GPRx);
     break;
 
   case SYS_execve:
