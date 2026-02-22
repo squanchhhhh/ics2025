@@ -23,5 +23,8 @@ size_t ramdisk_write(const void *buf, size_t offset, size_t len);
     } \
 } while(0)
 
+#define MLOG(flag, fmt, ...) \
+    do { if (flag) printf("[%s] " fmt "\n", __func__, ##__VA_ARGS__); } while (0)
+
 
 #endif

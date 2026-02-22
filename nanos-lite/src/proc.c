@@ -1,4 +1,5 @@
 #include "am.h"
+#include "common.h"
 #include "debug.h"
 #include <proc.h>
 #include <stdio.h>
@@ -6,6 +7,7 @@
 #include "fs.h"
 #include "list.h"
 #include "mm.h"
+#define PROC_LOG 1
 #define MAX_NR_PROC 4
 
 static PCB pcb[MAX_NR_PROC] __attribute__((used)) = {};
@@ -14,7 +16,9 @@ PCB *current = NULL;
 
 static list_head ready_queue = LIST_HEAD_INIT(ready_queue);
 
+
 PCB* pcb_alloc() {
+  MLOG(PROC_LOG,"call pcb_alloc current = %s\n",current->name);
   for (int i = 0; i < MAX_NR_PROC; i++) {
     if (pcb[i].state == UNUSED) {
       pcb[i].pid = i + 1;
@@ -25,56 +29,86 @@ PCB* pcb_alloc() {
   }
   return NULL;
 }
+
 void pcb_enqueue(PCB *p) {
     if (p->state == READY) {
         list_add_tail(&p->list, &ready_queue);
     }
 }
+
 Context* copy_context_to_child_stack(PCB *child, Context *parent_ctx) {
   uintptr_t kstack_end = (uintptr_t)&child->stack + sizeof(child->stack);
   Context *child_ctx = (Context *)(kstack_end - sizeof(Context));
-  
-  // 1. 拷贝上下文
   memcpy(child_ctx, parent_ctx, sizeof(Context));
-  
-  // 2. 修正 pdir (必须包含 Sv32 模式位)
   uintptr_t mode = 1ul << (__riscv_xlen - 1);
   child_ctx->pdir = (void *)(mode | ((uintptr_t)child->as.ptr >> 12));
-  
   return child_ctx;
 }
 
 int sys_fork(Context *c) {
-    // 1. 先申请一个空的、有新 PID 的 PCB
     PCB *child = pcb_alloc();
     if (!child) return -1;
-
-    // 2. 暂时保存子进程独有的属性
     int child_pid = child->pid;
     list_head child_list = child->list; 
-
-    // 3. 拷贝父进程内容（注意这里会覆盖 pid 和 list）
     memcpy(child, current, sizeof(PCB));
-
-    // 4. 还原/修正子进程独有的属性
     child->pid = child_pid;
     child->list = child_list; 
-    child->parent = current; // 如果你在 PCB 里加了 parent 指针的话
-
-    // 5. 内存拷贝 (这是你之前实现的 mm.c 里的函数)
+    child->parent = current; 
     copy_as(&child->as, &current->as);
-    
-    // 6. 构造上下文
     child->cp = copy_context_to_child_stack(child, c);
-    child->cp->GPRx = 0; // 子进程 a0 = 0
-
-    // 7. 加入调度队列
+    child->cp->GPRx = 0; 
     child->state = READY;
     pcb_enqueue(child);
-
-    return child->pid; // 父进程拿到子进程 PID
+    return child->pid; 
+}
+/**
+ * sys_wait - 令当前进程进入阻塞状态，直到任一子进程结束
+ * 返回值: 结束的子进程 PID，若无子进程则返回 -1
+ */
+int sys_wait(int *status) {
+    MLOG(PROC_LOG, "PID %d (%s) is waiting for children", current->pid, current->name);
+    bool has_child = false;
+    while (1) {
+        for (int i = 0; i < MAX_NR_PROC; i++) {
+            if (pcb[i].parent == current && pcb[i].state != UNUSED) {
+                has_child = true;
+                if (pcb[i].state == ZOMBIE) {
+                    int child_pid = pcb[i].pid;
+                    MLOG(PROC_LOG, "Parent PID %d found Zombie child PID %d, reclaiming...", current->pid, child_pid);
+                    unprotect(&pcb[i].as);
+                    pcb[i].state = UNUSED;
+                    
+                    return child_pid;
+                }
+            }
+        }
+        if (!has_child) {
+            MLOG(PROC_LOG, "PID %d has no children to wait for", current->pid);
+            return -1;
+        }
+        current->state = BLOCKED;
+        MLOG(PROC_LOG, "No Zombie child found, PID %d entering BLOCKED state", current->pid);
+        yield(); 
+    }
 }
 
+
+void do_exit(int status) {
+    MLOG(PROC_LOG, "Process PID %d (%s) exiting with status %d", current->pid, current->name, status);
+    current->state = ZOMBIE;
+    if (current->parent && current->parent->state == BLOCKED) {
+        MLOG(PROC_LOG, "Wake up parent PID %d", current->parent->pid);
+        current->parent->state = READY;
+        pcb_enqueue(current->parent);
+    }
+    yield();
+}
+
+void do_execve(const char *filename, char *const argv[], char *const envp[]) {
+    MLOG(PROC_LOG, "Execve: PID %d replacing image with %s", current->pid, filename);
+    context_uload(current, filename, argv, envp);
+    yield(); 
+}
 
 
 PCB* pcb_dequeue() {
@@ -112,40 +146,34 @@ void hello_fun_another(void *arg) {
 }
 
 void init_proc() {
-    // 1. 确立当前身份为 idle (PID 0)
     current = &pcb_boot;
     current->pid = 0;
     strcpy(current->name, "idle");
-
-    // 2. 加载第一个真正的人类进程 (PID 1)
-    PCB *p1 = pcb_alloc(); // 找到 pcb[0]
+    PCB *p1 = pcb_alloc(); 
     char * argv[] = {NULL};
     char * envp[] = {NULL};
     context_uload(p1, "/bin/nterm", argv, envp);
     p1->state = READY;
-    pcb_enqueue(p1); // 加入链表
+    pcb_enqueue(p1);
 }
 
 Context* schedule(Context *prev) {
-  if (current != NULL) {
-    current->cp = prev;
-
-    if (current != &pcb_boot && current->state == RUNNING) {
-      current->state = READY;
-      pcb_enqueue(current);
+    if (current != NULL) {
+        current->cp = prev;
+        if (current != &pcb_boot && current->state == RUNNING) {
+            current->state = READY;
+            pcb_enqueue(current);
+        }
     }
-  }
-  PCB *next = pcb_dequeue();
-
-  if (next == NULL) {
-    current = &pcb_boot;
-  } else {
-    current = next;
-    current->state = RUNNING;
-  }
-
-  Log("Next process: %s (PID:%d)", current->name, current->pid);
-  return current->cp;
+    PCB *next = pcb_dequeue();
+    if (next == NULL) {
+        current = &pcb_boot;
+    } else {
+        current = next;
+        current->state = RUNNING;
+    }
+    MLOG(PROC_LOG, "Schedule: Next PID %d (%s)", current->pid, current->name);
+    return current->cp;
 }
 
 /*
@@ -168,9 +196,4 @@ int map_to_proc_fd(int s_idx) {
   Log("Proc '%s' attempting to map fd, current fd_table[3]=%d", current->name, current->fd_table[3]);
   printf("Process %s: No available FD slots!\n", current->name);
   return -1;
-}
-
-void do_execve(const char *filename, char *const argv[], char *const envp[]) {
-  context_uload(current, filename, argv, envp);
-  yield(); 
 }

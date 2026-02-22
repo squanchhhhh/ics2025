@@ -8,7 +8,6 @@
 struct timezone;
 #define FB_ADDR 0xa1000000
 
-// === 增加调试开关 ===
 #define VERBOSE_SYSCALL 0  // 设为 1 开启输出，设为 0 关闭输出
 
 #define KLOG(format, ...)                                                      \
