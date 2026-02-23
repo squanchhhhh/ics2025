@@ -57,6 +57,13 @@ void do_syscall(Context *ctx) {
 
   // 统一打印入口信息
   KLOG("call syscall [ID=%x] name=%s\n", a[0], get_syscall_name(a[0]));
+  // --- 栈状态输出 ---
+  register uintptr_t sp asm("sp");
+  // 计算当前 SP 距离 PCB 起始位置的偏移
+  uintptr_t offset = (uintptr_t)sp - (uintptr_t)current;
+  // 计算当前 SP 距离 Context 结构体末尾的距离（安全余量）
+  int margin = (int)sp - (int)((uintptr_t)ctx + sizeof(Context));
+  printf("[SYSCALL] ID:%d | SP_Offset:%u | Margin:%d\n", a[0], (unsigned)offset, margin);
 
   switch (a[0]) {
   case SYS_yield:
@@ -144,7 +151,6 @@ void do_syscall(Context *ctx) {
 
   case SYS_wait:
     KLOG("  -> [Dispatch] SYS_wait, status_ptr=%p\n", (void*)a[1]);
-    *(volatile uint32_t *)0x80000000 = 0x11111111;
     ctx->GPRx = sys_wait((int *)a[1]);
     break;
 

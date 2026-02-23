@@ -131,5 +131,4 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   pcb->cp->gpr[10] = sp_virt;; 
   pcb->cp->gpr[2] = sp_virt;
   MLOG(LOADER_LOG,"Loader: entry = %x, SP = %x", entry, pcb->cp->gpr[2]);
-  printf("DEBUG: pdir is at %p, current value is %p\n", &pcb->cp->pdir, pcb->cp->pdir);
 }
