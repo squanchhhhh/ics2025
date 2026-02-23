@@ -63,7 +63,7 @@ void do_syscall(Context *ctx) {
   uintptr_t offset = (uintptr_t)sp - (uintptr_t)current;
   // 计算当前 SP 距离 Context 结构体末尾的距离（安全余量）
   int margin = (int)sp - (int)((uintptr_t)ctx + sizeof(Context));
-  printf("[SYSCALL] ID:%d | SP_Offset:%u | Margin:%d\n", a[0], (unsigned)offset, margin);
+  printf("[SYSCALL] ID:%d | SP_Offset:%d | Margin:%d\n", a[0], (unsigned)offset, margin);
 
   switch (a[0]) {
   case SYS_yield:
